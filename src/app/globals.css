@@ -45,7 +45,7 @@
 
 :root {
   --radius: 0.625rem;
-  --background: oklch(1 0 0);
+  --background: #fefdf8;
   --foreground: oklch(0.13 0.028 261.692);
   --card: oklch(1 0 0);
   --card-foreground: oklch(0.13 0.028 261.692);
@@ -120,3 +120,11 @@
     @apply bg-background text-foreground;
   }
 }
+
+@layer utilities {
+  .bg-cream {
+    background-color: #fefdf8;
+  }
+}
+
+/* Removed overriding body background to rely on CSS variables */
