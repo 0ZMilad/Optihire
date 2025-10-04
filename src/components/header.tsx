@@ -2,54 +2,47 @@ import Link from "next/link";
 import { Button } from "@/components/ui/button";
 
 export function Header() {
+  const navLinks = [
+    { name: "Start Here", href: "#start" },
+    { name: "Benefits", href: "#benefits" },
+    { name: "Process", href: "#process" },
+    { name: "FAQs", href: "#faqs" },
+  ];
+
   return (
-    <header className="sticky top-0 z-50 glass-card">
-      <div className="container mx-auto px-3 sm:px-4 md:px-6 py-3 sm:py-4">
-        <nav className="flex items-center justify-between">
-          <div className="flex items-center space-x-2">
-            <div className="w-7 h-7 sm:w-8 sm:h-8 bg-primary rounded-lg flex items-center justify-center">
-              <span className="text-primary-foreground font-bold text-xs sm:text-sm">
-                O
-              </span>
-            </div>
-            <span className="text-lg sm:text-xl font-bold text-foreground">
-              OptiHire
+    <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
+      <div className="container relative mx-auto flex h-16 items-center justify-between px-3 sm:px-4 md:px-6">
+        <Link href="/" className="flex items-center space-x-2">
+          <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-primary sm:h-8 sm:w-8">
+            <span className="text-xs font-bold text-primary-foreground sm:text-sm">
+              O
             </span>
           </div>
+          <span className="text-lg font-bold text-foreground sm:text-xl">
+            OptiHire
+          </span>
+        </Link>
 
-          <div className="hidden md:flex items-center space-x-4 lg:space-x-6 xl:space-x-8">
-            <a
-              href="#start"
-              className="text-sm lg:text-base text-muted-foreground hover:text-foreground transition-colors"
-            >
-              Start Here
-            </a>
-            <a
-              href="#benefits"
-              className="text-sm lg:text-base text-muted-foreground hover:text-foreground transition-colors"
-            >
-              Benefits
-            </a>
-            <a
-              href="#process"
-              className="text-sm lg:text-base text-muted-foreground hover:text-foreground transition-colors"
-            >
-              Process
-            </a>
-            <a
-              href="#faqs"
-              className="text-sm lg:text-base text-muted-foreground hover:text-foreground transition-colors"
-            >
-              FAQs
-            </a>
+        <nav className="absolute left-1/2 top-1/2 hidden -translate-x-1/2 -translate-y-1/2 md:flex">
+          <div className="flex items-center space-x-1 lg:space-x-2">
+            {navLinks.map((link) => (
+              <Button
+                key={link.name}
+                variant="ghost"
+                asChild
+                className="font-normal text-muted-foreground transition-colors hover:text-foreground"
+              >
+                <a href={link.href}>{link.name}</a>
+              </Button>
+            ))}
           </div>
-
-          <Link href="/dashboard">
-            <Button className="bg-primary text-primary-foreground hover:bg-primary/90 text-xs sm:text-sm px-3 sm:px-4 py-2 sm:py-2.5">
-              Dashboard
-            </Button>
-          </Link>
         </nav>
+
+        <div className="flex items-center">
+          <Link href="/login" className="hidden md:block">
+            <Button size="sm">Login</Button>
+          </Link>
+        </div>
       </div>
     </header>
   );

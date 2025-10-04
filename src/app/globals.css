@@ -116,8 +116,13 @@
   * {
     @apply border-border outline-ring/50;
   }
+  html {
+    overflow-x: hidden;
+  }
   body {
     @apply bg-background text-foreground;
+    zoom: 0.9;
+    overflow-x: hidden;
   }
 }
 
@@ -178,6 +183,15 @@
   .container-responsive {
     padding-left: clamp(1rem, 3vw, 3rem);
     padding-right: clamp(1rem, 3vw, 3rem);
+  }
+}
+
+@supports not (zoom: 0.9) {
+  body {
+    transform: scale(0.9);
+    transform-origin: top center;
+    width: calc(100% / 0.9);
+    min-height: calc(100vh / 0.9);
   }
 }
 
