@@ -8,7 +8,7 @@ from decimal import Decimal
 from pydantic import EmailStr
 from sqlmodel import SQLModel, Field, Column
 from sqlalchemy import ARRAY, String, UniqueConstraint, func
-from sqlalchemy.dialects.postgresql import UUID as PGUUID
+from sqlalchemy.dialects.postgresql import UUID as PGUUID, JSONB
 
 
 class UserBase(SQLModel):
@@ -69,7 +69,7 @@ class UserOnboardingProgress(SQLModel, table=True):
     user_id: UUID = Field(
         sa_column=Column(PGUUID(as_uuid=True), primary_key=True)
     )
-    data: dict = Field(sa_column=Column("data", nullable=False))  # JSONB in PostgreSQL
+    data: dict = Field(sa_column=Column("data", JSONB, nullable=False))  # JSONB in PostgreSQL
     updated_at: datetime = Field(
         default_factory=datetime.utcnow,
         sa_column_kwargs={"server_default": func.now(), "onupdate": func.now()}

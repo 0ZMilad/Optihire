@@ -1,6 +1,14 @@
 from app.core.config import settings
 from sqlmodel import SQLModel
-from app.models.user_model import User  # Import your table models here
+
+from app.models import (
+    User, UserOnboardingProgress,
+    UploadedFile, ParseTask,
+    ResumeTemplate, Resume, ResumeExperience, ResumeEducation,
+    ResumeSkill, ResumeCertification, ResumeProject, ResumeCustomSection,
+    JobDescription, AnalysisResult, Suggestion, SuggestionInteraction,
+    SkillCorrection, IndustryKeyword
+)
 
 from logging.config import fileConfig
 
