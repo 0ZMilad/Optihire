@@ -5,43 +5,86 @@ FastAPI backend with Supabase PostgreSQL integration for AI-powered ATS resume o
 ## Tech Stack
 
 - **FastAPI** - Modern Python web framework
-- **Supabase** - PostgreSQL database, authentication, and storage
-- **SQLModel** - SQL database ORM
+- **Supabase** - PostgreSQL database + authentication
+- **SQLModel** - SQL ORM with Pydantic
 - **Alembic** - Database migrations
-- **Pydantic** - Data validation
 
-## Structure
+---
+
+## API Style Guide
+
+### URL Structure
+
+- **Base URL**: `/api/v1/`
+- **Naming**: Use plural nouns (`/users`, `/resumes`, `/jobs`)
+- **Multi-word**: Use kebab-case (`/job-descriptions`)
+- **IDs**: Path parameters (`/users/{id}`)
+- **Filtering**: Query parameters (`/resumes?status=active`)
+
+### HTTP Methods
+
+- **GET** - Read data (list or single)
+- **POST** - Create new resource
+- **PATCH** - Update existing resource (partial)
+- **DELETE** - Remove resource (soft delete)
+
+### Status Codes
+
+- `200` - Success (GET, PATCH, DELETE)
+- `201` - Created (POST)
+- `400` - Bad request
+- `401` - Unauthorized
+- `404` - Not found
+- `422` - Validation error
+- `500` - Server error
+
+### Response Format
+
+**Success:**
+
+```json
+{
+  "id": "uuid",
+  "field": "value",
+  "created_at": "2025-10-13T22:45:30.123456"
+}
+```
+
+**Error:**
+
+```json
+{
+  "detail": "Error message"
+}
+```
+
+### Authentication
 
 ```
-app/
-├── api/v1/endpoints/  # API routes
-├── core/              # Configuration & security
-├── db/                # Database session & Supabase client
-├── models/            # SQLModel database models
-├── schemas/           # Pydantic request/response schemas
-└── services/          # Business logic
+Authorization: Bearer <supabase_jwt_token>
 ```
 
-## Setup
+**Public endpoints:**
 
-1. Install dependencies:
+- `/health`
+- `/api/v1/system/health`
 
-```bash
-pip install -r requirements.txt
-```
+**Protected endpoints:**
 
-2. Configure `.env` with Supabase credentials
+- All `/api/v1/*` require auth
 
-3. Run migrations:
+### Data Formats
 
-```bash
-alembic upgrade head
-```
+- **Dates**: ISO 8601 (`2025-10-13T22:45:30.123456`)
+- **IDs**: UUID v4 (`550e8400-e29b-41d4-a716-446655440000`)
+- **Booleans**: `true`/`false`
 
-4. Start server:
+### Best Practices
 
-```bash
-uvicorn app.main:app --reload
-```
-
-API docs available at `http://localhost:8000/docs`
+1. Use Pydantic schemas for validation
+2. Business logic in services, not endpoints
+3. Use dependency injection for DB sessions
+4. Implement soft deletes (`deleted_at`)
+5. Use UUID primary keys
+6. Return proper status codes
+7. Log all errors

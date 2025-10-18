@@ -25,3 +25,7 @@ pnpm dev
 ```
 
 Open http://localhost:3000 with your browser to see the result.
+
+## Privacy
+
+As part of OptiHire, we store your account information (email and profile) and ATS analysis results to provide personaliSed compatibility scoring and feedback. Uploaded resume files are deleted within 24 hours of upload. All other user data is retained only to operate and improve the service and removed upon account deletion. Supabase acts as an identity sub-processor for authentication and user management.
