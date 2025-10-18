@@ -1,73 +1,77 @@
 """
 Schemas for job listings, matching, and feedback.
 """
+
+from datetime import date, datetime
 from uuid import UUID
-from datetime import datetime, date
-from typing import Optional, List
+
 from pydantic import BaseModel, Field
 
-from app.schemas.common_schema import RemoteType, ExperienceLevel, JobType, FeedbackType
-
+from app.schemas.common_schema import ExperienceLevel, FeedbackType, JobType, RemoteType
 
 # ===== JOB LISTINGS =====
 
+
 class JobListingCreate(BaseModel):
     """Create a new job listing."""
-    external_id: Optional[str] = Field(None, max_length=255)
+
+    external_id: str | None = Field(None, max_length=255)
     source: str = Field(..., max_length=50)
     job_title: str = Field(..., max_length=200)
     company_name: str = Field(..., max_length=200)
-    location: Optional[str] = Field(None, max_length=255)
-    remote_type: Optional[RemoteType] = None
-    salary_min: Optional[int] = Field(None, ge=0)
-    salary_max: Optional[int] = Field(None, ge=0)
+    location: str | None = Field(None, max_length=255)
+    remote_type: RemoteType | None = None
+    salary_min: int | None = Field(None, ge=0)
+    salary_max: int | None = Field(None, ge=0)
     salary_currency: str = Field(default="USD", max_length=3)
-    description: Optional[str] = None
-    requirements: Optional[str] = None
-    benefits: Optional[str] = None
-    job_type: Optional[JobType] = None
-    experience_level: Optional[ExperienceLevel] = None
-    posted_date: Optional[date] = None
-    application_deadline: Optional[date] = None
-    external_url: Optional[str] = Field(None, max_length=500)
+    description: str | None = None
+    requirements: str | None = None
+    benefits: str | None = None
+    job_type: JobType | None = None
+    experience_level: ExperienceLevel | None = None
+    posted_date: date | None = None
+    application_deadline: date | None = None
+    external_url: str | None = Field(None, max_length=500)
 
 
 class JobListingUpdate(BaseModel):
     """Update a job listing."""
-    job_title: Optional[str] = Field(None, max_length=200)
-    company_name: Optional[str] = Field(None, max_length=200)
-    location: Optional[str] = Field(None, max_length=255)
-    remote_type: Optional[RemoteType] = None
-    salary_min: Optional[int] = Field(None, ge=0)
-    salary_max: Optional[int] = Field(None, ge=0)
-    description: Optional[str] = None
-    requirements: Optional[str] = None
-    benefits: Optional[str] = None
-    is_active: Optional[bool] = None
+
+    job_title: str | None = Field(None, max_length=200)
+    company_name: str | None = Field(None, max_length=200)
+    location: str | None = Field(None, max_length=255)
+    remote_type: RemoteType | None = None
+    salary_min: int | None = Field(None, ge=0)
+    salary_max: int | None = Field(None, ge=0)
+    description: str | None = None
+    requirements: str | None = None
+    benefits: str | None = None
+    is_active: bool | None = None
 
 
 class JobListingRead(BaseModel):
     """Read job listing data."""
+
     id: UUID
-    external_id: Optional[str]
+    external_id: str | None
     source: str
     job_title: str
     company_name: str
-    location: Optional[str]
-    remote_type: Optional[str]
-    salary_min: Optional[int]
-    salary_max: Optional[int]
+    location: str | None
+    remote_type: str | None
+    salary_min: int | None
+    salary_max: int | None
     salary_currency: str
-    description: Optional[str]
-    requirements: Optional[str]
-    benefits: Optional[str]
-    job_type: Optional[str]
-    experience_level: Optional[str]
-    posted_date: Optional[date]
-    application_deadline: Optional[date]
-    external_url: Optional[str]
+    description: str | None
+    requirements: str | None
+    benefits: str | None
+    job_type: str | None
+    experience_level: str | None
+    posted_date: date | None
+    application_deadline: date | None
+    external_url: str | None
     is_active: bool
-    extracted_keywords: List[str]
+    extracted_keywords: list[str]
     created_at: datetime
     updated_at: datetime
 
@@ -76,37 +80,41 @@ class JobListingRead(BaseModel):
 
 # ===== JOB MATCHES =====
 
+
 class JobMatchCreate(BaseModel):
     """Create a new job match."""
+
     user_id: UUID
     resume_id: UUID
     job_listing_id: UUID
     match_score: int = Field(..., ge=0, le=100)
-    skill_match_score: Optional[int] = Field(None, ge=0, le=100)
-    experience_match_score: Optional[int] = Field(None, ge=0, le=100)
-    location_match_score: Optional[int] = Field(None, ge=0, le=100)
-    matched_skills: List[str] = Field(default_factory=list)
-    missing_skills: List[str] = Field(default_factory=list)
+    skill_match_score: int | None = Field(None, ge=0, le=100)
+    experience_match_score: int | None = Field(None, ge=0, le=100)
+    location_match_score: int | None = Field(None, ge=0, le=100)
+    matched_skills: list[str] = Field(default_factory=list)
+    missing_skills: list[str] = Field(default_factory=list)
 
 
 class JobMatchUpdate(BaseModel):
     """Update a job match."""
-    is_saved: Optional[bool] = None
-    is_hidden: Optional[bool] = None
+
+    is_saved: bool | None = None
+    is_hidden: bool | None = None
 
 
 class JobMatchRead(BaseModel):
     """Read job match data."""
+
     id: UUID
     user_id: UUID
     resume_id: UUID
     job_listing_id: UUID
     match_score: int
-    skill_match_score: Optional[int]
-    experience_match_score: Optional[int]
-    location_match_score: Optional[int]
-    matched_skills: List[str]
-    missing_skills: List[str]
+    skill_match_score: int | None
+    experience_match_score: int | None
+    location_match_score: int | None
+    matched_skills: list[str]
+    missing_skills: list[str]
     is_saved: bool
     is_hidden: bool
     created_at: datetime
@@ -116,8 +124,10 @@ class JobMatchRead(BaseModel):
 
 # ===== USER JOB FEEDBACK =====
 
+
 class UserJobFeedbackCreate(BaseModel):
     """Create user feedback on a job."""
+
     user_id: UUID
     job_listing_id: UUID
     feedback_type: FeedbackType
@@ -125,6 +135,7 @@ class UserJobFeedbackCreate(BaseModel):
 
 class UserJobFeedbackRead(BaseModel):
     """Read user job feedback data."""
+
     id: UUID
     user_id: UUID
     job_listing_id: UUID

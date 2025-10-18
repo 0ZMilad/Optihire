@@ -3,32 +3,31 @@ Database models for the OptiHire application.
 """
 
 # User models
-from app.models.user_model import User, UserOnboardingProgress
+# Analysis models
+from app.models.analysis_model import (
+    AnalysisResult,
+    IndustryKeyword,
+    JobDescription,
+    SkillCorrection,
+    Suggestion,
+    SuggestionInteraction,
+)
 
 # File models
-from app.models.file_model import UploadedFile, ParseTask
+from app.models.file_model import ParseTask, UploadedFile
 
 # Resume models
 from app.models.resume_model import (
-    ResumeTemplate,
     Resume,
-    ResumeExperience,
-    ResumeEducation,
-    ResumeSkill,
     ResumeCertification,
-    ResumeProject,
     ResumeCustomSection,
+    ResumeEducation,
+    ResumeExperience,
+    ResumeProject,
+    ResumeSkill,
+    ResumeTemplate,
 )
-
-# Analysis models
-from app.models.analysis_model import (
-    JobDescription,
-    AnalysisResult,
-    Suggestion,
-    SuggestionInteraction,
-    SkillCorrection,
-    IndustryKeyword,
-)
+from app.models.user_model import User, UserOnboardingProgress
 
 __all__ = [
     # User

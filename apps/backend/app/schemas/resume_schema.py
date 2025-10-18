@@ -1,22 +1,24 @@
 """
 Schemas for resumes and all related sections.
 """
-from uuid import UUID
-from datetime import datetime, date
-from typing import Optional, List
-from decimal import Decimal
-from pydantic import BaseModel, Field, EmailStr, HttpUrl
 
+from datetime import date, datetime
+from decimal import Decimal
+from uuid import UUID
+
+from pydantic import BaseModel, EmailStr, Field
 
 # ===== RESUME TEMPLATES =====
 
+
 class ResumeTemplateRead(BaseModel):
     """Read resume template data."""
+
     id: UUID
     name: str
     version: str
     path: str
-    thumbnail_url: Optional[str]
+    thumbnail_url: str | None
     is_default: bool
     is_active: bool
     created_at: datetime
@@ -26,107 +28,115 @@ class ResumeTemplateRead(BaseModel):
 
 # ===== MAIN RESUME =====
 
+
 class ResumeCreate(BaseModel):
     """Create a new resume."""
+
     user_id: UUID
     version_name: str = Field(..., max_length=100)
-    template_id: Optional[UUID] = None
+    template_id: UUID | None = None
     is_primary: bool = False
-    full_name: Optional[str] = Field(None, max_length=200)
-    email: Optional[EmailStr] = None
-    phone: Optional[str] = Field(None, max_length=30)
-    location: Optional[str] = Field(None, max_length=255)
-    linkedin_url: Optional[str] = Field(None, max_length=255)
-    github_url: Optional[str] = Field(None, max_length=255)
-    portfolio_url: Optional[str] = Field(None, max_length=255)
-    professional_summary: Optional[str] = None
+    full_name: str | None = Field(None, max_length=200)
+    email: EmailStr | None = None
+    phone: str | None = Field(None, max_length=30)
+    location: str | None = Field(None, max_length=255)
+    linkedin_url: str | None = Field(None, max_length=255)
+    github_url: str | None = Field(None, max_length=255)
+    portfolio_url: str | None = Field(None, max_length=255)
+    professional_summary: str | None = None
 
 
 class ResumeUpdate(BaseModel):
     """Update a resume."""
-    version_name: Optional[str] = Field(None, max_length=100)
-    template_id: Optional[UUID] = None
-    is_primary: Optional[bool] = None
-    section_order: Optional[dict] = None
-    full_name: Optional[str] = Field(None, max_length=200)
-    email: Optional[EmailStr] = None
-    phone: Optional[str] = Field(None, max_length=30)
-    location: Optional[str] = Field(None, max_length=255)
-    linkedin_url: Optional[str] = Field(None, max_length=255)
-    github_url: Optional[str] = Field(None, max_length=255)
-    portfolio_url: Optional[str] = Field(None, max_length=255)
-    professional_summary: Optional[str] = None
+
+    version_name: str | None = Field(None, max_length=100)
+    template_id: UUID | None = None
+    is_primary: bool | None = None
+    section_order: dict | None = None
+    full_name: str | None = Field(None, max_length=200)
+    email: EmailStr | None = None
+    phone: str | None = Field(None, max_length=30)
+    location: str | None = Field(None, max_length=255)
+    linkedin_url: str | None = Field(None, max_length=255)
+    github_url: str | None = Field(None, max_length=255)
+    portfolio_url: str | None = Field(None, max_length=255)
+    professional_summary: str | None = None
 
 
 class ResumeRead(BaseModel):
     """Read resume data."""
+
     id: UUID
     user_id: UUID
     version_name: str
-    template_id: Optional[UUID]
+    template_id: UUID | None
     is_primary: bool
-    section_order: Optional[dict]
-    content_hash: Optional[str]
-    full_name: Optional[str]
-    email: Optional[str]
-    phone: Optional[str]
-    location: Optional[str]
-    linkedin_url: Optional[str]
-    github_url: Optional[str]
-    portfolio_url: Optional[str]
-    professional_summary: Optional[str]
-    last_analyzed_at: Optional[datetime]
+    section_order: dict | None
+    content_hash: str | None
+    full_name: str | None
+    email: str | None
+    phone: str | None
+    location: str | None
+    linkedin_url: str | None
+    github_url: str | None
+    portfolio_url: str | None
+    professional_summary: str | None
+    last_analyzed_at: datetime | None
     created_at: datetime
     updated_at: datetime
-    deleted_at: Optional[datetime]
+    deleted_at: datetime | None
 
     model_config = {"from_attributes": True}
 
 
 # ===== EXPERIENCE =====
 
+
 class ExperienceCreate(BaseModel):
     """Create a new experience entry."""
+
     resume_id: UUID
     company_name: str = Field(..., max_length=200)
     job_title: str = Field(..., max_length=200)
-    location: Optional[str] = Field(None, max_length=255)
+    location: str | None = Field(None, max_length=255)
     start_date: date
-    end_date: Optional[date] = None
+    end_date: date | None = None
     is_current: bool = False
-    description: Optional[str] = None
-    achievements: List[str] = Field(default_factory=list)
-    skills_used: List[str] = Field(default_factory=list)
+    description: str | None = None
+    achievements: list[str] = Field(default_factory=list)
+    skills_used: list[str] = Field(default_factory=list)
     display_order: int = 0
 
 
 class ExperienceUpdate(BaseModel):
     """Update an experience entry."""
-    company_name: Optional[str] = Field(None, max_length=200)
-    job_title: Optional[str] = Field(None, max_length=200)
-    location: Optional[str] = Field(None, max_length=255)
-    start_date: Optional[date] = None
-    end_date: Optional[date] = None
-    is_current: Optional[bool] = None
-    description: Optional[str] = None
-    achievements: Optional[List[str]] = None
-    skills_used: Optional[List[str]] = None
-    display_order: Optional[int] = None
+
+    company_name: str | None = Field(None, max_length=200)
+    job_title: str | None = Field(None, max_length=200)
+    location: str | None = Field(None, max_length=255)
+    start_date: date | None = None
+    end_date: date | None = None
+    is_current: bool | None = None
+    description: str | None = None
+    achievements: list[str] | None = None
+    skills_used: list[str] | None = None
+    display_order: int | None = None
 
 
 class ExperienceRead(BaseModel):
     """Read experience data."""
+
     id: UUID
     resume_id: UUID
     company_name: str
     job_title: str
-    location: Optional[str]
+    location: str | None
     start_date: date
-    end_date: Optional[date]
+    end_date: date | None
     is_current: bool
-    description: Optional[str]
-    achievements: List[str]
-    skills_used: List[str]
+    description: str | None
+    achievements: list[str]
+    skills_used: list[str]
     display_order: int
     created_at: datetime
     updated_at: datetime
@@ -136,51 +146,55 @@ class ExperienceRead(BaseModel):
 
 # ===== EDUCATION =====
 
+
 class EducationCreate(BaseModel):
     """Create a new education entry."""
+
     resume_id: UUID
     institution_name: str = Field(..., max_length=200)
-    degree_type: Optional[str] = Field(None, max_length=100)
-    field_of_study: Optional[str] = Field(None, max_length=200)
-    location: Optional[str] = Field(None, max_length=255)
-    start_date: Optional[date] = None
-    end_date: Optional[date] = None
+    degree_type: str | None = Field(None, max_length=100)
+    field_of_study: str | None = Field(None, max_length=200)
+    location: str | None = Field(None, max_length=255)
+    start_date: date | None = None
+    end_date: date | None = None
     is_current: bool = False
-    gpa: Optional[Decimal] = Field(None, ge=0, le=4.0)
-    achievements: List[str] = Field(default_factory=list)
-    relevant_coursework: List[str] = Field(default_factory=list)
+    gpa: Decimal | None = Field(None, ge=0, le=4.0)
+    achievements: list[str] = Field(default_factory=list)
+    relevant_coursework: list[str] = Field(default_factory=list)
     display_order: int = 0
 
 
 class EducationUpdate(BaseModel):
     """Update an education entry."""
-    institution_name: Optional[str] = Field(None, max_length=200)
-    degree_type: Optional[str] = Field(None, max_length=100)
-    field_of_study: Optional[str] = Field(None, max_length=200)
-    location: Optional[str] = Field(None, max_length=255)
-    start_date: Optional[date] = None
-    end_date: Optional[date] = None
-    is_current: Optional[bool] = None
-    gpa: Optional[Decimal] = Field(None, ge=0, le=4.0)
-    achievements: Optional[List[str]] = None
-    relevant_coursework: Optional[List[str]] = None
-    display_order: Optional[int] = None
+
+    institution_name: str | None = Field(None, max_length=200)
+    degree_type: str | None = Field(None, max_length=100)
+    field_of_study: str | None = Field(None, max_length=200)
+    location: str | None = Field(None, max_length=255)
+    start_date: date | None = None
+    end_date: date | None = None
+    is_current: bool | None = None
+    gpa: Decimal | None = Field(None, ge=0, le=4.0)
+    achievements: list[str] | None = None
+    relevant_coursework: list[str] | None = None
+    display_order: int | None = None
 
 
 class EducationRead(BaseModel):
     """Read education data."""
+
     id: UUID
     resume_id: UUID
     institution_name: str
-    degree_type: Optional[str]
-    field_of_study: Optional[str]
-    location: Optional[str]
-    start_date: Optional[date]
-    end_date: Optional[date]
+    degree_type: str | None
+    field_of_study: str | None
+    location: str | None
+    start_date: date | None
+    end_date: date | None
     is_current: bool
-    gpa: Optional[Decimal]
-    achievements: List[str]
-    relevant_coursework: List[str]
+    gpa: Decimal | None
+    achievements: list[str]
+    relevant_coursework: list[str]
     display_order: int
     created_at: datetime
     updated_at: datetime
@@ -190,35 +204,39 @@ class EducationRead(BaseModel):
 
 # ===== SKILLS =====
 
+
 class SkillCreate(BaseModel):
     """Create a new skill entry."""
+
     resume_id: UUID
     skill_name: str = Field(..., max_length=100)
-    skill_category: Optional[str] = Field(None, max_length=50)
-    proficiency_level: Optional[str] = Field(None, max_length=20)
-    years_of_experience: Optional[Decimal] = Field(None, ge=0, le=99.9)
+    skill_category: str | None = Field(None, max_length=50)
+    proficiency_level: str | None = Field(None, max_length=20)
+    years_of_experience: Decimal | None = Field(None, ge=0, le=99.9)
     is_primary: bool = False
     display_order: int = 0
 
 
 class SkillUpdate(BaseModel):
     """Update a skill entry."""
-    skill_name: Optional[str] = Field(None, max_length=100)
-    skill_category: Optional[str] = Field(None, max_length=50)
-    proficiency_level: Optional[str] = Field(None, max_length=20)
-    years_of_experience: Optional[Decimal] = Field(None, ge=0, le=99.9)
-    is_primary: Optional[bool] = None
-    display_order: Optional[int] = None
+
+    skill_name: str | None = Field(None, max_length=100)
+    skill_category: str | None = Field(None, max_length=50)
+    proficiency_level: str | None = Field(None, max_length=20)
+    years_of_experience: Decimal | None = Field(None, ge=0, le=99.9)
+    is_primary: bool | None = None
+    display_order: int | None = None
 
 
 class SkillRead(BaseModel):
     """Read skill data."""
+
     id: UUID
     resume_id: UUID
     skill_name: str
-    skill_category: Optional[str]
-    proficiency_level: Optional[str]
-    years_of_experience: Optional[Decimal]
+    skill_category: str | None
+    proficiency_level: str | None
+    years_of_experience: Decimal | None
     is_primary: bool
     display_order: int
     created_at: datetime
@@ -228,39 +246,43 @@ class SkillRead(BaseModel):
 
 # ===== CERTIFICATIONS =====
 
+
 class CertificationCreate(BaseModel):
     """Create a new certification entry."""
+
     resume_id: UUID
     certification_name: str = Field(..., max_length=200)
-    issuing_organization: Optional[str] = Field(None, max_length=200)
-    issue_date: Optional[date] = None
-    expiry_date: Optional[date] = None
-    credential_id: Optional[str] = Field(None, max_length=100)
-    credential_url: Optional[str] = Field(None, max_length=500)
+    issuing_organization: str | None = Field(None, max_length=200)
+    issue_date: date | None = None
+    expiry_date: date | None = None
+    credential_id: str | None = Field(None, max_length=100)
+    credential_url: str | None = Field(None, max_length=500)
     display_order: int = 0
 
 
 class CertificationUpdate(BaseModel):
     """Update a certification entry."""
-    certification_name: Optional[str] = Field(None, max_length=200)
-    issuing_organization: Optional[str] = Field(None, max_length=200)
-    issue_date: Optional[date] = None
-    expiry_date: Optional[date] = None
-    credential_id: Optional[str] = Field(None, max_length=100)
-    credential_url: Optional[str] = Field(None, max_length=500)
-    display_order: Optional[int] = None
+
+    certification_name: str | None = Field(None, max_length=200)
+    issuing_organization: str | None = Field(None, max_length=200)
+    issue_date: date | None = None
+    expiry_date: date | None = None
+    credential_id: str | None = Field(None, max_length=100)
+    credential_url: str | None = Field(None, max_length=500)
+    display_order: int | None = None
 
 
 class CertificationRead(BaseModel):
     """Read certification data."""
+
     id: UUID
     resume_id: UUID
     certification_name: str
-    issuing_organization: Optional[str]
-    issue_date: Optional[date]
-    expiry_date: Optional[date]
-    credential_id: Optional[str]
-    credential_url: Optional[str]
+    issuing_organization: str | None
+    issue_date: date | None
+    expiry_date: date | None
+    credential_id: str | None
+    credential_url: str | None
     display_order: int
     created_at: datetime
 
@@ -269,48 +291,52 @@ class CertificationRead(BaseModel):
 
 # ===== PROJECTS =====
 
+
 class ProjectCreate(BaseModel):
     """Create a new project entry."""
+
     resume_id: UUID
     project_name: str = Field(..., max_length=200)
-    role: Optional[str] = Field(None, max_length=100)
-    description: Optional[str] = None
-    technologies_used: List[str] = Field(default_factory=list)
-    project_url: Optional[str] = Field(None, max_length=500)
-    start_date: Optional[date] = None
-    end_date: Optional[date] = None
+    role: str | None = Field(None, max_length=100)
+    description: str | None = None
+    technologies_used: list[str] = Field(default_factory=list)
+    project_url: str | None = Field(None, max_length=500)
+    start_date: date | None = None
+    end_date: date | None = None
     is_current: bool = False
-    achievements: List[str] = Field(default_factory=list)
+    achievements: list[str] = Field(default_factory=list)
     display_order: int = 0
 
 
 class ProjectUpdate(BaseModel):
     """Update a project entry."""
-    project_name: Optional[str] = Field(None, max_length=200)
-    role: Optional[str] = Field(None, max_length=100)
-    description: Optional[str] = None
-    technologies_used: Optional[List[str]] = None
-    project_url: Optional[str] = Field(None, max_length=500)
-    start_date: Optional[date] = None
-    end_date: Optional[date] = None
-    is_current: Optional[bool] = None
-    achievements: Optional[List[str]] = None
-    display_order: Optional[int] = None
+
+    project_name: str | None = Field(None, max_length=200)
+    role: str | None = Field(None, max_length=100)
+    description: str | None = None
+    technologies_used: list[str] | None = None
+    project_url: str | None = Field(None, max_length=500)
+    start_date: date | None = None
+    end_date: date | None = None
+    is_current: bool | None = None
+    achievements: list[str] | None = None
+    display_order: int | None = None
 
 
 class ProjectRead(BaseModel):
     """Read project data."""
+
     id: UUID
     resume_id: UUID
     project_name: str
-    role: Optional[str]
-    description: Optional[str]
-    technologies_used: List[str]
-    project_url: Optional[str]
-    start_date: Optional[date]
-    end_date: Optional[date]
+    role: str | None
+    description: str | None
+    technologies_used: list[str]
+    project_url: str | None
+    start_date: date | None
+    end_date: date | None
     is_current: bool
-    achievements: List[str]
+    achievements: list[str]
     display_order: int
     created_at: datetime
     updated_at: datetime
@@ -320,29 +346,33 @@ class ProjectRead(BaseModel):
 
 # ===== CUSTOM SECTIONS =====
 
+
 class CustomSectionCreate(BaseModel):
     """Create a new custom section."""
+
     resume_id: UUID
     section_title: str = Field(..., max_length=100)
-    section_type: Optional[str] = Field(None, max_length=50)
+    section_type: str | None = Field(None, max_length=50)
     content: dict
     display_order: int = 0
 
 
 class CustomSectionUpdate(BaseModel):
     """Update a custom section."""
-    section_title: Optional[str] = Field(None, max_length=100)
-    section_type: Optional[str] = Field(None, max_length=50)
-    content: Optional[dict] = None
-    display_order: Optional[int] = None
+
+    section_title: str | None = Field(None, max_length=100)
+    section_type: str | None = Field(None, max_length=50)
+    content: dict | None = None
+    display_order: int | None = None
 
 
 class CustomSectionRead(BaseModel):
     """Read custom section data."""
+
     id: UUID
     resume_id: UUID
     section_title: str
-    section_type: Optional[str]
+    section_type: str | None
     content: dict
     display_order: int
     created_at: datetime
@@ -353,11 +383,13 @@ class CustomSectionRead(BaseModel):
 
 # ===== COMBINED RESUME =====
 
+
 class ResumeComplete(ResumeRead):
     """Complete resume with all related sections."""
-    experiences: List[ExperienceRead] = Field(default_factory=list)
-    education: List[EducationRead] = Field(default_factory=list)
-    skills: List[SkillRead] = Field(default_factory=list)
-    certifications: List[CertificationRead] = Field(default_factory=list)
-    projects: List[ProjectRead] = Field(default_factory=list)
-    custom_sections: List[CustomSectionRead] = Field(default_factory=list)
+
+    experiences: list[ExperienceRead] = Field(default_factory=list)
+    education: list[EducationRead] = Field(default_factory=list)
+    skills: list[SkillRead] = Field(default_factory=list)
+    certifications: list[CertificationRead] = Field(default_factory=list)
+    projects: list[ProjectRead] = Field(default_factory=list)
+    custom_sections: list[CustomSectionRead] = Field(default_factory=list)

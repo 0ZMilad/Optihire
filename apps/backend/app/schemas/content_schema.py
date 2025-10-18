@@ -1,34 +1,38 @@
 """
 Schemas for content generation tools (cover letters, interview prep, project suggestions).
 """
-from uuid import UUID
+
 from datetime import datetime
-from typing import Optional, List
+from uuid import UUID
+
 from pydantic import BaseModel, Field
 
 from app.schemas.common_schema import ProjectStatus
 
-
 # ===== COVER LETTERS =====
+
 
 class CoverLetterCreate(BaseModel):
     """Create a new cover letter."""
+
     user_id: UUID
-    resume_id: Optional[UUID] = None
+    resume_id: UUID | None = None
     content: str
     generated_by: str = Field(default="ai", max_length=50)
 
 
 class CoverLetterUpdate(BaseModel):
     """Update a cover letter."""
-    content: Optional[str] = None
+
+    content: str | None = None
 
 
 class CoverLetterRead(BaseModel):
     """Read cover letter data."""
+
     id: UUID
     user_id: UUID
-    resume_id: Optional[UUID]
+    resume_id: UUID | None
     content: str
     generated_by: str
     created_at: datetime
@@ -39,19 +43,22 @@ class CoverLetterRead(BaseModel):
 
 # ===== INTERVIEW QUESTIONS =====
 
+
 class InterviewQuestionCreate(BaseModel):
     """Create new interview questions."""
+
     user_id: UUID
-    job_title: Optional[str] = Field(None, max_length=200)
-    questions: List[str]
+    job_title: str | None = Field(None, max_length=200)
+    questions: list[str]
 
 
 class InterviewQuestionRead(BaseModel):
     """Read interview questions data."""
+
     id: UUID
     user_id: UUID
-    job_title: Optional[str]
-    questions: List[str]
+    job_title: str | None
+    questions: list[str]
     created_at: datetime
 
     model_config = {"from_attributes": True}
@@ -59,38 +66,42 @@ class InterviewQuestionRead(BaseModel):
 
 # ===== SUGGESTED PROJECTS =====
 
+
 class SuggestedProjectCreate(BaseModel):
     """Create a new suggested project."""
+
     title: str = Field(..., max_length=200)
-    description: Optional[str] = None
-    difficulty_level: Optional[str] = Field(None, max_length=50)
-    estimated_hours: Optional[int] = Field(None, ge=0)
-    skills_gained: List[str] = Field(default_factory=list)
-    project_url: Optional[str] = Field(None, max_length=500)
-    field: Optional[str] = Field(None, max_length=50)
+    description: str | None = None
+    difficulty_level: str | None = Field(None, max_length=50)
+    estimated_hours: int | None = Field(None, ge=0)
+    skills_gained: list[str] = Field(default_factory=list)
+    project_url: str | None = Field(None, max_length=500)
+    field: str | None = Field(None, max_length=50)
 
 
 class SuggestedProjectUpdate(BaseModel):
     """Update a suggested project."""
-    title: Optional[str] = Field(None, max_length=200)
-    description: Optional[str] = None
-    difficulty_level: Optional[str] = Field(None, max_length=50)
-    estimated_hours: Optional[int] = Field(None, ge=0)
-    skills_gained: Optional[List[str]] = None
-    project_url: Optional[str] = Field(None, max_length=500)
-    is_active: Optional[bool] = None
+
+    title: str | None = Field(None, max_length=200)
+    description: str | None = None
+    difficulty_level: str | None = Field(None, max_length=50)
+    estimated_hours: int | None = Field(None, ge=0)
+    skills_gained: list[str] | None = None
+    project_url: str | None = Field(None, max_length=500)
+    is_active: bool | None = None
 
 
 class SuggestedProjectRead(BaseModel):
     """Read suggested project data."""
+
     id: UUID
     title: str
-    description: Optional[str]
-    difficulty_level: Optional[str]
-    estimated_hours: Optional[int]
-    skills_gained: List[str]
-    project_url: Optional[str]
-    field: Optional[str]
+    description: str | None
+    difficulty_level: str | None
+    estimated_hours: int | None
+    skills_gained: list[str]
+    project_url: str | None
+    field: str | None
     is_active: bool
     created_at: datetime
     updated_at: datetime
@@ -100,8 +111,10 @@ class SuggestedProjectRead(BaseModel):
 
 # ===== USER SUGGESTED PROJECTS =====
 
+
 class UserSuggestedProjectCreate(BaseModel):
     """Create a user-project association."""
+
     user_id: UUID
     project_id: UUID
     status: ProjectStatus = ProjectStatus.SUGGESTED
@@ -109,19 +122,21 @@ class UserSuggestedProjectCreate(BaseModel):
 
 class UserSuggestedProjectUpdate(BaseModel):
     """Update user project progress."""
-    status: Optional[ProjectStatus] = None
-    started_at: Optional[datetime] = None
-    completed_at: Optional[datetime] = None
+
+    status: ProjectStatus | None = None
+    started_at: datetime | None = None
+    completed_at: datetime | None = None
 
 
 class UserSuggestedProjectRead(BaseModel):
     """Read user project association data."""
+
     id: UUID
     user_id: UUID
     project_id: UUID
     status: str
-    started_at: Optional[datetime]
-    completed_at: Optional[datetime]
+    started_at: datetime | None
+    completed_at: datetime | None
     created_at: datetime
 
     model_config = {"from_attributes": True}
