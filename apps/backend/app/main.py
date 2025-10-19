@@ -18,7 +18,7 @@ app.add_middleware(
     allow_origins=[
         "http://localhost:3000",  # Local Next.js development
         "http://localhost:3001",  # Alternative port
-        "https://your-production-domain.com",  # Add your production domain
+        "https://syicfsqcndapnfpqqbee.supabase.co", # Supabase deployed frontend
     ],
     allow_credentials=True,
     allow_methods=["*"],
