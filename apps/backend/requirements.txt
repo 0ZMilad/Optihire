@@ -17,6 +17,8 @@ python-dotenv
 ruff
 
 # Authentication & Security
+pyjwt[crypto]
+cachetools
 # python-jose[cryptography]
 # passlib[bcrypt]
 # python-multipart
