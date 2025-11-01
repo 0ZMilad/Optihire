@@ -1,5 +1,5 @@
+import { Github, Linkedin, X } from "lucide-react";
 import Link from "next/link";
-import { X, Linkedin, Github } from "lucide-react";
 
 export function Footer() {
   return (
