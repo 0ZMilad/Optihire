@@ -2,7 +2,7 @@
 
 import { BarChart, Code, Eye, EyeOff, User } from "lucide-react";
 import Link from "next/link";
-import { useState } from "react";
+import { useState, FormEvent } from "react";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
@@ -15,8 +15,52 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 
+import { authService } from "@/middle-service/supabase";
+
 export default function SignupForm() {
   const [showPassword, setShowPassword] = useState(false);
+
+  const [currentEmail, setEmail] = useState("");
+  const [currentPassword, setPassword] = useState("");
+
+  const [isLoading, setIsLoading] = useState<boolean>(false);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [successMessage, setSuccessMessage] = useState("");
+
+  const [firstName, setFirstName] = useState("");
+  const [lastName, setLastName] = useState("");
+  const [username, setUserName] = useState("");
+  const [currentRole, setRole] = useState("designer");
+  const [agreedToTerms, setAgreedToTerms] = useState(false);
+
+  const handleSignUp = async (e: FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+
+    setIsLoading(true);
+
+    setErrorMessage("");
+    setSuccessMessage("");
+
+    if (agreedToTerms == false) {
+      setErrorMessage("You must agree to the terms first when signing up");
+      setIsLoading(false);
+      return;
+    }
+
+    try {
+      const { error } = await authService.signUp(currentEmail, currentPassword);
+      if (error) {
+        setErrorMessage(error?.message);
+      } else {
+        setSuccessMessage("Please check your email to verify your account.");
+      }
+    } catch (error) {
+      console.error("Login failed:", error);
+      setErrorMessage("Error occurred, check logs");
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   return (
     <div className="flex items-center justify-center min-h-screen">
@@ -28,7 +72,7 @@ export default function SignupForm() {
           <p className="text-center text-sm text-muted-foreground dark:text-muted-foreground">
             Join us today and get started with your journey.
           </p>
-          <form className="mt-6 space-y-4">
+          <form className="mt-6 space-y-4" onSubmit={handleSignUp}>
             <div className="space-y-2">
               <Label
                 htmlFor="role"
@@ -36,7 +80,11 @@ export default function SignupForm() {
               >
                 Role
               </Label>
-              <Select defaultValue="designer">
+              <Select
+                defaultValue="designer"
+                onValueChange={setRole}
+                value={currentRole}
+              >
                 <SelectTrigger
                   id="role"
                   className="[&>span]:flex [&>span]:items-center [&>span]:gap-2 [&>span_svg]:shrink-0"
@@ -68,7 +116,13 @@ export default function SignupForm() {
                 >
                   First name
                 </Label>
-                <Input id="firstName" placeholder="John" className="mt-1" />
+                <Input
+                  id="firstName"
+                  placeholder="John"
+                  className="mt-1"
+                  onChange={(e) => setFirstName(e.target.value)}
+                  value={firstName}
+                />
               </div>
               <div className="space-y-2">
                 <Label
@@ -77,7 +131,13 @@ export default function SignupForm() {
                 >
                   Last name
                 </Label>
-                <Input id="lastName" placeholder="Doe" className="mt-1" />
+                <Input
+                  id="lastName"
+                  placeholder="Doe"
+                  className="mt-1"
+                  onChange={(e) => setLastName(e.target.value)}
+                  value={lastName}
+                />
               </div>
             </div>
 
@@ -88,7 +148,13 @@ export default function SignupForm() {
               >
                 Username
               </Label>
-              <Input id="username" placeholder="johndoe" className="mt-1" />
+              <Input
+                id="username"
+                placeholder="johndoe"
+                className="mt-1"
+                onChange={(e) => setUserName(e.target.value)}
+                value={username}
+              />
             </div>
 
             <div className="space-y-2">
@@ -103,6 +169,8 @@ export default function SignupForm() {
                 type="email"
                 placeholder="john@example.com"
                 className="mt-1"
+                onChange={(e) => setEmail(e.target.value)}
+                value={currentEmail}
               />
             </div>
 
@@ -119,6 +187,8 @@ export default function SignupForm() {
                   type={showPassword ? "text" : "password"}
                   placeholder="**************"
                   className="pr-10 mt-1"
+                  onChange={(e) => setPassword(e.target.value)}
+                  value={currentPassword}
                 />
                 <Button
                   type="button"
@@ -137,7 +207,13 @@ export default function SignupForm() {
             </div>
 
             <div className="flex items-center space-x-2">
-              <Checkbox id="terms" />
+              <Checkbox
+                id="terms"
+                checked={agreedToTerms}
+                onCheckedChange={(checked) =>
+                  setAgreedToTerms(checked === true)
+                }
+              />
               <label
                 htmlFor="terms"
                 className="text-xs sm:text-sm text-muted-foreground"
@@ -152,9 +228,33 @@ export default function SignupForm() {
                 </Link>
               </label>
             </div>
-
-            <Button type="submit" className="mt-6 w-full py-2 font-medium">
-              Create Account
+            {errorMessage && (
+              <div className="rounded bg-destructive/10 border border-destructive/20 p-2">
+                <p className="text-xs font-medium text-destructive">
+                  ⚠️ {errorMessage}
+                </p>
+              </div>
+            )}
+            {successMessage && (
+              <div className="rounded bg-green-500/10 border border-green-500/20 p-2">
+                <p className="text-xs font-medium text-green-600">
+                  ✅ {successMessage}
+                </p>
+              </div>
+            )}
+            <Button
+              type="submit"
+              className="mt-6 w-full py-2 font-medium"
+              disabled={isLoading}
+            >
+              {isLoading ? (
+                <span className="flex items-center justify-center gap-1">
+                  <span className="inline-block h-3 w-3 animate-spin rounded-full border border-background border-t-foreground" />
+                  <span className="text-sm">Signing up...</span>
+                </span>
+              ) : (
+                "Sign up"
+              )}
             </Button>
           </form>
 
