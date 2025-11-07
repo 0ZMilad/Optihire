@@ -5,7 +5,37 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 
+import { FormEvent, useState } from "react";
+import { authService } from "@/middle-service/supabase";
+
 export default function Login() {
+  const [currentEmail, setEmail] = useState("");
+
+  const [currentPassword, setPassword] = useState("");
+
+  const [isLoading, setIsLoading] = useState<boolean>(false);
+
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
+
+  const handleLogin = async (e: FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+
+    setIsLoading(true);
+
+    setErrorMessage("");
+
+    try {
+      const { error } = await authService.signIn(currentEmail, currentPassword);
+      if (error) {
+        setErrorMessage(error?.message);
+      }
+    } catch (error) {
+      console.error("Login failed:", error);
+      setErrorMessage("Error occurred, check logs");
+    } finally {
+      setIsLoading(false);
+    }
+  };
   return (
     <div className="flex items-center justify-center min-h-screen">
       <div className="flex flex-1 flex-col justify-center px-4 py-10 lg:px-6">
@@ -16,7 +46,12 @@ export default function Login() {
           <p className="text-center text-sm text-muted-foreground dark:text-muted-foreground">
             Enter your credentials to access your account.
           </p>
-          <form action="#" method="post" className="mt-6 space-y-4">
+          <form
+            action="#"
+            method="post"
+            className="mt-6 space-y-4"
+            onSubmit={handleLogin}
+          >
             <div>
               <Label
                 htmlFor="email-login-03"
@@ -31,6 +66,8 @@ export default function Login() {
                 autoComplete="email"
                 placeholder="Milad.@example.com"
                 className="mt-2"
+                onChange={(e) => setEmail(e.target.value)}
+                value={currentEmail}
               />
             </div>
             <div>
@@ -47,10 +84,30 @@ export default function Login() {
                 autoComplete="password"
                 placeholder="**************"
                 className="mt-2"
+                onChange={(e) => setPassword(e.target.value)}
+                value={currentPassword}
               />
             </div>
-            <Button type="submit" className="mt-4 w-full py-2 font-medium">
-              Sign in
+            {errorMessage && (
+              <div className="rounded bg-destructive/10 border border-destructive/20 p-2">
+                <p className="text-xs font-medium text-destructive">
+                  ⚠️ {errorMessage}
+                </p>
+              </div>
+            )}
+            <Button
+              type="submit"
+              className="mt-4 w-full py-2 font-medium"
+              disabled={isLoading}
+            >
+              {isLoading ? (
+                <span className="flex items-center justify-center gap-1">
+                  <span className="inline-block h-3 w-3 animate-spin rounded-full border border-background border-t-foreground" />
+                  <span className="text-sm">Signing in...</span>
+                </span>
+              ) : (
+                "Sign In"
+              )}
             </Button>
           </form>
           <div className="mt-6 space-y-3">

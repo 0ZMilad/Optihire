@@ -10,10 +10,7 @@ export const userService = {
    * This is called after Supabase authentication to create the app profile
    */
   createUser: async (userData: UserCreate): Promise<UserRead> => {
-    const response = await apiClient.post<UserRead>(
-      "/api/v1/users/",
-      userData,
-    );
+    const response = await apiClient.post<UserRead>("/api/v1/users/", userData);
     return response.data;
   },
 
@@ -39,11 +36,11 @@ export const userService = {
    */
   updateUser: async (
     userId: string,
-    userData: UserUpdate,
+    userData: UserUpdate
   ): Promise<UserRead> => {
     const response = await apiClient.patch<UserRead>(
       `/api/v1/users/${userId}`,
-      userData,
+      userData
     );
     return response.data;
   },
