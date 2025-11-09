@@ -17,6 +17,8 @@ interface AuthContextType {
   user: User | null;
 }
 
+
+
 const AuthContext = createContext<AuthContextType | null>(null);
 
 export const AuthProvider = ({ children }: PropsWithChildren) => {
@@ -26,6 +28,13 @@ export const AuthProvider = ({ children }: PropsWithChildren) => {
   const [currentSession, setSession] = useState<Session | null>(null);
 
   const [currentUser, setUser] = useState<User | null>(null);
+
+useEffect(() => {
+  authService.getSession().then(({ data: { session } }) => {
+    setSession(session);
+    setUser(session?.user || null);
+  });
+}, []);
 
   useEffect(() => {
     const {
