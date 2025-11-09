@@ -2,6 +2,7 @@
 
 import { BarChart, Code, Eye, EyeOff, User } from "lucide-react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useState, FormEvent } from "react";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -18,6 +19,7 @@ import {
 import { authService } from "@/middle-service/supabase";
 
 export default function SignupForm() {
+  const router = useRouter();
   const [showPassword, setShowPassword] = useState(false);
 
   const [currentEmail, setEmail] = useState("");
@@ -48,11 +50,16 @@ export default function SignupForm() {
     }
 
     try {
-      const { error } = await authService.signUp(currentEmail, currentPassword);
+      const { data, error } = await authService.signUp(currentEmail, currentPassword);
       if (error) {
         setErrorMessage(error?.message);
       } else {
-        setSuccessMessage("Please check your email to verify your account.");
+        if (data?.user && !data.session) {
+          setSuccessMessage("Please check your email to verify your account.");
+        } else if (data?.session) {
+          router.push("/dashboard");
+          router.refresh();
+        }
       }
     } catch (error) {
       console.error("Login failed:", error);

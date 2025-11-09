@@ -17,35 +17,39 @@ export function HeroSection() {
     <section className="container mx-auto px-3 sm:px-4 md:px-6 pt-2 sm:pt-4 pb-8 sm:pb-10 lg:pt-6 lg:pb-16">
       <div className="grid items-center gap-8 md:gap-10 lg:gap-12 xl:gap-16 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.2fr)] xl:grid-cols-[minmax(0,520px)_minmax(0,1fr)]">
         <div className="mx-auto max-w-2xl space-y-6 sm:space-y-8 text-center lg:mx-0 lg:text-left">
-          <div className="flex justify-center lg:justify-end">
+          <div className="flex justify-center">
             <Badge
               variant="outline"
-              className="gap-2 rounded-full bg-primary/10 px-3 sm:px-4 py-1.5 sm:py-2 text-xs sm:text-sm font-medium text-primary border-transparent lg:mr-35"
+              className="gap-2 rounded-full bg-primary/10 px-3 sm:px-4 py-1.5 sm:py-2 text-xs sm:text-sm font-medium text-primary border-transparent"
             >
               Proven by recruiters and powered by AI
             </Badge>
           </div>
 
           <h1 className="text-center text-3xl sm:text-4xl md:text-5xl lg:text-6xl xl:text-7xl font-semibold leading-tight text-balance text-foreground">
-            <span className="block">Level up with</span>
-            <span className="mt-1 sm:mt-2 block">
-              <span className="font-bold text-slate-600 dark:text-slate-200">
-                OptiHire
-              </span>
-              <Badge
-                variant="outline"
-                className="ml-2 sm:ml-3 md:ml-4 inline-flex items-center rounded-full border border-white/35 bg-white/20 px-2 sm:px-3 py-0.5 sm:py-1 align-middle text-[0.5rem] sm:text-[0.6rem] md:text-[0.7rem] font-semibold uppercase tracking-[0.3em] sm:tracking-[0.4em] md:tracking-[0.5em] text-primary shadow-[inset_0_1px_1px_rgba(255,255,255,0.55),0_16px_36px_-20px_rgba(37,99,235,0.45)] backdrop-blur-xl ring-1 ring-primary/35"
-              >
-                AI
-              </Badge>
+            <span className="mt-2 sm:mt-3 flex flex-col items-center gap-3">
+              <span className="sr-only">OptiHire</span>
+              <Image
+                src="/OptiHire.png"
+                alt="OptiHire logo"
+                width={280}
+                height={110}
+                priority
+                className="h-14 sm:h-16 md:h-18 w-auto"
+              />
             </span>
           </h1>
 
-          <p className="text-base sm:text-lg md:text-xl text-muted-foreground px-2 sm:px-0">
-            Diagnose your resume, surface perfect-fit roles, and track every
-            application in one place. We combine ATS scoring with human-ready
-            recommendations so you can go from search to offer faster.
-          </p>
+          <div className="text-base sm:text-lg md:text-xl px-2 sm:px-0 space-y-3 leading-relaxed">
+            <p className="text-foreground">
+              Diagnose your resume, surface perfect-fit roles, and track every
+              application in one place.
+            </p>
+            <p className="text-muted-foreground">
+              We combine ATS scoring with human-ready recommendations so you can
+              go from search to offer faster.
+            </p>
+          </div>
 
           <div className="flex flex-col justify-center gap-3 sm:gap-4 sm:flex-row lg:justify-start">
             <Button

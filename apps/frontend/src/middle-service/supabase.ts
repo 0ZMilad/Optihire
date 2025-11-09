@@ -1,4 +1,4 @@
-import { createClient } from "@supabase/supabase-js";
+import { createBrowserClient } from "@supabase/ssr";
 import type { Session } from "@supabase/supabase-js";
 
 // Get Supabase configuration from environment
@@ -12,14 +12,7 @@ if (!supabaseUrl || !supabaseAnonKey) {
   );
 }
 
-// Create single Supabase client instance
-export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
-  auth: {
-    autoRefreshToken: true,
-    persistSession: true,
-    detectSessionInUrl: true,
-  },
-});
+export const supabase = createBrowserClient(supabaseUrl, supabaseAnonKey);
 
 /**
  * Authentication service helper functions
