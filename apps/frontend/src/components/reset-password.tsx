@@ -1,25 +1,87 @@
 "use client";
 
 import Link from "next/link";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+
+import { authService } from "@/middle-service/supabase";
 
 export default function ResetPassword() {
   const [step, setStep] = useState<"email" | "reset">("email");
   const [email, setEmail] = useState("");
 
-  const handleEmailSubmit = (e: React.FormEvent) => {
+  const [isLoading, setIsLoading] = useState<boolean>(false);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [successMessage, setSuccessMessage] = useState("");
+
+  const [newPassword, setNewPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
+
+  const handleEmailSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    // Here you would typically send a reset email
-    setStep("reset");
+
+    setIsLoading(true);
+
+    setErrorMessage("");
+
+    try {
+      const { error } = await authService.resetPassword(email);
+      if (error) {
+        setErrorMessage(error?.message);
+      } else {
+        setSuccessMessage("Reset successful");
+      }
+    } catch (error) {
+      console.error("Reset failed:", error);
+      setErrorMessage("Error occurred, check logs");
+    } finally {
+      setIsLoading(false);
+    }
   };
 
-  const handleResetSubmit = (e: React.FormEvent) => {
+  const handleResetSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    // Here you would typically submit the new password
+
+    setIsLoading(true);
+
+    setErrorMessage("");
+
+    if (newPassword !== confirmPassword) {
+      setErrorMessage("Passwords do not match. Please try again.");
+      setIsLoading(false);
+      return;
+    }
+
+    try {
+      const { error } = await authService.updatePassword(newPassword);
+      if (error) {
+        setErrorMessage(error?.message);
+      } else {
+        setSuccessMessage("Reset successful");
+      }
+    } catch (error) {
+      console.error("Reset failed:", error);
+      setErrorMessage("Error occurred, check logs");
+    } finally {
+      setIsLoading(false);
+    }
   };
+
+  useEffect(() => {
+    const {
+      data: { subscription },
+    } = authService.onAuthStateChange((event, session) => {
+      if (event === "PASSWORD_RECOVERY") {
+        setStep("reset");
+      }
+    });
+
+    return () => {
+      subscription.unsubscribe();
+    };
+  }, []);
 
   return (
     <div className="flex items-center justify-center min-h-screen">
@@ -54,8 +116,33 @@ export default function ResetPassword() {
                     required
                   />
                 </div>
-                <Button type="submit" className="mt-4 w-full py-2 font-medium">
-                  Send Reset Link
+                {errorMessage && (
+                  <div className="rounded bg-destructive/10 border border-destructive/20 p-2">
+                    <p className="text-xs font-medium text-destructive">
+                      ⚠️ {errorMessage}
+                    </p>
+                  </div>
+                )}
+                {successMessage && (
+                  <div className="rounded bg-green-500/10 border border-green-500/20 p-2">
+                    <p className="text-xs font-medium text-green-600">
+                      ✅ {successMessage}
+                    </p>
+                  </div>
+                )}
+                <Button
+                  type="submit"
+                  className="mt-4 w-full py-2 font-medium"
+                  disabled={isLoading}
+                >
+                  {isLoading ? (
+                    <span className="flex items-center justify-center gap-1">
+                      <span className="inline-block h-3 w-3 animate-spin rounded-full border border-background border-t-foreground" />
+                      <span className="text-sm">Sending reset link...</span>
+                    </span>
+                  ) : (
+                    "Send Reset Link"
+                  )}
                 </Button>
               </form>
               <p className="mt-6 text-sm text-muted-foreground dark:text-muted-foreground">
@@ -92,6 +179,8 @@ export default function ResetPassword() {
                     placeholder="**************"
                     className="mt-2"
                     required
+                    onChange={(e) => setNewPassword(e.target.value)}
+                    value={newPassword}
                   />
                 </div>
                 <div>
@@ -109,10 +198,37 @@ export default function ResetPassword() {
                     placeholder="**************"
                     className="mt-2"
                     required
+                    onChange={(e) => setConfirmPassword(e.target.value)}
+                    value={confirmPassword}
                   />
                 </div>
-                <Button type="submit" className="mt-4 w-full py-2 font-medium">
-                  Reset Password
+                {errorMessage && (
+                  <div className="rounded bg-destructive/10 border border-destructive/20 p-2">
+                    <p className="text-xs font-medium text-destructive">
+                      ⚠️ {errorMessage}
+                    </p>
+                  </div>
+                )}
+                {successMessage && (
+                  <div className="rounded bg-green-500/10 border border-green-500/20 p-2">
+                    <p className="text-xs font-medium text-green-600">
+                      ✅ {successMessage}
+                    </p>
+                  </div>
+                )}
+                <Button
+                  type="submit"
+                  className="mt-4 w-full py-2 font-medium"
+                  disabled={isLoading}
+                >
+                  {isLoading ? (
+                    <span className="flex items-center justify-center gap-1">
+                      <span className="inline-block h-3 w-3 animate-spin rounded-full border border-background border-t-foreground" />
+                      <span className="text-sm">Reseting password...</span>
+                    </span>
+                  ) : (
+                    "Reset Password"
+                  )}
                 </Button>
               </form>
               <p className="mt-6 text-sm text-muted-foreground dark:text-muted-foreground">

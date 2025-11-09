@@ -2,7 +2,23 @@ import Image from "next/image";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 
+import { useAuth } from "./auth-provider";
+
+import { authService } from "@/middle-service/supabase";
+
+import { useRouter } from "next/navigation";
+
 export function Header() {
+  const { user } = useAuth();
+
+  const router = useRouter();
+
+  const handleSignout = async () => {
+    await authService.signOut();
+
+    router.push("/");
+  };
+
   // const navLinks = [
   //   { name: "Start Here", href: "#start" },
   //   { name: "Benefits", href: "#benefits" },
@@ -39,11 +55,28 @@ export function Header() {
             ))}
           </div>
         </nav> */}
-
-        <div className="flex items-center">
-          <Link href="/login" className="hidden md:block">
-            <Button size="sm">Login</Button>
-          </Link>
+        <div className="flex items-center gap-4">
+          {user ? (
+            <>
+              <span className="hidden text-sm text-muted-foreground sm:inline-block">
+                {user.email}
+              </span>
+              <Button variant="outline" size="sm" onClick={handleSignout}>
+                Logout
+              </Button>
+            </>
+          ) : (
+            <>
+              <Link href="/login" className="hidden md:block">
+                <Button size="sm" variant="ghost">
+                  {"Login"}
+                </Button>
+              </Link>
+              <Link href="/sign-up" className="hidden md:block">
+                <Button size="sm">{"Sign up"}</Button>
+              </Link>
+            </>
+          )}
         </div>
       </div>
     </header>
