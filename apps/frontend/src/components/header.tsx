@@ -1,5 +1,8 @@
+"use client";
+
 import Image from "next/image";
 import Link from "next/link";
+import { usePathname } from "next/navigation";
 import { Button } from "@/components/ui/button";
 
 import { useAuth } from "./auth-provider";
@@ -10,6 +13,7 @@ import { useRouter } from "next/navigation";
 
 export function Header() {
   const { user } = useAuth();
+  const pathname = usePathname();
 
   const router = useRouter();
 
@@ -58,22 +62,30 @@ export function Header() {
         <div className="flex items-center gap-4">
           {user ? (
             <>
-              <span className="hidden text-sm text-muted-foreground sm:inline-block">
-                {user.email}
-              </span>
-              <Button variant="outline" size="sm" onClick={handleSignout}>
-                Logout
-              </Button>
+              {pathname === "/" ? (
+                <Link href="/dashboard">
+                  <Button size="sm">View Dashboard</Button>
+                </Link>
+              ) : (
+                <>
+                  <span className="hidden text-sm text-muted-foreground sm:inline-block">
+                    {user.email}
+                  </span>
+                  <Button variant="outline" size="sm" onClick={handleSignout}>
+                    Logout
+                  </Button>
+                </>
+              )}
             </>
           ) : (
             <>
               <Link href="/login" className="hidden md:block">
                 <Button size="sm" variant="ghost">
-                  {"Login"}
+                  Login
                 </Button>
               </Link>
               <Link href="/sign-up" className="hidden md:block">
-                <Button size="sm">{"Sign up"}</Button>
+                <Button size="sm">Sign up</Button>
               </Link>
             </>
           )}
