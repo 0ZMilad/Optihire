@@ -1,12 +1,51 @@
 from typing import Optional
 from uuid import UUID
 
-from fastapi import Depends, HTTPException, status
+from fastapi import Depends, HTTPException, status, Request
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
+from typing import List, Set
 
 from app.core.jwt import get_jwt_validator
 
 security = HTTPBearer()
+
+def require_scopes(required_scopes: List[str]):
+    """Factory that creates a scope-checking dependency"""
+    
+    async def check_scopes(request: Request) -> None:
+        # Step 1: Get user from request.state (set by middleware)
+        user = getattr(request.state, "user", None)
+        
+        if not user:
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail={
+                    "code": "NOT_AUTHENTICATED",
+                    "message": "User not authenticated",
+                    "details": {}
+                }
+            )
+        
+        # Step 2: Extract token scopes from user payload
+        token_scopes = set(user.get("scopes", []))
+        required = set(required_scopes)
+        
+        # Step 3: Compare required vs provided scopes
+        if not required.issubset(token_scopes):
+            # Step 4: Raise HTTPException with 403 if insufficient
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail={
+                    "code": "INSUFFICIENT_SCOPES",
+                    "message": "Token does not have required scopes",
+                    "details": {
+                        "required": list(required),
+                        "provided": list(token_scopes)
+                    }
+                }
+            )
+    
+    return check_scopes
 
 
 async def get_current_user(

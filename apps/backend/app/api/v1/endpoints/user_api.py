@@ -3,7 +3,7 @@ from uuid import UUID
 from fastapi import APIRouter, Depends, HTTPException
 from sqlmodel import Session
 
-from app.core.dependencies import get_current_user, get_current_user_id
+from app.core.dependencies import get_current_user, get_current_user_id, require_scopes
 from app.db.session import get_db
 from app.schemas.user_schema import UserCreate, UserRead, UserUpdate
 from app.services import user_service
@@ -11,7 +11,7 @@ from app.services import user_service
 router = APIRouter()
 
 
-@router.post("/", response_model=UserRead, status_code=201)
+@router.post("/", response_model=UserRead, status_code=201, dependencies=[Depends(require_scopes(["users:create"]))])
 def create_new_user(
     user: UserCreate,
     db: Session = Depends(get_db),
@@ -32,7 +32,7 @@ def create_new_user(
     return user_service.create_user(db=db, user_data=user)
 
 
-@router.get("/{user_id}", response_model=UserRead)
+@router.get("/{user_id}", response_model=UserRead, dependencies=[Depends(require_scopes(["users:read"]))])
 def get_user(
     user_id: UUID,
     db: Session = Depends(get_db),
@@ -54,7 +54,7 @@ def get_user(
     return user
 
 
-@router.patch("/{user_id}", response_model=UserRead)
+@router.patch("/{user_id}", response_model=UserRead, dependencies=[Depends(require_scopes(["users:update"]))])
 def update_user(
     user_id: UUID,
     user_data: UserUpdate,
@@ -77,7 +77,7 @@ def update_user(
     return user
 
 
-@router.delete("/{user_id}", status_code=204)
+@router.delete("/{user_id}", status_code=204, dependencies=[Depends(require_scopes(["users:delete"]))])
 def delete_user(
     user_id: UUID,
     db: Session = Depends(get_db),

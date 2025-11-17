@@ -23,6 +23,11 @@ cachetools
 # passlib[bcrypt]
 # python-multipart
 
+# Testing
+pytest
+pytest-asyncio
+httpx
+
 # File Processing
 # PyPDF2
 # python-docx

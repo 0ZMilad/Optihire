@@ -1,11 +1,28 @@
 from fastapi import Request, status
-from fastapi.responses import JSONResponse
 from starlette.middleware.base import BaseHTTPMiddleware
+from uuid import uuid4
 
+from app.core.utils import create_error_response
 from app.core.jwt import get_jwt_validator
+from typing import Sequence
+
+def get_request_id(request: Request) -> str:
+    """
+    Retrieve request ID from header or generate a new one.
+    This ensures every request has a traceable ID.
+    """
+    # Check if client already sent an x-request-id header
+    request_id = request.headers.get("x-request-id")
+    
+    # If not present, generate a new UUID
+    if not request_id:
+        request_id = str(uuid4())
+    
+    return request_id
 
 
 class JWTMiddleware(BaseHTTPMiddleware):
+    
     """
     Global JWT validation middleware.
     Validates all requests except public paths.
@@ -19,21 +36,30 @@ class JWTMiddleware(BaseHTTPMiddleware):
         "/redoc",
         "/openapi.json",
     }
-    
+
     async def dispatch(self, request: Request, call_next):
-        # Skip authentication for public paths
-        if request.url.path in self.PUBLIC_PATHS:
-            return await call_next(request)
+        # 1. EXTRACT REQUEST ID (for traceability)
+        request_id = get_request_id(request)
+        request.state.request_id = request_id
         
-        # Extract token from Authorization header
+        # 2. CHECK PUBLIC PATHS (skip auth for routes that don't need it)
+        if request.url.path in self.PUBLIC_PATHS:
+            response = await call_next(request)
+            response.headers["x-request-id"] = request_id
+            return response
+        
+        # 3. EXTRACT & VALIDATE JWT TOKEN (protected routes only)
         auth_header = request.headers.get("Authorization")
         
         if not auth_header or not auth_header.startswith("Bearer "):
-            return JSONResponse(
+            error_response = create_error_response(
                 status_code=status.HTTP_401_UNAUTHORIZED,
-                content={"detail": "Missing or invalid authorization header"},
-                headers={"WWW-Authenticate": "Bearer"},
+                code="MISSING_AUTH_HEADER",
+                message="Missing or invalid authorization header",
+                details={"header": "Authorization"}
             )
+            error_response.headers["x-request-id"] = request_id
+            return error_response
         
         token = auth_header.split(" ")[1]
         validator = get_jwt_validator()
@@ -41,14 +67,44 @@ class JWTMiddleware(BaseHTTPMiddleware):
         try:
             # Validate token
             payload = validator.validate_token(token)
+
+            if "sub" not in payload:
+                error_response = create_error_response(
+                    status_code=status.HTTP_401_UNAUTHORIZED,
+                    code="MISSING_SUB_CLAIM",
+                    message="Token is missing 'sub' claim",
+                    details={"claim": "sub"}
+                )
+                error_response.headers["x-request-id"] = request_id
+                return error_response
+            
+            if "scopes" not in payload or not isinstance(payload["scopes"], Sequence):
+                error_response = create_error_response(
+                    status_code=status.HTTP_401_UNAUTHORIZED,
+                    code="INVALID_SCOPES_CLAIM",
+                    message="Token has invalid or missing 'scopes' claim",
+                    details={"claim": "scopes"}
+                )
+                error_response.headers["x-request-id"] = request_id
+                return error_response
+            
+            
+            
+
+            
             # Attach user info to request state
             request.state.user = payload
         except Exception as e:
-            return JSONResponse(
+            error_response = create_error_response(
                 status_code=status.HTTP_401_UNAUTHORIZED,
-                content={"detail": str(e)},
-                headers={"WWW-Authenticate": "Bearer"},
+                code="INVALID_TOKEN",
+                message="Token validation failed",
+                details={"error": str(e)}
             )
+            error_response.headers["x-request-id"] = request_id
+            return error_response
         
+        # 4. PROCESS REQUEST & ENRICH RESPONSE
         response = await call_next(request)
+        response.headers["x-request-id"] = request_id
         return response
