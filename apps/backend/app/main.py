@@ -3,6 +3,7 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from app.api.v1.endpoints import system_api, user_api
 from app.core.config import settings
+from app.middleware.auth import JWTMiddleware
 
 app = FastAPI(
     title=settings.PROJECT_NAME,
@@ -11,6 +12,9 @@ app = FastAPI(
     docs_url="/docs",
     redoc_url="/redoc",
 )
+
+# Add JWT authentication middleware (must be before CORS)
+app.add_middleware(JWTMiddleware)
 
 # CORS configuration (for your Next.js frontend)
 app.add_middleware(

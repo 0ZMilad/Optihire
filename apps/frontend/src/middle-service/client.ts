@@ -2,6 +2,7 @@
  * API Client - Axios instance with interceptors
  */
 import axios, { type AxiosError } from "axios";
+import { supabase } from "./supabase";
 
 // Get API URL from environment
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
@@ -18,15 +19,13 @@ export const apiClient = axios.create({
 
 // Request interceptor - add auth token if needed
 apiClient.interceptors.request.use(
-  async (config) => {
-    // TODO: Add Supabase auth token when implementing authentication
-    // Example:
-    // import { supabase } from './supabase';
-    // const { data: { session } } = await supabase.auth.getSession();
-    // if (session?.access_token) {
-    //   config.headers.Authorization = `Bearer ${session.access_token}`;
-    // }
 
+    async (config) => {
+    const { data: { session } } = await supabase.auth.getSession();
+    if (session?.access_token) {
+      config.headers.Authorization = `Bearer ${session.access_token}`;
+    }
+    
     return config;
   },
   (error) => {
