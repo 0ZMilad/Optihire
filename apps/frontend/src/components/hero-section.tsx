@@ -14,141 +14,121 @@ const partnerLogos = [
 
 export function HeroSection() {
   return (
-    <section className="container mx-auto px-3 sm:px-4 md:px-6 pt-2 sm:pt-4 pb-8 sm:pb-10 lg:pt-6 lg:pb-16">
-      <div className="grid items-center gap-8 md:gap-10 lg:gap-12 xl:gap-16 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.2fr)] xl:grid-cols-[minmax(0,520px)_minmax(0,1fr)]">
-        <div className="mx-auto max-w-2xl space-y-6 sm:space-y-8 text-center lg:mx-0 lg:text-left">
-          <div className="flex justify-center">
-            <Badge
-              variant="outline"
-              className="gap-2 rounded-full bg-primary/10 px-3 sm:px-4 py-1.5 sm:py-2 text-xs sm:text-sm font-medium text-primary border-transparent"
-            >
-              Proven by recruiters and powered by AI
-            </Badge>
-          </div>
+    <section className="container mx-auto px-3 sm:px-4 md:px-6 pt-6 sm:pt-12 pb-12 sm:pb-20 lg:pt-20 lg:pb-28 bg-[radial-gradient(#e5e5e5_1px,transparent_1px)] [background-size:40px_40px]">
+      <div className="grid items-center gap-8 md:gap-12 lg:gap-16 xl:gap-24 lg:grid-cols-[1fr_1fr]">
+        <div className="mx-auto max-w-2xl space-y-8 sm:space-y-10 text-center lg:mx-0 lg:text-left flex flex-col justify-center h-full">
+          
+          <div className="space-y-6">
+            <h1 className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-bold tracking-[-0.02em] text-foreground leading-[1.1]">
+              Unlock Your <br className="hidden lg:block" />
+              Career Potential.
+            </h1>
 
-          <h1 className="text-center text-3xl sm:text-4xl md:text-5xl lg:text-6xl xl:text-7xl font-semibold leading-tight text-balance text-foreground">
-            <span className="mt-2 sm:mt-3 flex flex-col items-center gap-3">
-              <span className="sr-only">OptiHire</span>
-              <Image
-                src="/OptiHire.png"
-                alt="OptiHire logo"
-                width={280}
-                height={110}
-                priority
-                className="h-14 sm:h-16 md:h-18 w-auto"
-              />
-            </span>
-          </h1>
-
-          <div className="text-base sm:text-lg md:text-xl px-2 sm:px-0 space-y-3 leading-relaxed">
-            <p className="text-foreground">
-              Diagnose your resume, surface perfect-fit roles, and track every
-              application in one place.
-            </p>
-            <p className="text-muted-foreground">
-              We combine ATS scoring with human-ready recommendations so you can
-              go from search to offer faster.
+            <p className="text-lg sm:text-xl text-muted-foreground leading-relaxed max-w-xl mx-auto lg:mx-0">
+              AI-powered insights, personalised feedback, and seamless application tracking—all designed to get you the job you deserve.
             </p>
           </div>
 
-          <div className="flex flex-col justify-center gap-3 sm:gap-4 sm:flex-row lg:justify-start">
+          <div className="flex flex-col sm:flex-row gap-4 justify-center lg:justify-start">
             <Button
               size="lg"
-              className="bg-primary text-primary-foreground hover:bg-primary/90 text-sm sm:text-base w-full sm:w-auto"
+              className="bg-brand-primary hover:bg-brand-primary/90 text-brand-primary-foreground font-semibold text-base px-8 h-12 rounded-full shadow-lg hover:shadow-xl transition-all duration-300"
             >
               Upload your resume
             </Button>
-            <Link href="/dashboard" className="w-full sm:w-auto">
+            <Link href="/dashboard">
               <Button
                 size="lg"
                 variant="outline"
-                className="text-sm sm:text-base w-full"
+                className="text-base px-8 h-12 rounded-full border border-gray-200 text-black hover:bg-gray-50"
               >
                 View dashboard
               </Button>
             </Link>
           </div>
 
-          <div className="pt-6 sm:pt-8 md:pt-10">
-            <p className="text-xs sm:text-sm font-semibold uppercase tracking-[0.2em] sm:tracking-[0.3em] text-muted-foreground text-center lg:text-left">
-              Trusted by job seekers hired at
+          <div className="pt-4 sm:pt-6">
+            <p className="text-xs font-semibold uppercase tracking-widest text-muted-foreground/70 mb-4">
+              Trusted by top companies
             </p>
-            <div className="mt-4 sm:mt-6 flex flex-wrap items-center justify-center gap-x-6 sm:gap-x-8 md:gap-x-10 gap-y-4 sm:gap-y-6 lg:justify-start">
+            <div className="flex flex-wrap items-center justify-center lg:justify-start gap-8 opacity-50 grayscale hover:opacity-100 transition-all duration-500">
               {partnerLogos.map((logo) => (
-                <Image
-                  key={logo.name}
-                  src={logo.src}
-                  alt={`${logo.name} logo`}
-                  width={logo.width}
-                  height={logo.height}
-                  className="h-6 sm:h-8 w-auto opacity-80 grayscale transition hover:opacity-100 hover:grayscale-0"
-                />
+                <div key={logo.name} className="relative h-6 sm:h-8 w-auto">
+                  <Image
+                    src={logo.src}
+                    alt={`${logo.name} logo`}
+                    width={logo.width}
+                    height={logo.height}
+                    className="h-full w-auto object-contain"
+                  />
+                </div>
               ))}
             </div>
           </div>
         </div>
 
-        <div className="relative mx-auto w-full max-w-xl hidden md:block">
+        <div className="relative mx-auto w-full max-w-xl hidden md:block lg:-translate-x-6">
           <div className="absolute -left-8 sm:-left-12 -top-8 sm:-top-12 h-24 w-24 sm:h-36 sm:w-36 rounded-full bg-primary/20 blur-3xl"></div>
           <div className="absolute -bottom-8 sm:-bottom-10 right-0 h-28 w-28 sm:h-40 sm:w-40 rounded-full bg-accent/20 blur-3xl"></div>
-          <Card className="relative overflow-hidden rounded-2xl md:rounded-3xl lg:rounded-[32px] border border-border bg-white/60 p-4 sm:p-6 lg:p-8 shadow-[0_40px_120px_-45px_rgba(15,23,42,0.65)] backdrop-blur scale-90 md:scale-95 lg:scale-100 origin-center gap-4 sm:gap-5 lg:gap-6">
-            <div className="flex items-center justify-between gap-3">
-              <div>
-                <p className="text-xs sm:text-sm font-semibold text-muted-foreground">
-                  Opportunity match
+          
+          <Card className="relative overflow-hidden rounded-2xl md:rounded-3xl lg:rounded-[32px] border border-gray-100 bg-white/80 p-6 sm:p-8 shadow-[0_20px_40px_rgba(0,0,0,0.08)] backdrop-blur-xl">
+            
+            <div className="flex items-center justify-between mb-8">
+              <div className="space-y-1">
+                <p className="text-sm font-medium text-muted-foreground">
+                  Opportunity Match
                 </p>
-                <p className="text-lg sm:text-xl lg:text-2xl font-semibold text-foreground">
-                  92% fit · Stripe
-                </p>
+                <div className="flex items-baseline gap-2">
+                  <span className="text-3xl font-bold text-foreground tracking-tight">92%</span>
+                  <span className="text-lg font-medium text-muted-foreground">fit · Stripe</span>
+                </div>
               </div>
               <Badge
-                variant="outline"
-                className="rounded-full bg-emerald-500/10 px-2.5 sm:px-3 lg:px-4 py-1.5 sm:py-2 text-xs sm:text-sm font-medium text-emerald-600 whitespace-nowrap border-transparent"
+                variant="secondary"
+                className="rounded-full bg-emerald-50 text-emerald-600 hover:bg-emerald-50 border border-emerald-100 px-3 py-1"
               >
                 Top 5%
               </Badge>
             </div>
 
-            <Card className="gap-3 sm:gap-4 rounded-2xl lg:rounded-3xl bg-muted/30 p-4 sm:p-5 lg:p-6 border-transparent shadow-none">
+            <div className="space-y-5 rounded-2xl bg-gray-50/80 p-5 border border-gray-100">
               <div className="flex items-center justify-between">
-                <span className="text-xs sm:text-sm font-medium text-muted-foreground">
-                  ATS score
+                <span className="text-sm font-semibold text-gray-700">
+                  ATS Score
                 </span>
-                <span className="text-base sm:text-lg font-semibold text-foreground">
+                <span className="text-sm font-bold text-foreground">
                   87/100
                 </span>
               </div>
-              <Progress value={87} className="h-2 bg-muted" />
+              
+              <Progress value={87} className="h-2 bg-gray-200" />
 
-              <ul className="space-y-1.5 sm:space-y-2 text-xs sm:text-sm text-muted-foreground">
-                <li className="flex items-center gap-2">
-                  <span className="h-1.5 w-1.5 sm:h-2 sm:w-2 rounded-full bg-primary flex-shrink-0"></span>
-                  <span className="line-clamp-1">
-                    Tailor your leadership achievements
-                  </span>
-                </li>
-                <li className="flex items-center gap-2">
-                  <span className="h-1.5 w-1.5 sm:h-2 sm:w-2 rounded-full bg-primary/70 flex-shrink-0"></span>
-                  <span className="line-clamp-1">
-                    Align keywords with the job description
-                  </span>
-                </li>
-                <li className="flex items-center gap-2">
-                  <span className="h-1.5 w-1.5 sm:h-2 sm:w-2 rounded-full bg-primary/50 flex-shrink-0"></span>
-                  <span className="line-clamp-1">
-                    Highlight quantifiable outcomes
-                  </span>
-                </li>
+              <ul className="space-y-3">
+                {[
+                  "Tailor your leadership achievements",
+                  "Align keywords with job description",
+                  "Highlight quantifiable outcomes"
+                ].map((item, i) => (
+                  <li key={i} className="flex items-start gap-3 text-sm text-muted-foreground">
+                    <div className="mt-1.5 h-1.5 w-1.5 rounded-full bg-primary flex-shrink-0" />
+                    <span className="leading-tight">{item}</span>
+                  </li>
+                ))}
               </ul>
-            </Card>
+            </div>
 
-            <Card className="rounded-2xl lg:rounded-3xl bg-primary/10 p-4 sm:p-5 lg:p-6 text-xs sm:text-sm text-primary border-transparent shadow-none">
-              "OptiHire helped me overhaul my resume in a weekend and land three
-              interviews the following week."
-              <p className="mt-2 sm:mt-3 text-[10px] sm:text-xs uppercase tracking-wider sm:tracking-widest text-primary/70">
-                — Maya Edwards · Product Manager
+            <div className="mt-6 pt-6 border-t border-gray-100">
+              <p className="text-sm text-gray-600 italic leading-relaxed">
+                "OptiHire helped me overhaul my resume in a weekend and land three interviews the following week."
               </p>
-            </Card>
+              <div className="mt-3 flex items-center gap-2">
+                <div className="h-6 w-6 rounded-full bg-gradient-to-br from-primary to-accent opacity-80" />
+                <p className="text-xs font-semibold text-gray-900">
+                  Maya Edwards <span className="text-muted-foreground font-normal">· Product Manager</span>
+                </p>
+              </div>
+            </div>
+
           </Card>
         </div>
       </div>

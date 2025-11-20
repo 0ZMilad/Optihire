@@ -85,7 +85,7 @@ export function Header() {
                 </Button>
               </Link>
               <Link href="/sign-up" className="hidden md:block">
-                <Button size="sm">Sign up</Button>
+                <Button size="sm" className="bg-brand-primary text-brand-primary-foreground hover:bg-brand-primary/90">Sign up</Button>
               </Link>
             </>
           )}
