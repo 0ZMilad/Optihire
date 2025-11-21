@@ -30,7 +30,7 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body
-        className={`${geistSans.variable} ${geistMono.variable} antialiased`}
+        className={`${geistSans.variable} ${geistMono.variable} antialiased bg-[radial-gradient(#e5e5e5_1px,transparent_1px)] [background-size:40px_40px]`}
       >
         {" "}
         <AuthProvider>{children}</AuthProvider>

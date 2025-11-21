@@ -7,7 +7,7 @@ import { CTASection } from "@/components/cta-section";
 
 export default function Home() {
   return (
-    <div className="min-h-screen bg-background overflow-x-clip flex flex-col">
+    <div className="min-h-screen overflow-x-clip flex flex-col">
       <Header />
       <main className="flex-1">
         <div className="flex justify-center px-4 sm:px-6 lg:px-8 xl:px-12 pt-4">
