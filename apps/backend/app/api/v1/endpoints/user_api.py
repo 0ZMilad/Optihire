@@ -32,6 +32,65 @@ def create_new_user(
     return user_service.create_user(db=db, user_data=user)
 
 
+@router.get("/profile", response_model=UserRead, dependencies=[Depends(require_scopes(["users:read"]))])
+def get_current_user_profile(
+    db: Session = Depends(get_db),
+    current_user_id: UUID = Depends(get_current_user_id),
+):
+    """
+    Get the currently authenticated user's profile.
+    
+    Returns the profile information of the authenticated user without requiring
+    them to pass their user_id as a path parameter.
+    """
+
+    # STEP 1: Extract the current user's ID from JWT token
+    # (This is already done by the get_current_user_id dependency)
+    # current_user_id is now available as a function parameter
+    
+    # STEP 2: Query the database using the service layer
+    # Call the existing service method to fetch the user by their ID
+    user = user_service.get_user_by_id(db=db, user_id=current_user_id)
+    
+    # STEP 3: Error handling - check if user exists
+    # If the service returns None, raise a 404 exception
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+    
+    # STEP 4: Return the user profile
+    # FastAPI automatically serializes to UserRead schema
+    return user
+
+@router.put("/profile", response_model=UserRead, dependencies=[Depends(require_scopes(["users:update"]))])
+def update_current_user_profile(
+    user_data: UserUpdate,
+    db: Session = Depends(get_db),
+    current_user_id: UUID = Depends(get_current_user_id),
+):
+    """
+    Update the currently authenticated user's profile.
+    
+    Updates the profile information of the authenticated user without requiring
+    them to pass their user_id as a path parameter.
+    """
+
+    # STEP 1: Extract the current user's ID from JWT token
+    # (This is already done by the get_current_user_id dependency)
+    # current_user_id is now available as a function parameter
+    
+    # STEP 2: Query the database using the service layer
+    # Call the existing service method to fetch the user by their ID
+    user = user_service.update_user(db=db, user_id=current_user_id, user_data=user_data)
+    
+    # STEP 3: Error handling - check if user exists
+    # If the service returns None, raise a 404 exception
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+    
+    # STEP 4: Return the user profile
+    # FastAPI automatically serializes to UserRead schema
+    return user
+
 @router.get("/{user_id}", response_model=UserRead, dependencies=[Depends(require_scopes(["users:read"]))])
 def get_user(
     user_id: UUID,
@@ -97,3 +156,4 @@ def delete_user(
     if not success:
         raise HTTPException(status_code=404, detail="User not found")
     return None
+
