@@ -36,7 +36,7 @@ export function Header() {
         <Link href="/" className="flex items-center space-x-2">
           <Image
             src="/optihire.png"
-            alt="OptiHire Logo"
+            alt="Optihire Logo"
             width={50}
             height={50}
             className="h-8 w-auto"

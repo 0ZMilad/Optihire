@@ -1,4 +1,4 @@
-# OptiHire Backend
+# Optihire Backend
 
 FastAPI backend with Supabase PostgreSQL integration for AI-powered ATS resume optimization.
 

@@ -79,7 +79,7 @@ export function HeroSection() {
                   Opportunity Match
                 </p>
                 <div className="flex items-baseline gap-2">
-                  <span className="text-3xl font-bold text-foreground tracking-tight">92%</span>
+                  <span className="text-2xl font-semibold text-foreground tracking-tight">92%</span>
                   <span className="text-lg font-medium text-muted-foreground">fit · Stripe</span>
                 </div>
               </div>
@@ -119,7 +119,7 @@ export function HeroSection() {
 
             <div className="mt-6 pt-6 border-t border-gray-100">
               <p className="text-sm text-gray-600 italic leading-relaxed">
-                "OptiHire helped me overhaul my resume in a weekend and land three interviews the following week."
+                "Optihire helped me overhaul my resume in a weekend and land three interviews the following week."
               </p>
               <div className="mt-3 flex items-center gap-2">
                 <div className="h-6 w-6 rounded-full bg-gradient-to-br from-primary to-accent opacity-80" />

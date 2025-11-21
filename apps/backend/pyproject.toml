@@ -1,7 +1,7 @@
 [project]
 name = "optihire-backend"
 version = "0.1.0"
-description = "OptiHire Backend API"
+description = "Optihire Backend API"
 requires-python = ">=3.10"
 
 [tool.ruff]

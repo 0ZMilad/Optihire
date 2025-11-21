@@ -1,5 +1,5 @@
 """
-Schema exports for the OptiHire application.
+Schema exports for the Optihire application.
 """
 
 # Common enums

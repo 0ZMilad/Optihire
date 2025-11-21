@@ -1,4 +1,4 @@
-"""Add OptiHire schema with Supabase auth integration
+"""Add Optihire schema with Supabase auth integration
 
 Revision ID: 477144644922
 Revises: 

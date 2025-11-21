@@ -1,5 +1,5 @@
 """
-Database models for the OptiHire application.
+Database models for the Optihire application.
 """
 
 # User models

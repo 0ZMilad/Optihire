@@ -16,7 +16,7 @@ class Settings(BaseSettings):
     JWT_AUDIENCE: str = "authenticated"  # Supabase default audience
 
     # Application settings
-    PROJECT_NAME: str = "OptiHire API"
+    PROJECT_NAME: str = "Optihire API"
     API_V1_STR: str = "/api/v1"
 
     @property

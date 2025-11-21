@@ -20,14 +20,14 @@ def check_system_health(db: Session = Depends(get_db)):
         db.exec(text("SELECT 1"))
         return {
             "status": "healthy",
-            "service": "OptiHire Backend",
+            "service": "Optihire Backend",
             "database": "connected",
             "timestamp": datetime.utcnow().isoformat(),
         }
     except Exception as e:
         return {
             "status": "unhealthy",
-            "service": "OptiHire Backend",
+            "service": "Optihire Backend",
             "database": f"disconnected: {str(e)}",
             "timestamp": datetime.utcnow().isoformat(),
         }

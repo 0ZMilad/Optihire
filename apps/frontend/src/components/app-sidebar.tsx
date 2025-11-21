@@ -135,7 +135,7 @@ export function AppSidebar() {
             <span className="text-lg font-bold">O</span>
           </div>
           <div className="grid flex-1 text-left text-sm leading-tight">
-            <span className="truncate font-semibold">OptiHire</span>
+            <span className="truncate font-semibold">Optihire</span>
             <span className="truncate text-xs">Resume Optimiser</span>
           </div>
         </div>

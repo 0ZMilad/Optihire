@@ -41,7 +41,7 @@ app.include_router(
 @app.get("/")
 def read_root():
     return {
-        "message": "Welcome to OptiHire API",
+        "message": "Welcome to Optihire API",
         "version": "1.0.0",
         "docs": "/docs",
         "redoc": "/redoc",
@@ -50,4 +50,4 @@ def read_root():
 
 @app.get("/health")
 def health_check():
-    return {"status": "healthy", "service": "OptiHire Backend"}
+    return {"status": "healthy", "service": "Optihire Backend"}

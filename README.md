@@ -1,4 +1,4 @@
-# OptiHire
+# Optihire
 
 A web platform that helps job seekers improve their CVs for Applicant Tracking Systems (ATS). This platform provides automated analysis, compatibility scoring, and actionable suggestions to increase your chances of landing an interview.
 
@@ -28,4 +28,4 @@ Open http://localhost:3000 with your browser to see the result.
 
 ## Privacy
 
-As part of OptiHire, we store your account information (email and profile) and ATS analysis results to provide personaliSed compatibility scoring and feedback. Uploaded resume files are deleted within 24 hours of upload. All other user data is retained only to operate and improve the service and removed upon account deletion. Supabase acts as an identity sub-processor for authentication and user management.
+As part of Optihire, we store your account information (email and profile) and ATS analysis results to provide personaliSed compatibility scoring and feedback. Uploaded resume files are deleted within 24 hours of upload. All other user data is retained only to operate and improve the service and removed upon account deletion. Supabase acts as an identity sub-processor for authentication and user management.
