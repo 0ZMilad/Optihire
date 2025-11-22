@@ -116,7 +116,7 @@ export function HeroSection() {
 
                 <div className="relative space-y-2 pt-2">
                   <div className="h-2 w-3/4 bg-slate-200 rounded-sm"></div>
-                  <div className="h-2 w-1/2 bg-slate-200 rounded-sm"></div>
+                  <div className="h-2 w-1/2 bg-indigo-100 rounded-sm"></div>
                 </div>
               </div>
 
@@ -128,32 +128,32 @@ export function HeroSection() {
 
               <svg className="absolute inset-0 w-[180%] h-[140%] -top-[20%] -left-[40%] pointer-events-none z-0 visible lg:block hidden">
                 <path
-                  d="M 48 165 L 10 165 L 10 90"
+                  d="M 175 235 L 80 235 L 80 160"
                   fill="none"
                   stroke="#10B981"
                   strokeWidth="1.5"
                   strokeDasharray="4 4"
-                  className="opacity-60"
+                  className="opacity-60 animate-dash"
                 />
                 <circle
-                  cx="48"
-                  cy="165"
+                  cx="175"
+                  cy="235"
                   r="3"
                   fill="#10B981"
                   className="animate-pulse"
                 />
 
                 <path
-                  d="M 250 340 L 310 340 L 310 380"
+                  d="M 280 393 L 480 393 L 480 430"
                   fill="none"
                   stroke="#6366F1"
                   strokeWidth="1.5"
                   strokeDasharray="4 4"
-                  className="opacity-60"
+                  className="opacity-60 animate-dash"
                 />
                 <circle
-                  cx="250"
-                  cy="340"
+                  cx="280"
+                  cy="393"
                   r="3"
                   fill="#6366F1"
                   className="animate-pulse"
