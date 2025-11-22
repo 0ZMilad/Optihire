@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import Image from "next/image";
 import { usePathname, useRouter } from "next/navigation";
 import { authService } from "@/middle-service/supabase";
 import {
@@ -130,11 +131,17 @@ export function AppSidebar() {
   return (
     <Sidebar collapsible="icon">
       <SidebarHeader>
-        <div className="flex items-center gap-2 px-2 py-4">
-          <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary text-primary-foreground">
-            <span className="text-lg font-bold">O</span>
+        <div className="flex items-center justify-center gap-2 px-2 py-4">
+          <div className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-lg">
+            <Image
+              src="/Omega.png"
+              alt="Optihire"
+              width={32}
+              height={32}
+              className="h-8 w-8 object-contain"
+            />
           </div>
-          <div className="grid flex-1 text-left text-sm leading-tight">
+          <div className="grid min-w-0 flex-1 text-left text-sm leading-tight">
             <span className="truncate font-semibold">Optihire</span>
             <span className="truncate text-xs">Resume Optimiser</span>
           </div>
