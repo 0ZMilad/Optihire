@@ -2,6 +2,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { CheckCircle2, BarChart3, FileText, Cpu } from "lucide-react";
+import CountUp from "@/components/count-up";
 
 const partnerLogos = [
   { name: "Microsoft", src: "/microsoft.jpg", width: 160, height: 40 },
@@ -177,7 +178,7 @@ export function HeroSection() {
               </div>
             </div>
 
-            <div className="absolute bottom-16 -right-4 md:-right-20 bg-white/90 backdrop-blur-md border border-indigo-100 p-3 rounded-lg shadow-[0_8px_30px_rgb(0,0,0,0.04)] animate-float-delayed z-10">
+            <div className="absolute bottom-16 -right-4 md:-right-14 bg-white/90 backdrop-blur-md border border-indigo-100 p-3 rounded-lg shadow-[0_8px_30px_rgb(0,0,0,0.04)] animate-float-delayed z-10">
               <div className="flex items-center gap-3">
                 <div className="bg-indigo-50 p-1.5 rounded-md border border-indigo-100 shadow-sm">
                   <BarChart3 className="w-4 h-4 text-indigo-600" />
@@ -188,7 +189,14 @@ export function HeroSection() {
                   </p>
                   <div className="flex items-center gap-1">
                     <span className="text-xs font-bold text-slate-900 font-mono">
-                      87/100
+                      <CountUp
+                        from={0}
+                        to={87}
+                        separator=","
+                        direction="up"
+                        duration={2}
+                        className="count-up-text"
+                      />
                     </span>
                     <span className="text-[9px] text-emerald-600 font-bold bg-emerald-50 px-1 rounded">
                       HIGH
