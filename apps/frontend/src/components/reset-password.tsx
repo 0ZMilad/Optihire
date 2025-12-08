@@ -5,33 +5,29 @@ import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-
+import { Spinner } from "./ui/spinner";
 import { authService } from "@/middle-service/supabase";
 
 export default function ResetPassword() {
   const [step, setStep] = useState<"email" | "reset">("email");
   const [email, setEmail] = useState("");
-
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [successMessage, setSuccessMessage] = useState("");
-
   const [newPassword, setNewPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
 
   const handleEmailSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-
     setIsLoading(true);
-
     setErrorMessage("");
 
     try {
       const { error } = await authService.resetPassword(email);
       if (error) {
-        setErrorMessage(error?.message);
+        setErrorMessage(error.message);
       } else {
-        setSuccessMessage("Reset successful");
+        setSuccessMessage("Reset link sent! Check your email.");
       }
     } catch (error) {
       console.error("Reset failed:", error);
@@ -43,9 +39,7 @@ export default function ResetPassword() {
 
   const handleResetSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-
     setIsLoading(true);
-
     setErrorMessage("");
 
     if (newPassword !== confirmPassword) {
@@ -57,9 +51,9 @@ export default function ResetPassword() {
     try {
       const { error } = await authService.updatePassword(newPassword);
       if (error) {
-        setErrorMessage(error?.message);
+        setErrorMessage(error.message);
       } else {
-        setSuccessMessage("Reset successful");
+        setSuccessMessage("Password updated successfully!");
       }
     } catch (error) {
       console.error("Reset failed:", error);
@@ -72,7 +66,7 @@ export default function ResetPassword() {
   useEffect(() => {
     const {
       data: { subscription },
-    } = authService.onAuthStateChange((event, session) => {
+    } = authService.onAuthStateChange((event) => {
       if (event === "PASSWORD_RECOVERY") {
         setStep("reset");
       }
@@ -136,10 +130,10 @@ export default function ResetPassword() {
                   disabled={isLoading}
                 >
                   {isLoading ? (
-                    <span className="flex items-center justify-center gap-1">
-                      <span className="inline-block h-3 w-3 animate-spin rounded-full border border-background border-t-foreground" />
-                      <span className="text-sm">Sending reset link...</span>
-                    </span>
+                    <div className="flex items-center justify-center gap-2">
+                      <Spinner className="h-4 w-4" />
+                      <span>Sending Link...</span>
+                    </div>
                   ) : (
                     "Send Reset Link"
                   )}
@@ -222,12 +216,12 @@ export default function ResetPassword() {
                   disabled={isLoading}
                 >
                   {isLoading ? (
-                    <span className="flex items-center justify-center gap-1">
-                      <span className="inline-block h-3 w-3 animate-spin rounded-full border border-background border-t-foreground" />
-                      <span className="text-sm">Reseting password...</span>
-                    </span>
+                    <div className="flex items-center justify-center gap-2">
+                      <Spinner className="h-4 w-4" />
+                      <span>Updating Password...</span>
+                    </div>
                   ) : (
-                    "Reset Password"
+                    "Update Password"
                   )}
                 </Button>
               </form>

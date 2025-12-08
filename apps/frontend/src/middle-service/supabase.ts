@@ -1,5 +1,6 @@
 import { createBrowserClient } from "@supabase/ssr";
 import type { Session } from "@supabase/supabase-js";
+import { redirect } from "next/dist/server/api-utils";
 
 // Get Supabase configuration from environment
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
@@ -11,6 +12,16 @@ if (!supabaseUrl || !supabaseAnonKey) {
     "Missing Supabase environment variables. Please check NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_ANON_KEY in your .env file."
   );
 }
+
+const getRedirectUrl = () => {
+  if (process.env.NODE_ENV === "development") {
+    return "http://localhost:3000/auth/callback";
+  }
+
+   const siteUrl = process.env.NEXT_PUBLIC_SITE_URL?.replace(/\/$/, "") || "";
+  
+   return `${siteUrl}/auth/callback`;
+};
 
 export const supabase = createBrowserClient(supabaseUrl, supabaseAnonKey);
 
@@ -25,6 +36,9 @@ export const authService = {
     const { data, error } = await supabase.auth.signUp({
       email,
       password,
+      options: {
+        emailRedirectTo: getRedirectUrl(),
+      },
     });
     return { data, error };
   },
@@ -77,7 +91,9 @@ export const authService = {
    * Reset password for email
    */
   resetPassword: async (email: string) => {
-    const { data, error } = await supabase.auth.resetPasswordForEmail(email);
+    const { data, error } = await supabase.auth.resetPasswordForEmail(email, {
+        redirectTo: getRedirectUrl(),
+    });
     return { data, error };
   },
 

@@ -33,6 +33,10 @@ export async function middleware(request: NextRequest): Promise<NextResponse> {
 
   const pathname = request.nextUrl.pathname;
 
+  if (pathname === "/auth/callback") {
+    return supabaseResponse;
+  }
+
   if (pathname === "/dashboard" && !session) {
     return NextResponse.redirect(new URL("/login", request.url));
   }
@@ -45,5 +49,5 @@ export async function middleware(request: NextRequest): Promise<NextResponse> {
 }
 
 export const config = {
-  matcher: ["/dashboard", "/login", "/sign-up"],
+  matcher: ["/dashboard", "/login", "/sign-up", "/auth/callback"],
 };

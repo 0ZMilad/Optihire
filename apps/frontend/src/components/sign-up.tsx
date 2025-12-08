@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Spinner } from "@/components/ui/spinner";
 import {
   Select,
   SelectContent,
@@ -50,7 +51,10 @@ export default function SignupForm() {
     }
 
     try {
-      const { data, error } = await authService.signUp(currentEmail, currentPassword);
+      const { data, error } = await authService.signUp(
+        currentEmail,
+        currentPassword
+      );
       if (error) {
         setErrorMessage(error?.message);
       } else {
@@ -255,10 +259,10 @@ export default function SignupForm() {
               disabled={isLoading}
             >
               {isLoading ? (
-                <span className="flex items-center justify-center gap-1">
-                  <span className="inline-block h-3 w-3 animate-spin rounded-full border border-background border-t-foreground" />
-                  <span className="text-sm">Signing up...</span>
-                </span>
+                <div className="flex items-center justify-center gap-2">
+                  <Spinner className="h-4 w-4" />
+                  <span>Signing up...</span>
+                </div>
               ) : (
                 "Sign up"
               )}
