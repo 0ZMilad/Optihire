@@ -9,6 +9,9 @@ class Settings(BaseSettings):
     SUPABASE_URL: str
     SUPABASE_KEY: str
     SUPABASE_SERVICE_ROLE_KEY: str | None = None
+    # Storage bucket configuration
+    SUPABASE_STORAGE_BUCKET: str = "resumes"
+    MAX_UPLOAD_SIZE_MB: int = 5  
     
      # JWT Configuration for Supabase Auth
     SUPABASE_JWT_SECRET: str  # Add this - from Supabase dashboard
