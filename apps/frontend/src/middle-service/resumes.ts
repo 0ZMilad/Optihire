@@ -5,7 +5,7 @@ export const uploadResume = async (file: File) => {
   
   formData.append("file", file);  
 
-  const response = await apiClient.post("/resumes/upload", formData, { 
+  const response = await apiClient.post("/api/v1/resumes/upload", formData, { 
     headers: {
         "Content-Type": "multipart/form-data",
     },

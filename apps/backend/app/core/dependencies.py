@@ -49,10 +49,10 @@ def require_scopes(required_scopes: List[str]):
 
 
 async def get_current_user(
-    credentials: HTTPAuthorizationCredentials = Depends(security),
+    request: Request,
 ) -> dict:
     """
-    Dependency to extract and validate JWT token from request.
+    Dependency to extract user from request state (already validated by middleware).
     Returns the decoded token payload containing user info.
     
     Usage in endpoints:
@@ -62,18 +62,16 @@ async def get_current_user(
             email = current_user.get("email")
             # ... your logic
     """
-    if not credentials:
+    user = getattr(request.state, "user", None)
+    
+    if not user:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Missing authentication credentials",
+            detail="User not authenticated",
             headers={"WWW-Authenticate": "Bearer"},
         )
     
-    token = credentials.credentials
-    validator = get_jwt_validator()
-    payload = validator.validate_token(token)
-    
-    return payload
+    return user
 
 
 async def get_current_user_id(
@@ -93,22 +91,10 @@ async def get_current_user_id(
 
 
 async def get_optional_user(
-    credentials: Optional[HTTPAuthorizationCredentials] = Depends(
-        HTTPBearer(auto_error=False)
-    ),
+    request: Request,
 ) -> Optional[dict]:
     """
     Optional authentication - returns None if no token provided.
     Use for endpoints that work differently for authenticated users.
     """
-    if not credentials:
-        return None
-    
-    token = credentials.credentials
-    validator = get_jwt_validator()
-    
-    try:
-        payload = validator.validate_token(token)
-        return payload
-    except HTTPException:
-        return None
+    return getattr(request.state, "user", None)

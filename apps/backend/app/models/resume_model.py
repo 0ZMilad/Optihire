@@ -61,6 +61,8 @@ class Resume(SQLModel, table=True):
     is_primary: bool = Field(default=False)
     section_order: dict | None = Field(default=None, sa_column=Column(JSONB))
     content_hash: str | None = Field(default=None, max_length=64)
+    file_path: str | None = Field(default=None, max_length=500)
+    file_url: str | None = Field(default=None, max_length=500)
     full_name: str | None = Field(default=None, max_length=200)
     email: str | None = Field(default=None, max_length=255)
     phone: str | None = Field(default=None, max_length=30)

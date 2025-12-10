@@ -1,7 +1,7 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from app.api.v1.endpoints import system_api, user_api
+from app.api.v1.endpoints import system_api, user_api, resumes
 from app.core.config import settings
 from app.middleware.auth import JWTMiddleware
 
@@ -35,6 +35,9 @@ app.include_router(
 )
 app.include_router(
     system_api.router, prefix=f"{settings.API_V1_STR}/system", tags=["system"]
+)
+app.include_router(
+    resumes.router, prefix=f"{settings.API_V1_STR}/resumes", tags=["resumes"]
 )
 
 

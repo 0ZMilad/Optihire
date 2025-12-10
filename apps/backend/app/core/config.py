@@ -14,8 +14,6 @@ class Settings(BaseSettings):
     MAX_UPLOAD_SIZE_MB: int = 5  
     
      # JWT Configuration for Supabase Auth
-    SUPABASE_JWT_SECRET: str  # Add this - from Supabase dashboard
-    JWT_ALGORITHM: str = "HS256"  # Supabase uses HS256 by default
     JWT_AUDIENCE: str = "authenticated"  # Supabase default audience
 
     # Application settings
@@ -25,7 +23,7 @@ class Settings(BaseSettings):
     @property
     def jwt_issuer(self) -> str:
         """Extract issuer from Supabase URL for JWT validation"""
-        return self.SUPABASE_URL
+        return f"{self.SUPABASE_URL}/auth/v1"
 
     class Config:
         env_file = ".env"

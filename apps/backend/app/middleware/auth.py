@@ -2,7 +2,7 @@ from fastapi import Request, status
 from starlette.middleware.base import BaseHTTPMiddleware
 from uuid import uuid4
 
-from app.core.utils import create_error_response
+from app.core.utils import create_error_response, map_role_to_scopes
 from app.core.jwt import get_jwt_validator
 from typing import Sequence
 
@@ -62,6 +62,7 @@ class JWTMiddleware(BaseHTTPMiddleware):
             return error_response
         
         token = auth_header.split(" ")[1]
+        
         validator = get_jwt_validator()
         
         try:
@@ -78,19 +79,21 @@ class JWTMiddleware(BaseHTTPMiddleware):
                 error_response.headers["x-request-id"] = request_id
                 return error_response
             
-            if "scopes" not in payload or not isinstance(payload["scopes"], Sequence):
+            # Map Supabase role to scopes (for compatibility with existing endpoints)
+            if "scopes" not in payload:
+                role = payload.get("role", "")
+                payload["scopes"] = map_role_to_scopes(role)
+            
+            # Validate scopes is a list
+            if not isinstance(payload.get("scopes"), Sequence):
                 error_response = create_error_response(
                     status_code=status.HTTP_401_UNAUTHORIZED,
                     code="INVALID_SCOPES_CLAIM",
-                    message="Token has invalid or missing 'scopes' claim",
+                    message="Token has invalid 'scopes' claim",
                     details={"claim": "scopes"}
                 )
                 error_response.headers["x-request-id"] = request_id
                 return error_response
-            
-            
-            
-
             
             # Attach user info to request state
             request.state.user = payload

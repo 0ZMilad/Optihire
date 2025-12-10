@@ -21,7 +21,7 @@ pyjwt[crypto]
 cachetools
 # python-jose[cryptography]
 # passlib[bcrypt]
-# python-multipart
+python-multipart
 
 # Testing
 pytest

@@ -1,7 +1,13 @@
 import uuid
-from fastapi import APIRouter, File, UploadFile, HTTPException, status
+from fastapi import APIRouter, Depends, File, UploadFile, HTTPException, status
+from sqlmodel import Session
+from uuid import UUID
+
 from app.core.config import settings
-from app.services.storage_service import upload_file
+from app.core.dependencies import get_current_user_id
+from app.db.session import get_db
+from app.models.resume_model import Resume
+from app.services.storage_service import upload_file, delete_file
 
 router = APIRouter()
 
@@ -11,9 +17,14 @@ ALLOWED_MIME_TYPES = [
 ]
 
 @router.post("/upload", status_code=status.HTTP_201_CREATED)
-async def upload_resume(file: UploadFile = File(...)):
+async def upload_resume(
+    file: UploadFile = File(...),
+    current_user_id: UUID = Depends(get_current_user_id),
+    db: Session = Depends(get_db)
+):
     """
-    Uploads a resume file (PDF or DOCX) to Supabase storage.
+    Uploads a resume file (PDF or DOCX) to Supabase storage and saves metadata to database.
+    Requires authentication.
     """
     
     # 1. Read file content
@@ -63,10 +74,37 @@ async def upload_resume(file: UploadFile = File(...)):
             detail="Failed to upload file to storage service"
         )
 
-    # 6. Return Success Response
+    # 6. Save Resume Record to Database
+    try:
+        resume = Resume(
+            user_id=current_user_id,
+            version_name=file.filename or "Uploaded Resume",
+            full_name=None,  # Will be populated after parsing
+            email=None,
+            file_path=destination_path,
+            file_url=public_url,
+        )
+        db.add(resume)
+        db.commit()
+        db.refresh(resume)
+    except Exception as e:
+        # Clean up uploaded file if database save fails
+        try:
+            delete_file(destination_path)
+        except Exception:
+            pass  # Log this, but don't mask the original error
+        
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Failed to save resume metadata to database"
+        )
+
+    # 7. Return Success Response
     return {
+        "id": str(resume.id),
         "url": public_url,
         "filename": file.filename,
         "stored_name": unique_filename,
+        "user_id": str(current_user_id),
         "message": "Resume uploaded successfully"
     }
