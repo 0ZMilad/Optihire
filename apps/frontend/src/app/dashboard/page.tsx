@@ -5,8 +5,18 @@ import { Card } from "@/components/ui/card";
 import { DashboardHeader } from "@/components/dashboard-header";
 import { Main } from "@/components/main";
 import { DashboardLayout } from "@/components/dashboard-layout";
+import { ResumeUpload } from "@/components/resume-upload";
 
 export default function DashboardPage() {
+  const handleUploadSuccess = (data: any) => {
+    console.log("Upload successful:", data);
+    alert("Resume uploaded successfully!");
+  };
+
+  const handleUploadError = (error: string) => {
+    console.error("Upload error:", error);
+  };
+
   return (
     <DashboardLayout>
       <DashboardHeader>
@@ -22,7 +32,6 @@ export default function DashboardPage() {
 
       <Main>
         <div className="space-y-6">
-          {/* Welcome Message */}
           <div>
             <h2 className="text-2xl font-bold mb-2">Welcome back!</h2>
             <p className="text-muted-foreground">
@@ -30,7 +39,6 @@ export default function DashboardPage() {
             </p>
           </div>
 
-          {/* Stats Grid */}
           <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
             <Card className="p-6">
               <div className="space-y-2">
@@ -81,7 +89,6 @@ export default function DashboardPage() {
             </Card>
           </div>
 
-          {/* Quick Actions & Recent Activity */}
           <div className="grid gap-4 md:grid-cols-2">
             <Card className="p-6">
               <h3 className="text-lg font-semibold mb-4">Quick Actions</h3>
@@ -99,11 +106,12 @@ export default function DashboardPage() {
             </Card>
 
             <Card className="p-6">
-              <h3 className="text-lg font-semibold mb-4">Recent Activity</h3>
-              <div className="space-y-3">
-                <p className="text-sm text-muted-foreground text-center py-8">
-                  No recent activity yet. Start by uploading your resume!
-                </p>
+              <h3 className="text-lg font-semibold mb-4">Upload New Resume</h3>
+              <div className="min-h-[200px]">
+                <ResumeUpload
+                  onUploadSuccess={handleUploadSuccess}
+                  onUploadError={handleUploadError}
+                />
               </div>
             </Card>
           </div>
