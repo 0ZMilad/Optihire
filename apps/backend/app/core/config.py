@@ -25,9 +25,10 @@ class Settings(BaseSettings):
         """Extract issuer from Supabase URL for JWT validation"""
         return f"{self.SUPABASE_URL}/auth/v1"
 
-    class Config:
-        env_file = ".env"
-        case_sensitive = True
+    model_config = {
+        "env_file": ".env",
+        "case_sensitive": True,
+    }
 
 
 settings = Settings()

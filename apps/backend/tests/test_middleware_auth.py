@@ -55,6 +55,24 @@ class TestMiddlewareAuthentication:
         )
         assert response.status_code == status.HTTP_401_UNAUTHORIZED
         assert response.json()["code"] == "INVALID_TOKEN"
+    
+    def test_invalid_audience_returns_401(self, client, invalid_audience_token):
+        """Token with wrong audience should return 401."""
+        response = client.get(
+            "/protected",
+            headers={"Authorization": f"Bearer {invalid_audience_token}"}
+        )
+        assert response.status_code == status.HTTP_401_UNAUTHORIZED
+        assert response.json()["code"] == "INVALID_TOKEN"
+    
+    def test_invalid_issuer_returns_401(self, client, invalid_issuer_token):
+        """Token with wrong issuer should return 401."""
+        response = client.get(
+            "/protected",
+            headers={"Authorization": f"Bearer {invalid_issuer_token}"}
+        )
+        assert response.status_code == status.HTTP_401_UNAUTHORIZED
+        assert response.json()["code"] == "INVALID_TOKEN"
 
 
 class TestClaimEnforcement:
@@ -70,11 +88,20 @@ class TestClaimEnforcement:
         assert response.json()["code"] == "MISSING_SUB_CLAIM"
         assert response.json()["details"]["claim"] == "sub"
     
-    def test_token_missing_scopes_claim_returns_401(self, client, token_missing_scopes):
-        """Token missing 'scopes' claim should return 401."""
+    def test_token_without_scopes_gets_mapped_from_role(self, client, token_without_scopes):
+        """Token without 'scopes' but with 'role' should have scopes mapped automatically."""
         response = client.get(
             "/protected",
-            headers={"Authorization": f"Bearer {token_missing_scopes}"}
+            headers={"Authorization": f"Bearer {token_without_scopes}"}
+        )
+        # Should succeed because role:authenticated gets mapped to user scopes
+        assert response.status_code == status.HTTP_200_OK
+    
+    def test_token_with_string_scopes_returns_401(self, client, token_with_string_scopes):
+        """Token with scopes as string (not list) should return 401."""
+        response = client.get(
+            "/protected",
+            headers={"Authorization": f"Bearer {token_with_string_scopes}"}
         )
         assert response.status_code == status.HTTP_401_UNAUTHORIZED
         assert response.json()["code"] == "INVALID_SCOPES_CLAIM"

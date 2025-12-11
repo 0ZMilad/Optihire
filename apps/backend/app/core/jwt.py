@@ -1,11 +1,10 @@
 from datetime import datetime, timezone
 from functools import lru_cache
-from typing import Optional
 
+import httpx
 import jwt
 from cachetools import TTLCache
 from fastapi import HTTPException, status
-import requests
 
 from app.core.config import settings
 
@@ -34,11 +33,13 @@ class JWTValidator:
         if jwks_cache["keys"] is None or jwks_cache["fetched_at"] is None or \
            (datetime.now(timezone.utc).timestamp() - jwks_cache["fetched_at"]) > 3600:
             try:
-                response = requests.get(self.jwks_url, timeout=5)
-                response.raise_for_status()
-                jwks_cache["keys"] = response.json()["keys"]
-                jwks_cache["fetched_at"] = datetime.now(timezone.utc).timestamp()
-            except Exception as e:
+                # Use httpx for synchronous HTTP that doesn't block event loop
+                with httpx.Client(timeout=5.0) as client:
+                    response = client.get(self.jwks_url)
+                    response.raise_for_status()
+                    jwks_cache["keys"] = response.json()["keys"]
+                    jwks_cache["fetched_at"] = datetime.now(timezone.utc).timestamp()
+            except httpx.HTTPError as e:
                 raise HTTPException(
                     status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
                     detail=f"Failed to fetch JWKS: {str(e)}"

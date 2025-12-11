@@ -4,7 +4,6 @@ from uuid import uuid4
 
 from app.core.utils import create_error_response, map_role_to_scopes
 from app.core.jwt import get_jwt_validator
-from typing import Sequence
 
 def get_request_id(request: Request) -> str:
     """
@@ -84,8 +83,8 @@ class JWTMiddleware(BaseHTTPMiddleware):
                 role = payload.get("role", "")
                 payload["scopes"] = map_role_to_scopes(role)
             
-            # Validate scopes is a list
-            if not isinstance(payload.get("scopes"), Sequence):
+            # Validate scopes is a list (not str, which is also a Sequence)
+            if not isinstance(payload.get("scopes"), list):
                 error_response = create_error_response(
                     status_code=status.HTTP_401_UNAUTHORIZED,
                     code="INVALID_SCOPES_CLAIM",

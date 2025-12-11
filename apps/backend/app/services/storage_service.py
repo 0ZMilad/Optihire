@@ -1,8 +1,13 @@
+import logging
 from functools import lru_cache
-from supabase import create_client, Client
-from app.core.config import settings
 
 from fastapi import HTTPException, status
+from supabase import create_client, Client
+
+from app.core.config import settings
+
+logger = logging.getLogger(__name__)
+
 
 @lru_cache()
 def _get_supabase_client() -> Client:
@@ -38,10 +43,7 @@ def upload_file(file_data: bytes, destination_path: str, content_type: str) -> s
         return public_url
 
     except Exception as e:
-        # Log the actual error here if you have a logger
-        print(f"Upload failed: {str(e)}")
-        
-        # Raise a FastAPI error so the frontend gets a 500 instead of a crash
+        logger.error("Upload failed to bucket '%s': %s", bucket, str(e))
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, 
             detail="Failed to upload file to storage"
@@ -72,7 +74,5 @@ def delete_file(path: str) -> bool:
         return True
         
     except Exception as e:
-        print(f"Deletion failed: {str(e)}")
-        # We generally return False or log the error rather than crashing
-        # because failing to delete a file is rarely a critical app-breaking error.
+        logger.warning("File deletion failed for path '%s': %s", path, str(e))
         return False

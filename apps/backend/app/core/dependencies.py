@@ -2,14 +2,9 @@ from typing import Optional
 from uuid import UUID
 
 from fastapi import Depends, HTTPException, status, Request
-from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
-from typing import List, Set
 
-from app.core.jwt import get_jwt_validator
 
-security = HTTPBearer()
-
-def require_scopes(required_scopes: List[str]):
+def require_scopes(required_scopes: list[str]):
     """Factory that creates a scope-checking dependency"""
     
     async def check_scopes(request: Request) -> None:

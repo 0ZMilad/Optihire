@@ -19,14 +19,13 @@ ruff
 # Authentication & Security
 pyjwt[crypto]
 cachetools
-# python-jose[cryptography]
-# passlib[bcrypt]
+httpx
 python-multipart
 
 # Testing
 pytest
 pytest-asyncio
-httpx
+cryptography
 
 # File Processing
 # PyPDF2

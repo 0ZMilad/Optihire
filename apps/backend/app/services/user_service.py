@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import datetime, timezone
 from uuid import UUID
 
 from fastapi import HTTPException
@@ -53,7 +53,7 @@ def update_user(db: Session, user_id: UUID, user_data: UserUpdate) -> User | Non
     for key, value in update_data.items():
         setattr(user, key, value)
 
-    user.updated_at = datetime.utcnow()
+    user.updated_at = datetime.now(timezone.utc)
 
     try:
         db.add(user)
@@ -75,7 +75,7 @@ def delete_user(db: Session, user_id: UUID) -> bool:
     if not user:
         return False
 
-    user.deleted_at = datetime.utcnow()
+    user.deleted_at = datetime.now(timezone.utc)
     user.is_active = False
 
     db.add(user)

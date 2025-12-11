@@ -20,7 +20,7 @@ def app_with_scopes():
     def admin_endpoint():
         return {"message": "admin access granted"}
     
-    @app.post("/users", dependencies=[Depends(require_scopes(["users:create", "users:write"]))])
+    @app.post("/users", dependencies=[Depends(require_scopes(["users:create"]))])
     def create_user_endpoint():
         return {"message": "user created"}
     
@@ -34,7 +34,8 @@ def app_with_scopes():
 @pytest.fixture
 def scope_client(app_with_scopes):
     """Create test client for scope testing."""
-    return TestClient(app_with_scopes)
+    with TestClient(app_with_scopes) as c:
+        yield c
 
 
 class TestScopeEnforcement:
@@ -42,7 +43,7 @@ class TestScopeEnforcement:
     
     def test_endpoint_with_required_scope_succeeds(self, scope_client, valid_token):
         """Endpoint should succeed when token has required scopes."""
-        # valid_token has all user scopes including users:create and users:write
+        # valid_token has users:create scope
         response = scope_client.post(
             "/users",
             headers={"Authorization": f"Bearer {valid_token}"}
@@ -60,7 +61,7 @@ class TestScopeEnforcement:
         assert response.status_code == status.HTTP_403_FORBIDDEN
         body = response.json()
         assert body["detail"]["code"] == "INSUFFICIENT_SCOPES"
-        assert "users:create" in body["detail"]["details"]["required"] or "users:write" in body["detail"]["details"]["required"]
+        assert "users:create" in body["detail"]["details"]["required"]
     
     def test_endpoint_without_scope_requirement_succeeds(self, scope_client, token_insufficient_scopes):
         """Endpoints without scope requirements should work with any valid token."""

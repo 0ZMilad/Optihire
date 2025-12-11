@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import datetime, timezone
 
 from fastapi import APIRouter, Depends
 from sqlalchemy import text
@@ -22,12 +22,12 @@ def check_system_health(db: Session = Depends(get_db)):
             "status": "healthy",
             "service": "Optihire Backend",
             "database": "connected",
-            "timestamp": datetime.utcnow().isoformat(),
+            "timestamp": datetime.now(timezone.utc).isoformat(),
         }
     except Exception as e:
         return {
             "status": "unhealthy",
             "service": "Optihire Backend",
             "database": f"disconnected: {str(e)}",
-            "timestamp": datetime.utcnow().isoformat(),
+            "timestamp": datetime.now(timezone.utc).isoformat(),
         }
