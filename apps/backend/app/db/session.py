@@ -12,7 +12,16 @@ engine = create_engine(
 )
 
 
+def SessionLocal():
+    """
+    Create a new database session.
+    Used for background tasks and non-request contexts.
+    """
+    return Session(engine)
+
+
 def get_db():
     """Dependency for database sessions"""
     with Session(engine) as session:
         yield session
+

@@ -8,8 +8,8 @@ psycopg2-binary
 alembic
 
 # Supabase
+# automatically installs compatible versions of postgrest-py and httpx
 supabase>=2.0.0
-postgrest-py>=0.10.0
 
 # Configuration
 pydantic-settings
@@ -19,18 +19,17 @@ ruff
 # Authentication & Security
 pyjwt[crypto]
 cachetools
-httpx
 python-multipart
+# httpx is removed here because supabase installs it automatically
 
 # Testing
 pytest
 pytest-asyncio
 cryptography
 
-# File Processing
-# PyPDF2
-# python-docx
-# pypdf
+# File Processing - Resume Parsing
+pdfminer.six>=20231228
+python-docx>=1.1.0
 
 # AI/LLM Integration
 # openai

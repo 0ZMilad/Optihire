@@ -1,15 +1,126 @@
 """
 Resume parsing and background processing service.
+
+This module handles:
+- Downloading resume files from Supabase storage
+- Parsing PDF and DOCX files to extract text
+- Extracting structured data (contact info, experience, education, skills)
+- Background processing with status updates
 """
+import io
 import logging
+import re
 from uuid import UUID
 from datetime import datetime
-from sqlmodel import Session, select
+from functools import lru_cache
+from typing import Any
 
+from docx import Document
+from docx.opc.exceptions import PackageNotFoundError
+from pdfminer.high_level import extract_text as extract_pdf_text
+from pdfminer.pdfparser import PDFSyntaxError
+from pdfminer.pdfdocument import PDFEncryptionError
+from pdfminer.pdfpage import PDFTextExtractionNotAllowed
+from sqlmodel import Session, select
+from supabase import create_client, Client
+
+from app.core.config import settings
 from app.db.session import SessionLocal
 from app.models.resume_model import Resume
 
 logger = logging.getLogger(__name__)
+
+# =============================================================================
+# CONSTANTS
+# =============================================================================
+
+# Minimum character threshold for scanned PDF detection (Task 4555)
+MIN_TEXT_LENGTH_THRESHOLD = 50
+
+# Supported file extensions
+SUPPORTED_EXTENSIONS = {".pdf", ".docx"}
+
+# Regex patterns for structured data extraction
+PATTERNS = {
+    # Email pattern
+    "email": re.compile(
+        r"\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,}\b",
+        re.IGNORECASE
+    ),
+    # Phone patterns (international and US formats)
+    "phone": re.compile(
+        r"(?:\+?1[-.\s]?)?"  # Optional country code
+        r"(?:\(?\d{3}\)?[-.\s]?)"  # Area code
+        r"\d{3}[-.\s]?\d{4}"  # Main number
+        r"|\+\d{1,3}[-.\s]?\d{1,14}",  # International format
+        re.IGNORECASE
+    ),
+    # LinkedIn URL
+    "linkedin": re.compile(
+        r"(?:https?://)?(?:www\.)?linkedin\.com/in/[\w-]+/?",
+        re.IGNORECASE
+    ),
+    # GitHub URL
+    "github": re.compile(
+        r"(?:https?://)?(?:www\.)?github\.com/[\w-]+/?",
+        re.IGNORECASE
+    ),
+    # Portfolio/website URL
+    "website": re.compile(
+        r"(?:https?://)?(?:www\.)?[\w-]+\.(?:com|io|dev|me|org|net)(?:/[\w-]*)*",
+        re.IGNORECASE
+    ),
+}
+
+# Section header patterns for resume sectioning
+# These patterns must match section headers at line boundaries, not words in prose
+SECTION_HEADERS = {
+    "experience": re.compile(
+        r"^\s*(?:work\s+)?experience(?:\s+history)?(?:\s*:|\s*$)|^\s*employment(?:\s+history)?(?:\s*:|\s*$)|^\s*professional\s+(?:experience|background)(?:\s*:|\s*$)|^\s*career\s+history(?:\s*:|\s*$)",
+        re.IGNORECASE | re.MULTILINE
+    ),
+    "education": re.compile(
+        r"^\s*education(?:al\s+background)?(?:\s*:|\s*$)|^\s*academic(?:\s+background)?(?:\s*:|\s*$)|^\s*qualifications(?:\s*:|\s*$)|^\s*degrees?(?:\s*:|\s*$)",
+        re.IGNORECASE | re.MULTILINE
+    ),
+    "skills": re.compile(
+        r"^\s*(?:technical\s+)?skills(?:\s*:|\s*$)|^\s*competenc(?:ies|e)(?:\s*:|\s*$)|^\s*expertise(?:\s*:|\s*$)|^\s*technologies(?:\s*:|\s*$)|^\s*proficiencies(?:\s*:|\s*$)",
+        re.IGNORECASE | re.MULTILINE
+    ),
+    "certifications": re.compile(
+        r"^\s*certifications?(?:\s*:|\s*$)|^\s*licenses?(?:\s*:|\s*$)|^\s*credentials?(?:\s*:|\s*$)|^\s*professional\s+development(?:\s*:|\s*$)",
+        re.IGNORECASE | re.MULTILINE
+    ),
+    "projects": re.compile(
+        r"^\s*projects?(?:\s*:|\s*$)|^\s*portfolio(?:\s*:|\s*$)|^\s*personal\s+projects?(?:\s*:|\s*$)|^\s*side\s+projects?(?:\s*:|\s*$)",
+        re.IGNORECASE | re.MULTILINE
+    ),
+    "summary": re.compile(
+        r"^\s*(?:professional\s+)?summary(?:\s*:|\s*$)|^\s*profile(?:\s*:|\s*$)|^\s*objective(?:\s*:|\s*$)|^\s*about(?:\s+me)?(?:\s*:|\s*$)|^\s*overview(?:\s*:|\s*$)",
+        re.IGNORECASE | re.MULTILINE
+    ),
+}
+
+
+# =============================================================================
+# SUPABASE CLIENT
+# =============================================================================
+
+@lru_cache()
+def _get_supabase_client() -> Client:
+    """
+    Returns a cached Supabase client for storage operations.
+    Uses Service Role Key to bypass RLS.
+    """
+    return create_client(
+        supabase_url=str(settings.SUPABASE_URL),
+        supabase_key=str(settings.SUPABASE_SERVICE_ROLE_KEY or settings.SUPABASE_KEY),
+    )
+
+
+# =============================================================================
+# DATABASE OPERATIONS
+# =============================================================================
 
 
 def update_resume_status(
@@ -58,30 +169,642 @@ def update_resume_status(
             db.close()
 
 
+def update_resume_with_parsed_data(
+    resume: Resume,
+    parsed_data: dict[str, Any],
+    db: Session
+) -> None:
+    """
+    Update resume record with extracted/parsed data.
+    
+    Args:
+        resume: The Resume model instance to update
+        parsed_data: Dictionary containing extracted resume information
+        db: Database session
+    """
+    # Update contact information
+    if parsed_data.get("full_name"):
+        resume.full_name = parsed_data["full_name"]
+    if parsed_data.get("email"):
+        resume.email = parsed_data["email"]
+    if parsed_data.get("phone"):
+        resume.phone = parsed_data["phone"]
+    if parsed_data.get("location"):
+        resume.location = parsed_data["location"]
+    if parsed_data.get("linkedin_url"):
+        resume.linkedin_url = parsed_data["linkedin_url"]
+    if parsed_data.get("github_url"):
+        resume.github_url = parsed_data["github_url"]
+    if parsed_data.get("portfolio_url"):
+        resume.portfolio_url = parsed_data["portfolio_url"]
+    if parsed_data.get("professional_summary"):
+        resume.professional_summary = parsed_data["professional_summary"]
+    
+    db.add(resume)
+    db.commit()
+    logger.info(f"Resume {resume.id} updated with parsed data")
+
+
+# =============================================================================
+# FILE DOWNLOAD
+# =============================================================================
+
+def download_resume_file(file_path: str) -> bytes:
+    """
+    Download resume file from Supabase storage into memory.
+    
+    Args:
+        file_path: The storage path of the file (e.g., "resumes/uuid.pdf")
+        
+    Returns:
+        bytes: The file content as bytes
+        
+    Raises:
+        ValueError: If file download fails or file not found
+    """
+    client = _get_supabase_client()
+    bucket = settings.SUPABASE_STORAGE_BUCKET
+    
+    try:
+        logger.info(f"Downloading file from storage: {file_path}")
+        
+        # Download file content as bytes
+        response = client.storage.from_(bucket).download(file_path)
+        
+        if response is None:
+            raise ValueError(f"ParseError: FileNotFound - {file_path}")
+        
+        logger.info(f"Successfully downloaded file: {file_path} ({len(response)} bytes)")
+        return response
+        
+    except Exception as e:
+        error_msg = str(e)
+        logger.error(f"Failed to download file {file_path}: {error_msg}")
+        
+        # Check for specific error types
+        if "not found" in error_msg.lower() or "404" in error_msg:
+            raise ValueError(f"ParseError: FileNotFound - {file_path}")
+        
+        raise ValueError(f"ParseError: DownloadFailed - {error_msg}")
+
+
+# =============================================================================
+# PDF PARSING
+# =============================================================================
+
+def parse_pdf_resume(file_content: bytes) -> str:
+    """
+    Parse PDF resume and extract text content using pdfminer.six.
+    
+    Args:
+        file_content: PDF file content as bytes
+        
+    Returns:
+        str: Extracted text from the PDF
+        
+    Raises:
+        ValueError: With specific error codes for different failure scenarios:
+            - ParseError: ScannedPdfNoText - PDF is scanned/image-based
+            - ParseError: EncryptedPdf - PDF is password protected
+            - ParseError: CorruptedPdf - PDF file is corrupted/malformed
+    """
+    try:
+        logger.info("Parsing PDF document...")
+        
+        # Create a file-like object from bytes
+        pdf_file = io.BytesIO(file_content)
+        
+        # Extract text using pdfminer
+        extracted_text = extract_pdf_text(pdf_file)
+        
+        # Clean up the extracted text
+        stripped_text = extracted_text.strip() if extracted_text else ""
+        
+        # Task 4555: Scanned PDF Detection
+        # If text is too short, it's likely a scanned/image-based PDF
+        if len(stripped_text) < MIN_TEXT_LENGTH_THRESHOLD:
+            logger.warning(
+                f"PDF appears to be scanned - extracted only {len(stripped_text)} characters"
+            )
+            raise ValueError("ParseError: ScannedPdfNoText")
+        
+        logger.info(f"Successfully extracted {len(stripped_text)} characters from PDF")
+        return stripped_text
+        
+    except PDFEncryptionError:
+        logger.error("PDF is encrypted/password protected")
+        raise ValueError("ParseError: EncryptedPdf")
+        
+    except PDFTextExtractionNotAllowed:
+        logger.error("PDF text extraction is not allowed (restricted)")
+        raise ValueError("ParseError: EncryptedPdf")
+        
+    except PDFSyntaxError as e:
+        logger.error(f"PDF syntax error (corrupted file): {str(e)}")
+        raise ValueError("ParseError: CorruptedPdf")
+        
+    except ValueError:
+        # Re-raise ValueError (our custom errors) without wrapping
+        raise
+        
+    except Exception as e:
+        logger.error(f"Unexpected error parsing PDF: {str(e)}")
+        # Check if it's related to encryption or corruption
+        error_msg = str(e).lower()
+        if "encrypt" in error_msg or "password" in error_msg:
+            raise ValueError("ParseError: EncryptedPdf")
+        if "corrupt" in error_msg or "invalid" in error_msg or "malformed" in error_msg:
+            raise ValueError("ParseError: CorruptedPdf")
+        raise ValueError(f"ParseError: CorruptedPdf - {str(e)}")
+
+
+# =============================================================================
+# DOCX PARSING
+# =============================================================================
+
+def parse_docx_resume(file_content: bytes) -> str:
+    """
+    Parse DOCX resume and extract text content using python-docx.
+    
+    Args:
+        file_content: DOCX file content as bytes
+        
+    Returns:
+        str: Extracted text from the DOCX file
+        
+    Raises:
+        ValueError: If the DOCX file is corrupted or invalid
+    """
+    try:
+        logger.info("Parsing DOCX document...")
+        
+        # Create a file-like object from bytes
+        docx_file = io.BytesIO(file_content)
+        
+        # Load the document
+        document = Document(docx_file)
+        
+        # Extract text from paragraphs
+        paragraphs = []
+        for paragraph in document.paragraphs:
+            text = paragraph.text.strip()
+            if text:
+                paragraphs.append(text)
+        
+        # Also extract text from tables
+        for table in document.tables:
+            for row in table.rows:
+                row_text = []
+                for cell in row.cells:
+                    cell_text = cell.text.strip()
+                    if cell_text:
+                        row_text.append(cell_text)
+                if row_text:
+                    paragraphs.append(" | ".join(row_text))
+        
+        extracted_text = "\n".join(paragraphs)
+        
+        if len(extracted_text.strip()) < MIN_TEXT_LENGTH_THRESHOLD:
+            logger.warning(
+                f"DOCX has minimal text content - only {len(extracted_text.strip())} characters"
+            )
+            # For DOCX, minimal text might just be an empty/template document
+            # Still allow it through but log the warning
+        
+        logger.info(f"Successfully extracted {len(extracted_text)} characters from DOCX")
+        return extracted_text
+        
+    except PackageNotFoundError:
+        logger.error("DOCX file is corrupted or not a valid DOCX")
+        raise ValueError("ParseError: CorruptedDocx")
+        
+    except Exception as e:
+        error_msg = str(e).lower()
+        logger.error(f"Error parsing DOCX: {str(e)}")
+        
+        if "corrupt" in error_msg or "invalid" in error_msg:
+            raise ValueError("ParseError: CorruptedDocx")
+        
+        raise ValueError(f"ParseError: CorruptedDocx - {str(e)}")
+
+
+# =============================================================================
+# STRUCTURED DATA EXTRACTION (Task 4268)
+# =============================================================================
+
+def _extract_contact_info(text: str) -> dict[str, str | None]:
+    """
+    Extract contact information from resume text.
+    
+    Returns:
+        dict with keys: email, phone, linkedin_url, github_url, portfolio_url
+    """
+    contact_info: dict[str, str | None] = {
+        "email": None,
+        "phone": None,
+        "linkedin_url": None,
+        "github_url": None,
+        "portfolio_url": None,
+    }
+    
+    # Extract email
+    email_match = PATTERNS["email"].search(text)
+    if email_match:
+        contact_info["email"] = email_match.group(0).lower()
+    
+    # Extract phone
+    phone_match = PATTERNS["phone"].search(text)
+    if phone_match:
+        # Clean up phone number
+        phone = re.sub(r"[^\d+]", "", phone_match.group(0))
+        contact_info["phone"] = phone
+    
+    # Extract LinkedIn
+    linkedin_match = PATTERNS["linkedin"].search(text)
+    if linkedin_match:
+        url = linkedin_match.group(0)
+        if not url.startswith("http"):
+            url = "https://" + url
+        contact_info["linkedin_url"] = url
+    
+    # Extract GitHub
+    github_match = PATTERNS["github"].search(text)
+    if github_match:
+        url = github_match.group(0)
+        if not url.startswith("http"):
+            url = "https://" + url
+        contact_info["github_url"] = url
+    
+    return contact_info
+
+
+def _extract_name(text: str) -> str | None:
+    """
+    Attempt to extract the candidate's name from the resume.
+    
+    Heuristic: The name is usually in the first few lines, 
+    often the first non-empty line that looks like a name.
+    """
+    lines = text.strip().split("\n")
+    
+    for line in lines[:10]:  # Check first 10 lines
+        line = line.strip()
+        
+        # Skip empty lines
+        if not line:
+            continue
+        
+        # Skip lines that look like headers, emails, phones, URLs
+        if "@" in line or "http" in line.lower():
+            continue
+        if re.match(r"^[\d\s\-\(\)\+]+$", line):  # Phone numbers
+            continue
+        if len(line) > 50:  # Too long to be a name
+            continue
+        if any(keyword in line.lower() for keyword in [
+            "resume", "curriculum", "cv", "objective", "summary", "experience"
+        ]):
+            continue
+        
+        # Check if it looks like a name (2-4 words, mostly letters)
+        words = line.split()
+        if 1 <= len(words) <= 4:
+            # Check if words look like name components
+            if all(re.match(r"^[A-Za-z\.\-\']+$", word) for word in words):
+                return line
+    
+    return None
+
+
+def _extract_section_content(text: str, section_name: str) -> str:
+    """
+    Extract content for a specific section from resume text.
+    
+    Args:
+        text: Full resume text
+        section_name: Name of the section to extract
+        
+    Returns:
+        The content of the section (may be empty string)
+    """
+    if section_name not in SECTION_HEADERS:
+        return ""
+    
+    pattern = SECTION_HEADERS[section_name]
+    
+    # Find where this section starts
+    match = pattern.search(text)
+    if not match:
+        return ""
+    
+    section_start = match.end()
+    
+    # Find where the next section starts
+    next_section_start = len(text)
+    for other_section, other_pattern in SECTION_HEADERS.items():
+        if other_section == section_name:
+            continue
+        other_match = other_pattern.search(text[section_start:])
+        if other_match:
+            potential_end = section_start + other_match.start()
+            if potential_end < next_section_start:
+                next_section_start = potential_end
+    
+    section_content = text[section_start:next_section_start].strip()
+    return section_content
+
+
+def _parse_skills_section(skills_text: str) -> list[str]:
+    """
+    Parse skills section and extract individual skills.
+    """
+    if not skills_text:
+        return []
+    
+    skills = []
+    
+    # Split by common delimiters
+    # First, try splitting by newlines
+    lines = skills_text.split("\n")
+    
+    for line in lines:
+        line = line.strip()
+        if not line:
+            continue
+        
+        # Remove category labels (e.g., "Languages:", "Frontend:", etc.)
+        # Look for pattern "Word(s): content" and keep only content
+        colon_match = re.match(r"^([A-Za-z\s]+):\s*(.+)$", line)
+        if colon_match:
+            # Take only the part after the colon
+            line = colon_match.group(2)
+        
+        # Split by common separators: comma, semicolon, pipe, bullet points
+        parts = re.split(r"[,;|•·▪◦‣⁃]\s*", line)
+        
+        for part in parts:
+            skill = part.strip().strip("-•·").strip()
+            # Filter out empty strings and very long "skills" (likely sentences)
+            if skill and len(skill) < 50 and len(skill) > 1:
+                skills.append(skill)
+    
+    # Remove duplicates while preserving order
+    seen = set()
+    unique_skills = []
+    for skill in skills:
+        skill_lower = skill.lower()
+        if skill_lower not in seen:
+            seen.add(skill_lower)
+            unique_skills.append(skill)
+    
+    return unique_skills[:50]  # Limit to 50 skills
+
+
+def _parse_experience_section(experience_text: str) -> list[dict[str, Any]]:
+    """
+    Parse experience section into structured entries.
+    
+    Returns a list of experience dictionaries with:
+    - company_name, job_title, description (raw text for now)
+    """
+    if not experience_text:
+        return []
+    
+    experiences = []
+    
+    # Split by common patterns that indicate new job entries
+    # Look for patterns like: Company Name followed by date range
+    date_pattern = re.compile(
+        r"(?:Jan(?:uary)?|Feb(?:ruary)?|Mar(?:ch)?|Apr(?:il)?|May|Jun(?:e)?|"
+        r"Jul(?:y)?|Aug(?:ust)?|Sep(?:tember)?|Oct(?:ober)?|Nov(?:ember)?|Dec(?:ember)?)"
+        r"[\s,\.]*\d{2,4}\s*[-–—to]+\s*"
+        r"(?:Jan(?:uary)?|Feb(?:ruary)?|Mar(?:ch)?|Apr(?:il)?|May|Jun(?:e)?|"
+        r"Jul(?:y)?|Aug(?:ust)?|Sep(?:tember)?|Oct(?:ober)?|Nov(?:ember)?|Dec(?:ember)?|Present|Current)"
+        r"[\s,\.]*\d{0,4}",
+        re.IGNORECASE
+    )
+    
+    # For now, store raw text chunks as experience entries
+    # A more sophisticated parser would use NLP/ML
+    paragraphs = experience_text.split("\n\n")
+    
+    for para in paragraphs:
+        para = para.strip()
+        if len(para) > 20:  # Minimum content threshold
+            experiences.append({
+                "raw_text": para,
+                "company_name": None,  # Would need NER to extract
+                "job_title": None,     # Would need NER to extract
+            })
+    
+    return experiences[:20]  # Limit to 20 experiences
+
+
+def _parse_education_section(education_text: str) -> list[dict[str, Any]]:
+    """
+    Parse education section into structured entries.
+    """
+    if not education_text:
+        return []
+    
+    education = []
+    
+    # Common degree patterns
+    degree_pattern = re.compile(
+        r"(?:Bachelor|Master|PhD|Ph\.D|Doctorate|Associate|B\.S\.|B\.A\.|M\.S\.|M\.A\.|MBA|"
+        r"B\.Sc|M\.Sc|BBA|BS|BA|MS|MA)\.?",
+        re.IGNORECASE
+    )
+    
+    paragraphs = education_text.split("\n\n")
+    
+    for para in paragraphs:
+        para = para.strip()
+        if len(para) > 10:
+            entry = {
+                "raw_text": para,
+                "institution_name": None,
+                "degree_type": None,
+                "field_of_study": None,
+            }
+            
+            # Try to extract degree
+            degree_match = degree_pattern.search(para)
+            if degree_match:
+                entry["degree_type"] = degree_match.group(0)
+            
+            education.append(entry)
+    
+    return education[:10]  # Limit to 10 education entries
+
+
+def extract_structured_data(raw_text: str, file_type: str = "") -> dict[str, Any]:
+    """
+    Extract structured information from raw resume text using regex-based parsing.
+    
+    This implements Task 4268: Basic sectioning for Education, Experience, Skills.
+    
+    Args:
+        raw_text: The raw text extracted from the resume file
+        file_type: The file extension (e.g., ".pdf", ".docx") - for logging
+        
+    Returns:
+        dict: Structured resume data containing:
+            - full_name: Candidate's name
+            - email: Email address
+            - phone: Phone number
+            - linkedin_url: LinkedIn profile URL
+            - github_url: GitHub profile URL  
+            - portfolio_url: Portfolio/website URL
+            - professional_summary: Summary/objective section
+            - skills: List of skills
+            - experiences: List of work experience entries
+            - education: List of education entries
+            - raw_text: The original raw text for reference
+    """
+    logger.info(f"Extracting structured data from {file_type} resume text...")
+    
+    # Initialize result structure
+    result: dict[str, Any] = {
+        "full_name": None,
+        "email": None,
+        "phone": None,
+        "location": None,
+        "linkedin_url": None,
+        "github_url": None,
+        "portfolio_url": None,
+        "professional_summary": None,
+        "skills": [],
+        "experiences": [],
+        "education": [],
+        "certifications": [],
+        "projects": [],
+        "raw_text": raw_text,
+    }
+    
+    if not raw_text or not raw_text.strip():
+        logger.warning("Empty text provided for extraction")
+        return result
+    
+    # Extract contact information
+    contact_info = _extract_contact_info(raw_text)
+    result.update(contact_info)
+    
+    # Extract name
+    result["full_name"] = _extract_name(raw_text)
+    
+    # Extract summary/objective section
+    summary_content = _extract_section_content(raw_text, "summary")
+    if summary_content:
+        # Limit summary length
+        result["professional_summary"] = summary_content[:2000]
+    
+    # Extract skills
+    skills_content = _extract_section_content(raw_text, "skills")
+    result["skills"] = _parse_skills_section(skills_content)
+    
+    # Extract experience
+    experience_content = _extract_section_content(raw_text, "experience")
+    result["experiences"] = _parse_experience_section(experience_content)
+    
+    # Extract education
+    education_content = _extract_section_content(raw_text, "education")
+    result["education"] = _parse_education_section(education_content)
+    
+    # Extract certifications (raw for now)
+    cert_content = _extract_section_content(raw_text, "certifications")
+    if cert_content:
+        result["certifications"] = [{"raw_text": cert_content}]
+    
+    # Extract projects (raw for now)
+    projects_content = _extract_section_content(raw_text, "projects")
+    if projects_content:
+        result["projects"] = [{"raw_text": projects_content}]
+    
+    logger.info(
+        f"Extraction complete: name={result['full_name']}, "
+        f"email={result['email']}, skills={len(result['skills'])}, "
+        f"experiences={len(result['experiences'])}, education={len(result['education'])}"
+    )
+    
+    return result
+
+
+# =============================================================================
+# FILE TYPE DETECTION & ROUTING
+# =============================================================================
+
+def _get_file_extension(file_path: str) -> str:
+    """Extract and validate file extension from path."""
+    if "." not in file_path:
+        return ""
+    return "." + file_path.rsplit(".", 1)[-1].lower()
+
+
+def parse_resume_content(file_content: bytes, file_path: str) -> dict[str, Any]:
+    """
+    Main entry point for parsing resume content.
+    
+    Detects file type and routes to appropriate parser.
+    
+    Args:
+        file_content: The file content as bytes
+        file_path: Original file path (used to determine file type)
+        
+    Returns:
+        dict: Structured resume data
+        
+    Raises:
+        ValueError: With specific error codes for parsing failures
+    """
+    file_ext = _get_file_extension(file_path)
+    
+    logger.info(f"Parsing resume file: {file_path} (type: {file_ext})")
+    
+    # Validate file type
+    if file_ext not in SUPPORTED_EXTENSIONS:
+        logger.error(f"Unsupported file type: {file_ext}")
+        raise ValueError("ParseError: UnsupportedFileType")
+    
+    # Route to appropriate parser
+    if file_ext == ".pdf":
+        raw_text = parse_pdf_resume(file_content)
+    elif file_ext == ".docx":
+        raw_text = parse_docx_resume(file_content)
+    else:
+        raise ValueError("ParseError: UnsupportedFileType")
+    
+    # Extract structured data
+    structured_data = extract_structured_data(raw_text, file_ext)
+    
+    return structured_data
+
+
+# =============================================================================
+# BACKGROUND TASK
+# =============================================================================
+
+
 def parse_resume_background(resume_id: str, file_path: str) -> None:
     """
     Background task to parse resume file and extract information.
     
     This function runs asynchronously after file upload completes.
-    It updates the resume status throughout the process.
+    It downloads the file, parses content, extracts structured data,
+    and updates the resume record with the extracted information.
     
     Args:
         resume_id: String UUID of the resume to parse
         file_path: Path to the uploaded resume file in storage
     
-    Pseudo Logic:
-    1. Update status to 'Processing'
-    2. Download file from storage
-    3. Parse file content (PDF/DOCX)
-    4. Extract structured information:
-       - Contact info (name, email, phone, location, links)
-       - Work experience
-       - Education
-       - Skills
-       - Certifications
-       - Projects
-    5. Update resume record with extracted data
-    6. Update status to 'Completed' on success or 'Failed' on error
+    Error Handling:
+        - ParseError: ScannedPdfNoText - PDF is image-based/scanned
+        - ParseError: EncryptedPdf - PDF is password protected
+        - ParseError: CorruptedPdf - PDF file is corrupted
+        - ParseError: CorruptedDocx - DOCX file is corrupted
+        - ParseError: UnsupportedFileType - Unknown file extension
+        - ParseError: FileNotFound - File not in storage
+        - ParseError: DownloadFailed - Storage download error
     """
     db = SessionLocal()
     resume_uuid = UUID(resume_id)
@@ -96,109 +819,42 @@ def parse_resume_background(resume_id: str, file_path: str) -> None:
         resume = db.exec(statement).first()
         
         if not resume:
-            raise ValueError(f"Resume {resume_id} not found")
+            raise ValueError(f"ParseError: ResumeNotFound - {resume_id}")
         
-        # Step 3: Download file from storage (if needed)
-        # TODO: Implement file download from Supabase storage
-        # from app.services.storage_service import download_file
-        # file_content = download_file(file_path)
+        # Step 3: Download file from Supabase storage
+        logger.info(f"Downloading file: {file_path}")
+        file_content = download_resume_file(file_path)
         
-        # Step 4: Parse resume content
-        # TODO: Implement resume parsing logic
-        # This could use libraries like:
-        # - PyPDF2 or pdfplumber for PDF parsing
-        # - python-docx for DOCX parsing
-        # - OpenAI API for intelligent extraction
-        # parsed_data = parse_resume_content(file_content, resume.file_path)
+        # Step 4: Parse resume content and extract structured data
+        # This handles file type detection, parsing, and extraction
+        parsed_data = parse_resume_content(file_content, file_path)
         
-        # Step 5: Extract and structure information
-        # TODO: Extract structured data from parsed content
-        # Example structure:
-        # parsed_data = {
-        #     "full_name": "John Doe",
-        #     "email": "john@example.com",
-        #     "phone": "+1234567890",
-        #     "location": "New York, NY",
-        #     "linkedin_url": "https://linkedin.com/in/johndoe",
-        #     "github_url": "https://github.com/johndoe",
-        #     "professional_summary": "Experienced software engineer...",
-        #     "experiences": [...],
-        #     "education": [...],
-        #     "skills": [...],
-        #     "certifications": [...],
-        #     "projects": [...]
-        # }
+        # Step 5: Update resume with parsed data
+        update_resume_with_parsed_data(resume, parsed_data, db)
         
-        # Step 6: Update resume with parsed data
-        # TODO: Update resume fields with extracted information
-        # resume.full_name = parsed_data.get("full_name")
-        # resume.email = parsed_data.get("email")
-        # resume.phone = parsed_data.get("phone")
-        # resume.location = parsed_data.get("location")
-        # resume.linkedin_url = parsed_data.get("linkedin_url")
-        # resume.github_url = parsed_data.get("github_url")
-        # resume.professional_summary = parsed_data.get("professional_summary")
+        # Step 6: Log extraction summary
+        logger.info(
+            f"Resume {resume_id} parsed successfully: "
+            f"name={parsed_data.get('full_name')}, "
+            f"email={parsed_data.get('email')}, "
+            f"skills_count={len(parsed_data.get('skills', []))}"
+        )
         
-        # Step 7: Save related entities (experiences, education, skills, etc.)
-        # TODO: Create related records in junction tables
-        # for exp in parsed_data.get("experiences", []):
-        #     experience = ResumeExperience(resume_id=resume_uuid, **exp)
-        #     db.add(experience)
-        
-        # For now, just simulate successful processing
-        logger.info(f"Resume {resume_id} parsed successfully (placeholder)")
-        
-        # Step 8: Mark as Completed
+        # Step 7: Mark as Completed
         update_resume_status(resume_uuid, "Completed", db=db)
         
+    except ValueError as e:
+        # Handle specific parsing errors with frontend-friendly messages
+        error_msg = str(e)
+        logger.error(f"Parsing error for resume {resume_id}: {error_msg}")
+        update_resume_status(resume_uuid, "Failed", error_message=error_msg, db=db)
+        
     except Exception as e:
-        # Step 9: Handle errors and mark as Failed
-        error_msg = f"Failed to parse resume: {str(e)}"
-        logger.error(f"Error parsing resume {resume_id}: {error_msg}")
+        # Handle unexpected errors
+        error_msg = f"ParseError: UnexpectedError - {str(e)}"
+        logger.error(f"Unexpected error parsing resume {resume_id}: {error_msg}")
         update_resume_status(resume_uuid, "Failed", error_message=error_msg, db=db)
         
     finally:
         db.close()
 
-
-# Additional helper functions for future implementation
-
-def download_resume_file(file_path: str) -> bytes:
-    """
-    Download resume file from Supabase storage.
-    
-    TODO: Implement this function to retrieve file content
-    """
-    raise NotImplementedError("File download not yet implemented")
-
-
-def parse_pdf_resume(file_content: bytes) -> dict:
-    """
-    Parse PDF resume and extract text content.
-    
-    TODO: Implement PDF parsing using PyPDF2, pdfplumber, or similar
-    """
-    raise NotImplementedError("PDF parsing not yet implemented")
-
-
-def parse_docx_resume(file_content: bytes) -> dict:
-    """
-    Parse DOCX resume and extract text content.
-    
-    TODO: Implement DOCX parsing using python-docx
-    """
-    raise NotImplementedError("DOCX parsing not yet implemented")
-
-
-def extract_structured_data(raw_text: str, file_type: str) -> dict:
-    """
-    Extract structured information from raw resume text.
-    
-    This could use:
-    - Regular expressions for pattern matching
-    - NLP libraries like spaCy for entity extraction
-    - OpenAI API for intelligent extraction
-    
-    TODO: Implement intelligent data extraction
-    """
-    raise NotImplementedError("Structured data extraction not yet implemented")
