@@ -1,5 +1,5 @@
 import uuid
-from fastapi import APIRouter, Depends, File, UploadFile, HTTPException, status
+from fastapi import APIRouter, Depends, File, UploadFile, HTTPException, status, BackgroundTasks
 from sqlmodel import Session
 from uuid import UUID
 
@@ -8,6 +8,7 @@ from app.core.dependencies import get_current_user_id
 from app.db.session import get_db
 from app.models.resume_model import Resume
 from app.services.storage_service import upload_file, delete_file
+from app.services.resume_service import parse_resume_background
 
 router = APIRouter()
 
@@ -19,11 +20,13 @@ ALLOWED_MIME_TYPES = [
 @router.post("/upload", status_code=status.HTTP_201_CREATED)
 async def upload_resume(
     file: UploadFile = File(...),
+    background_tasks: BackgroundTasks = BackgroundTasks(),
     current_user_id: UUID = Depends(get_current_user_id),
     db: Session = Depends(get_db)
 ):
     """
     Uploads a resume file (PDF or DOCX) to Supabase storage and saves metadata to database.
+    Triggers background parsing task to extract resume information.
     Requires authentication.
     """
     
@@ -83,6 +86,7 @@ async def upload_resume(
             email=None,
             file_path=destination_path,
             file_url=public_url,
+            processing_status="Pending"  # Initial status
         )
         db.add(resume)
         db.commit()
@@ -99,12 +103,20 @@ async def upload_resume(
             detail="Failed to save resume metadata to database"
         )
 
-    # 7. Return Success Response
+    # 7. Trigger Background Parsing Task
+    background_tasks.add_task(
+        parse_resume_background,
+        resume_id=str(resume.id),
+        file_path=destination_path
+    )
+
+    # 8. Return Success Response
     return {
         "id": str(resume.id),
         "url": public_url,
         "filename": file.filename,
         "stored_name": unique_filename,
         "user_id": str(current_user_id),
-        "message": "Resume uploaded successfully"
+        "processing_status": "Pending",
+        "message": "Resume uploaded successfully. Processing in background."
     }

@@ -71,6 +71,8 @@ class Resume(SQLModel, table=True):
     github_url: str | None = Field(default=None, max_length=255)
     portfolio_url: str | None = Field(default=None, max_length=255)
     professional_summary: str | None = Field(default=None, sa_column=Column(Text))
+    processing_status: str = Field(default="Pending", max_length=20)
+    error_message: str | None = Field(default=None, sa_column=Column(Text))
     last_analyzed_at: datetime | None = Field(default=None)
     created_at: datetime = Field(
         default_factory=datetime.utcnow, sa_column_kwargs={"server_default": func.now()}
