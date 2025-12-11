@@ -81,6 +81,7 @@ class ResumeRead(BaseModel):
     github_url: str | None
     portfolio_url: str | None
     professional_summary: str | None
+    raw_text: str | None
     processing_status: str
     error_message: str | None
     last_analyzed_at: datetime | None

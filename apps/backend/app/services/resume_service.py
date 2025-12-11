@@ -203,6 +203,11 @@ def update_resume_with_parsed_data(
     if parsed_data.get("professional_summary"):
         resume.professional_summary = parsed_data["professional_summary"]
     
+    # Store raw text for future reprocessing
+    if parsed_data.get("raw_text"):
+        resume.raw_text = parsed_data["raw_text"]
+        logger.info(f"Stored {len(parsed_data['raw_text'])} characters of raw text for resume {resume.id}")
+    
     db.add(resume)
     db.commit()
     logger.info(f"Resume {resume.id} updated with parsed data")
