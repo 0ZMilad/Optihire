@@ -13,7 +13,7 @@ import re
 from uuid import UUID
 from datetime import datetime
 from functools import lru_cache
-from typing import Any
+from typing import Any, Optional
 
 from docx import Document
 from docx.opc.exceptions import PackageNotFoundError
@@ -27,8 +27,60 @@ from supabase import create_client, Client
 from app.core.config import settings
 from app.db.session import SessionLocal
 from app.models.resume_model import Resume
+from app.schemas.resume_schema import ResumeParseStatusResponse
 
 logger = logging.getLogger(__name__)
+
+# =============================================================================
+# STATUS MANAGEMENT
+# =============================================================================
+
+def get_parse_status(
+    resume_id: UUID, 
+    user_id: UUID, 
+    db: Session
+) -> Optional[ResumeParseStatusResponse]:
+    """
+    Retrieve the current parsing status of a resume.
+    
+    Args:
+        resume_id: UUID of the resume to check
+        user_id: UUID of the user (for authorization)
+        db: Database session
+        
+    Returns:
+        ResumeParseStatusResponse if resume found and user authorized, None otherwise
+    """
+    # Query the resume with ownership check
+    statement = select(Resume).where(
+        Resume.id == resume_id,
+        Resume.user_id == user_id
+    )
+    result = db.exec(statement)
+    resume = result.first()
+    
+    if not resume:
+        return None
+    
+    # Map status to user-friendly messages
+    status_messages = {
+        "Pending": "Resume is queued for parsing",
+        "Processing": "Parsing resume content...",
+        "Completed": "Resume parsed successfully",
+        "Failed": "Failed to parse resume"
+    }
+    
+    message = status_messages.get(resume.processing_status, "Unknown status")
+    
+    return ResumeParseStatusResponse(
+        id=resume.id,
+        status=resume.processing_status,
+        message=message,
+        created_at=resume.created_at,
+        updated_at=resume.updated_at,
+        error_details=resume.error_message if resume.processing_status == "Failed" else None
+    )
+
 
 # =============================================================================
 # CONSTANTS

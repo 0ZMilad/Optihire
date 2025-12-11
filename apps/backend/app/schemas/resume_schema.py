@@ -92,6 +92,19 @@ class ResumeRead(BaseModel):
     model_config = {"from_attributes": True}
 
 
+class ResumeParseStatusResponse(BaseModel):
+    """Response schema for resume parsing status."""
+
+    id: UUID
+    status: str
+    message: str
+    created_at: datetime
+    updated_at: datetime
+    error_details: str | None = None
+
+    model_config = {"from_attributes": True}
+
+
 # ===== EXPERIENCE =====
 
 

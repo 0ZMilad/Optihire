@@ -7,8 +7,9 @@ from app.core.config import settings
 from app.core.dependencies import get_current_user_id
 from app.db.session import get_db
 from app.models.resume_model import Resume
+from app.schemas.resume_schema import ResumeParseStatusResponse
 from app.services.storage_service import upload_file, delete_file
-from app.services.resume_service import parse_resume_background
+from app.services.resume_service import parse_resume_background, get_parse_status
 
 router = APIRouter()
 
@@ -120,3 +121,45 @@ async def upload_resume(
         "processing_status": "Pending",
         "message": "Resume uploaded successfully. Processing in background."
     }
+
+
+@router.get(
+    "/parse-status/{resume_id}",
+    response_model=ResumeParseStatusResponse,
+    status_code=status.HTTP_200_OK,
+    summary="Get resume parsing status"
+)
+async def get_resume_parse_status(
+    resume_id: UUID,
+    current_user_id: UUID = Depends(get_current_user_id),
+    db: Session = Depends(get_db)
+) -> ResumeParseStatusResponse:
+    """
+    Retrieve the current parsing status of a resume.
+    
+    This endpoint allows clients to poll the status of a resume parsing job.
+    
+    Args:
+        resume_id: UUID of the resume to check
+        current_user_id: Authenticated user's ID (from token)
+        db: Database session
+        
+    Returns:
+        ResumeParseStatusResponse with current status, message, and timestamps
+        
+    Raises:
+        404: Resume not found or user doesn't have access
+    """
+    status_result = get_parse_status(
+        resume_id=resume_id,
+        user_id=current_user_id,
+        db=db
+    )
+    
+    if not status_result:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Resume not found or access denied"
+        )
+    
+    return status_result
