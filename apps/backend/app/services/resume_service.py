@@ -37,6 +37,9 @@ logger = logging.getLogger(__name__)
 # Minimum character threshold for scanned PDF detection (Task 4555)
 MIN_TEXT_LENGTH_THRESHOLD = 50
 
+# Max file size
+MAX_FILE_SIZE_BYTES = 5 * 1024 * 1024
+
 # Supported file extensions
 SUPPORTED_EXTENSIONS = {".pdf", ".docx"}
 
@@ -220,7 +223,10 @@ def download_resume_file(file_path: str) -> bytes:
         bytes: The file content as bytes
         
     Raises:
-        ValueError: If file download fails or file not found
+        ValueError: With specific error codes:
+            - ParseError: FileNotFound - File not in storage
+            - ParseError: Oversize - File exceeds 5MB limit
+            - ParseError: DownloadFailed - Storage download error
     """
     client = _get_supabase_client()
     bucket = settings.SUPABASE_STORAGE_BUCKET
@@ -234,7 +240,16 @@ def download_resume_file(file_path: str) -> bytes:
         if response is None:
             raise ValueError(f"ParseError: FileNotFound - {file_path}")
         
-        logger.info(f"Successfully downloaded file: {file_path} ({len(response)} bytes)")
+        # Check file size (5MB limit)
+        file_size = len(response)
+        if file_size > MAX_FILE_SIZE_BYTES:
+            logger.error(
+                f"File {file_path} exceeds size limit: {file_size} bytes "
+                f"(max: {MAX_FILE_SIZE_BYTES} bytes)"
+            )
+            raise ValueError("ParseError: Oversize")
+        
+        logger.info(f"Successfully downloaded file: {file_path} ({file_size} bytes)")
         return response
         
     except Exception as e:
@@ -803,6 +818,7 @@ def parse_resume_background(resume_id: str, file_path: str) -> None:
         - ParseError: CorruptedPdf - PDF file is corrupted
         - ParseError: CorruptedDocx - DOCX file is corrupted
         - ParseError: UnsupportedFileType - Unknown file extension
+        - ParseError: Oversize - File exceeds 5MB limit
         - ParseError: FileNotFound - File not in storage
         - ParseError: DownloadFailed - Storage download error
     """
