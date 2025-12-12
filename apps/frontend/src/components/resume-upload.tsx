@@ -1,11 +1,8 @@
 "use client";
 
 import { useState, useRef, useCallback } from "react";
-import { CloudUpload, AlertCircle, FileText } from "lucide-react";
-import { Spinner } from "./ui/spinner";
+import { CloudUpload, AlertCircle } from "lucide-react";
 import { Card } from "./ui/card";
-
-import { uploadResume } from "@/middle-service/resumes";
 
 const MAX_FILE_SIZE_BYTES = 5 * 1024 * 1024; // 5 MB
 
@@ -41,70 +38,51 @@ const validateFile = (file: File): { valid: boolean; error: string | null } => {
 };
 
 interface ResumeUploadProps {
-  onUploadSuccess?: (data: any) => void;
-  onUploadError?: (error: string) => void;
+  onFileSelect: (file: File) => void; 
+  disabled?: boolean;                 
+  error?: string | null;              
   className?: string;
 }
 
 export function ResumeUpload({
-  onUploadSuccess,
-  onUploadError,
+  onFileSelect,
+  disabled = false,
+  error: propError, 
   className,
 }: ResumeUploadProps) {
   const [isDragOver, setIsDragOver] = useState(false);
-  const [isUploading, setIsUploading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [fileName, setFileName] = useState<string | null>(null);
-
+  // We keep a local error state for immediate validation feedback (e.g. file too big)
+  const [validationError, setValidationError] = useState<string | null>(null);
+  
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const processFile = useCallback(
-    async (file: File) => {
-      const validation = validateFile(file);
-      if (!validation.valid) {
-        setError(validation.error);
-        return;
-      }
+  // Derived state: Show either the server error (prop) or local validation error
+  const activeError = propError || validationError;
 
-      setError(null);
-      setFileName(file.name);
-      setIsUploading(true);
+  // Internal helper to handle file selection from Drop or Input
+  const handleFileSelection = useCallback((file: File) => {
+    // 1. Validate Locally
+    const validation = validateFile(file);
+    
+    if (!validation.valid) {
+      setValidationError(validation.error);
+      return;
+    }
 
-      try {
-        const data = await uploadResume(file);
-        
-        if (onUploadSuccess) {
-          onUploadSuccess(data);
-        }
+    // 2. If valid, clear local error and pass to parent
+    setValidationError(null);
+    onFileSelect(file);
+  }, [onFileSelect]);
 
-        setFileName(null); 
-        
-      } catch (err: any) {
-        console.error("Upload error:", err);
-        
-        const errorMessage =
-          err?.response?.data?.message || "Failed to upload resume. Please try again.";
-        
-        setError(errorMessage);
-        setFileName(null); 
-        
-        if (onUploadError) {
-          onUploadError(errorMessage);
-        }
-      } finally {
-        setIsUploading(false);
-      }
-    },
-    [onUploadSuccess, onUploadError]
-  );
+  // --- Handlers ---
 
   const handleDragOver = useCallback((e: React.DragEvent) => {
     e.preventDefault();
     e.stopPropagation();
-    if (!isDragOver) {
+    if (!disabled && !isDragOver) {
       setIsDragOver(true);
     }
-  }, [isDragOver]);
+  }, [isDragOver, disabled]);
 
   const handleDragLeave = useCallback((e: React.DragEvent) => {
     e.preventDefault();
@@ -118,84 +96,80 @@ export function ResumeUpload({
       e.stopPropagation();
       setIsDragOver(false);
 
-      if (isUploading) return;
+      if (disabled) return;
 
       if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
-        processFile(e.dataTransfer.files[0]);
+        handleFileSelection(e.dataTransfer.files[0]);
       }
     },
-    [isUploading, processFile]
+    [disabled, handleFileSelection]
   );
 
-  const handleFileSelect = useCallback(
+  const handleInputChange = useCallback(
     (e: React.ChangeEvent<HTMLInputElement>) => {
-      if (isUploading) return;
+      if (disabled) return;
 
       if (e.target.files && e.target.files.length > 0) {
-        processFile(e.target.files[0]);
+        handleFileSelection(e.target.files[0]);
       }
+      // Reset value to allow selecting the same file again if retry is needed
       e.target.value = "";
     },
-    [isUploading, processFile]
+    [disabled, handleFileSelection]
   );
 
   const handleKeyDown = useCallback(
     (e: React.KeyboardEvent) => {
       if (e.key === "Enter" || e.key === " ") {
         e.preventDefault();
-        if (!isUploading) {
+        if (!disabled) {
           fileInputRef.current?.click();
         }
       }
     },
-    [isUploading]
+    [disabled]
   );
 
   return (
     <Card
       role="button"
-      tabIndex={0}
+      tabIndex={disabled ? -1 : 0}
       aria-label="Upload resume file"
       onDragOver={handleDragOver}
       onDragLeave={handleDragLeave}
       onDrop={handleDrop}
-      onClick={() => !isUploading && fileInputRef.current?.click()}
+      onClick={() => !disabled && fileInputRef.current?.click()}
       onKeyDown={handleKeyDown}
       className={`
-        relative flex flex-col items-center justify-center p-8 text-center border-2 border-dashed rounded-lg transition-all cursor-pointer outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2
+        relative flex flex-col items-center justify-center p-8 text-center border-2 border-dashed rounded-lg transition-all outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2
         ${className}
         ${isDragOver 
           ? "border-primary bg-primary/5" 
           : "border-muted-foreground/25 hover:border-primary/50 hover:bg-muted/50"
         }
-        ${error ? "border-destructive bg-destructive/5" : ""}
-        ${isUploading ? "opacity-50 cursor-not-allowed" : ""}
+        ${activeError ? "border-destructive bg-destructive/5" : ""}
+        ${disabled ? "opacity-50 cursor-not-allowed grayscale" : "cursor-pointer"}
       `}
     >
       <input
         type="file"
         ref={fileInputRef}
-        onChange={handleFileSelect}
+        onChange={handleInputChange}
         className="hidden"
         accept=".pdf,.docx,application/pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+        disabled={disabled}
       />
 
-      {isUploading ? (
-        <div className="flex flex-col items-center space-y-3">
-          <Spinner className="w-8 h-8 text-primary" />
-          <div className="space-y-1">
-            <p className="text-sm font-medium">Uploading {fileName}...</p>
-            <p className="text-xs text-muted-foreground">Please wait</p>
-          </div>
-        </div>
-      ) : error ? (
+      {activeError ? (
         <div className="flex flex-col items-center space-y-3">
           <div className="p-3 rounded-full bg-destructive/10 text-destructive">
             <AlertCircle className="w-6 h-6" />
           </div>
           <div className="space-y-1">
-            <p className="text-sm font-medium text-destructive">{error}</p>
-            <p className="text-xs text-muted-foreground">Click to try again</p>
+            <p className="text-sm font-medium text-destructive">{activeError}</p>
+            <p className="text-xs text-muted-foreground">
+              {disabled ? "Please wait..." : "Click or drag to try again"}
+            </p>
           </div>
         </div>
       ) : (
