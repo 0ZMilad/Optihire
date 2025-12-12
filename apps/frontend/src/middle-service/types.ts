@@ -92,3 +92,59 @@ export interface ValidationError {
 export interface ApiValidationError {
   detail: ValidationError[];
 }
+
+// ============================================================================
+// Resume Parsing Types
+// ============================================================================
+
+export interface ResumeUploadResponse {
+  id: string;
+  url: string;
+  filename: string;
+  stored_name: string;
+  user_id: string;
+  processing_status: 'pending' | 'processing' | 'completed' | 'failed';
+  message?: string;
+}
+
+export interface ResumeParseStatusResponse {
+  id: string;
+  status: 'pending' | 'processing' | 'completed' | 'failed';
+  message?: string;
+  created_at: string;
+  updated_at: string;
+  error_details?: string | null;
+}
+
+export interface ResumeRead {
+  id: string;
+  user_id: string;
+  version_name: string;
+
+  // Parsed Contact Info & Links
+  full_name: string | null;
+  email: string | null;
+  phone: string | null;
+  location: string | null;
+  linkedin_url: string | null;
+  github_url: string | null;
+  portfolio_url: string | null;
+  
+  // Parsed Content
+  professional_summary: string | null;
+  raw_text: string | null;
+
+  // File Metadata
+  url: string;
+  filename: string;
+  stored_name: string;
+
+  // System Status
+  processing_status: 'pending' | 'processing' | 'completed' | 'failed';
+  message?: string;
+  error_details?: string | null;
+  
+  // Timestamps
+  created_at: string;
+  updated_at: string;
+}
