@@ -37,52 +37,64 @@ export const useResumePolling = (
     }
 
     setIsPolling(true);
-    let timerId: NodeJS.Timeout;
+    let timerId: NodeJS.Timeout | null = null;
+    let isCancelled = false; 
 
     const poll = async () => {
+      if (isCancelled) return; 
+
       try {
         attemptCount.current += 1;
 
         const data = await getResumeParseStatus(resumeId);
+        
+        if (isCancelled) return; 
         setStatusData(data);
 
         // CASE: Completed
-        if (data.status === "completed") {
+        if (data.status === "Completed") {
           setIsPolling(false);
-          if (onComplete) onComplete(resumeId);
+          if (onComplete && !isCancelled) onComplete(resumeId);
           return; 
         }
 
         // CASE: Failed
-        if (data.status === "failed") {
+        if (data.status === "Failed") {
           setIsPolling(false);
-          if (onError) onError(data.error_details || "Parsing failed");
+          if (onError && !isCancelled) onError(data.error_details || "Parsing failed");
           return;
         }
 
         // CASE: Timeout
         if (attemptCount.current >= maxAttempts) {
           setIsPolling(false);
-          if (onError) onError("Operation timed out");
+          if (onError && !isCancelled) onError("Operation timed out");
           return;
         }
 
         // CASE: Pending/Processing - Schedule next poll
-        timerId = setTimeout(poll, interval);
+        if (!isCancelled) {
+          timerId = setTimeout(poll, interval);
+        }
 
       } catch (error) {
-        setIsPolling(false);
-        if (onError) onError("Network error during polling");
+        if (!isCancelled) {
+          setIsPolling(false);
+          if (onError) onError("Network error during polling");
+        }
       }
     };
 
     // Start polling
     poll();
 
-    // Cleanup on unmount
-    return () => clearTimeout(timerId);
+    // Cleanup on unmount - prevent memory leaks
+    return () => {
+      isCancelled = true;
+      if (timerId) clearTimeout(timerId);
+    };
 
-  }, [resumeId, interval, maxAttempts]); 
+  }, [resumeId, interval, maxAttempts, onComplete, onError]); 
 
   return { statusData, isPolling };
 };

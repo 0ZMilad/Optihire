@@ -103,13 +103,13 @@ export interface ResumeUploadResponse {
   filename: string;
   stored_name: string;
   user_id: string;
-  processing_status: 'pending' | 'processing' | 'completed' | 'failed';
+  processing_status: 'Pending' | 'Processing' | 'Completed' | 'Failed';
   message?: string;
 }
 
 export interface ResumeParseStatusResponse {
   id: string;
-  status: 'pending' | 'processing' | 'completed' | 'failed';
+  status: 'Pending' | 'Processing' | 'Completed' | 'Failed';
   message?: string;
   created_at: string;
   updated_at: string;
@@ -140,7 +140,7 @@ export interface ResumeRead {
   stored_name: string;
 
   // System Status
-  processing_status: 'pending' | 'processing' | 'completed' | 'failed';
+  processing_status: 'Pending' | 'Processing' | 'Completed' | 'Failed';
   message?: string;
   error_details?: string | null;
   

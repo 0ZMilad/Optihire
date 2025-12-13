@@ -6,15 +6,34 @@ import { DashboardHeader } from "@/components/dashboard-header";
 import { Main } from "@/components/main";
 import { DashboardLayout } from "@/components/dashboard-layout";
 import { ResumeUpload } from "@/components/resume-upload";
+import { ResumeProcessing } from "@/components/resume-processing";
+import { ResumeReviewForm } from "@/components/resume-review-form";
+import { useResumeUpload } from "@/hooks/use-resume-upload";
+import { updateResume } from "@/middle-service/resumes";
+import { ResumeRead } from "@/middle-service/types";
+import { toast } from "sonner";
 
 export default function DashboardPage() {
-  const handleUploadSuccess = (data: any) => {
-    console.log("Upload successful:", data);
-    alert("Resume uploaded successfully!");
-  };
+  const {
+    appState,
+    parsedResumeData,
+    statusData,
+    error,
+    handleUpload,
+    resetUpload,
+  } = useResumeUpload();
 
-  const handleUploadError = (error: string) => {
-    console.error("Upload error:", error);
+  const handleSaveResume = async (editedData: Partial<ResumeRead>) => {
+    if (!parsedResumeData) return;
+
+    try {
+      await updateResume(parsedResumeData.id, editedData);
+      toast.success("Resume saved successfully!");
+      resetUpload();
+    } catch (err) {
+      console.error("Failed to save resume:", err);
+      toast.error("Failed to save resume. Please try again.");
+    }
   };
 
   return (
@@ -105,15 +124,40 @@ export default function DashboardPage() {
               </div>
             </Card>
 
-            <Card className="p-6">
-              <h3 className="text-lg font-semibold mb-4">Upload New Resume</h3>
-              <div className="min-h-[200px]">
-                <ResumeUpload
-                  onUploadSuccess={handleUploadSuccess}
-                  onUploadError={handleUploadError}
+            {appState === "IDLE" && (
+              <Card className="p-6">
+                <h3 className="text-lg font-semibold mb-4">
+                  Upload New Resume
+                </h3>
+                <p className="text-sm text-muted-foreground mb-4">
+                  Upload your resume to get started with AI-powered analysis
+                  and job matching.
+                </p>
+                <div className="min-h-[200px]">
+                  <ResumeUpload
+                    onFileSelect={handleUpload}
+                    disabled={false}
+                    error={error}
+                  />
+                </div>
+              </Card>
+            )}
+
+            {appState === "PROCESSING" && (
+              <div className="md:col-span-2">
+                <ResumeProcessing statusMessage={statusData?.message} />
+              </div>
+            )}
+
+            {appState === "DONE" && parsedResumeData && (
+              <div className="md:col-span-2">
+                <ResumeReviewForm
+                  resumeData={parsedResumeData}
+                  onSave={handleSaveResume}
+                  onCancel={resetUpload}
                 />
               </div>
-            </Card>
+            )}
           </div>
         </div>
       </Main>
