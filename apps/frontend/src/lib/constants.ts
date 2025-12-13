@@ -76,7 +76,7 @@ export const SUCCESS_MESSAGES = {
 
 export const STATUS_MESSAGES = {
   Pending: "Resume is queued for processing...",
-  Processing: "Analyzing your resume...",
+  Processing: "Analysing your resume...",
   Completed: "Analysis complete!",
   Failed: "Failed to process resume.",
 } as const;

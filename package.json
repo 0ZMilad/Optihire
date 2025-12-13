@@ -4,7 +4,7 @@
   "scripts": {
     "dev": "concurrently \"pnpm dev:frontend\" \"pnpm dev:backend\"",
     "dev:frontend": "pnpm --filter optihire dev",
-    "dev:backend": "cd apps/backend && uvicorn app.main:app --reload",
+    "dev:backend": "cd apps/backend && uvicorn app.main:app --reload --log-level warning",
     "lint": "pnpm --filter optihire lint",
     "format": "pnpm --filter optihire format",
     "build": "pnpm --filter optihire build"

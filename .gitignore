@@ -64,3 +64,7 @@ next-env.d.ts
 
 # Jupyter Notebook Checkpoints
 .ipynb_checkpoints
+
+# Log Files - Generated at runtime
+**/logs/
+*.log

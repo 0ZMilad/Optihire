@@ -5,11 +5,13 @@ from uuid import UUID
 
 from app.core.config import settings
 from app.core.dependencies import get_current_user_id
+from app.core.logging_config import log_info, log_error, log_warning
 from app.db.session import get_db
 from app.models.resume_model import Resume
-from app.schemas.resume_schema import ResumeParseStatusResponse
+from app.schemas.resume_schema import ResumeParseStatusResponse, ResumeRead
 from app.services.storage_service import upload_file, delete_file
 from app.services.resume_service import parse_resume_background, get_parse_status
+from sqlmodel import select
 
 router = APIRouter()
 
@@ -43,7 +45,6 @@ async def upload_resume(
     # 2. Validate Size
     # Convert MB to Bytes
     max_size_bytes = settings.MAX_UPLOAD_SIZE_MB * 1024 * 1024
-    
     if len(file_content) > max_size_bytes:
         raise HTTPException(
             status_code=status.HTTP_413_REQUEST_ENTITY_TOO_LARGE,
@@ -66,13 +67,17 @@ async def upload_resume(
     # 5. Upload to Storage
     # This helper function (created in Phase 3) handles the Supabase connection
     try:
+        log_info(f"Uploading resume: user={current_user_id}, file={file.filename}, size={len(file_content)} bytes")
+        
         public_url = upload_file(
             file_data=file_content,
             destination_path=destination_path,
             content_type=file.content_type
         )
+        
+        log_info(f"Storage upload successful: {destination_path}")
     except Exception as e:
-        # Log the error internally here if you have a logger
+        log_error(f"Storage upload failed: {str(e)}")
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Failed to upload file to storage service"
@@ -83,21 +88,23 @@ async def upload_resume(
         resume = Resume(
             user_id=current_user_id,
             version_name=file.filename or "Uploaded Resume",
-            full_name=None,  # Will be populated after parsing
+            full_name=None,
             email=None,
             file_path=destination_path,
             file_url=public_url,
-            processing_status="Pending"  # Initial status
+            processing_status="Pending"
         )
         db.add(resume)
         db.commit()
         db.refresh(resume)
     except Exception as e:
-        # Clean up uploaded file if database save fails
+        log_error(f"Database save failed: {str(e)}")
+        
         try:
             delete_file(destination_path)
-        except Exception:
-            pass  # Log this, but don't mask the original error
+            log_info(f"Cleaned up orphaned file: {destination_path}")
+        except Exception as cleanup_error:
+            log_error(f"Failed to cleanup file after DB error: {str(cleanup_error)}")
         
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
@@ -110,6 +117,7 @@ async def upload_resume(
         resume_id=str(resume.id),
         file_path=destination_path
     )
+    log_info(f"Background parsing task queued: resume_id={resume.id}")
 
     # 8. Return Success Response
     return {
@@ -121,6 +129,47 @@ async def upload_resume(
         "processing_status": "Pending",
         "message": "Resume uploaded successfully. Processing in background."
     }
+
+
+@router.get(
+    "/{resume_id}",
+    response_model=ResumeRead,
+    status_code=status.HTTP_200_OK,
+    summary="Get resume by ID"
+)
+async def get_resume(
+    resume_id: UUID,
+    current_user_id: UUID = Depends(get_current_user_id),
+    db: Session = Depends(get_db)
+) -> ResumeRead:
+    """
+    Retrieve a resume by its ID.
+    
+    Args:
+        resume_id: UUID of the resume to retrieve
+        current_user_id: Authenticated user's ID (from token)
+        db: Database session
+        
+    Returns:
+        ResumeRead with full resume data
+        
+    Raises:
+        404: Resume not found or user doesn't have access
+    """
+    statement = select(Resume).where(
+        Resume.id == resume_id,
+        Resume.user_id == current_user_id
+    )
+    result = db.exec(statement)
+    resume = result.first()
+    
+    if not resume:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Resume not found or access denied"
+        )
+    
+    return resume
 
 
 @router.get(

@@ -1,9 +1,17 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+import logging
 
 from app.api.v1.endpoints import system_api, user_api, resumes
 from app.core.config import settings
+from app.core.logging_config import backend_logger, log_info
 from app.middleware.auth import JWTMiddleware
+from app.middleware.logging_middleware import LoggingMiddleware
+
+# Suppress FastAPI/Uvicorn console logging
+logging.getLogger("uvicorn").setLevel(logging.WARNING)
+logging.getLogger("uvicorn.access").setLevel(logging.WARNING)
+logging.getLogger("fastapi").setLevel(logging.WARNING)
 
 app = FastAPI(
     title=settings.PROJECT_NAME,
@@ -12,6 +20,12 @@ app = FastAPI(
     docs_url="/docs",
     redoc_url="/redoc",
 )
+
+# Initialize logging
+log_info("Application starting up", logger_name="backend")
+
+# Add logging middleware (should be early in the stack)
+app.add_middleware(LoggingMiddleware)
 
 # Add JWT authentication middleware (must be before CORS)
 app.add_middleware(JWTMiddleware)

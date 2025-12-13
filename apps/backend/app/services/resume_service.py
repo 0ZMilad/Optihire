@@ -25,11 +25,10 @@ from sqlmodel import Session, select
 from supabase import create_client, Client
 
 from app.core.config import settings
+from app.core.logging_config import log_info, log_error, log_warning
 from app.db.session import SessionLocal
 from app.models.resume_model import Resume
 from app.schemas.resume_schema import ResumeParseStatusResponse
-
-logger = logging.getLogger(__name__)
 
 # =============================================================================
 # STATUS MANAGEMENT
@@ -211,12 +210,12 @@ def update_resume_status(
             
             db.add(resume)
             db.commit()
-            logger.info(f"Resume {resume_id} status updated to {status}")
+            log_info(f"Resume {resume_id} status updated to {status}")
         else:
-            logger.warning(f"Resume {resume_id} not found for status update")
+            log_warning(f"Resume {resume_id} not found for status update")
     
     except Exception as e:
-        logger.error(f"Failed to update resume status for {resume_id}: {str(e)}")
+        log_error(f"Failed to update resume status for {resume_id}: {str(e)}")
         if db:
             db.rollback()
     finally:
@@ -258,11 +257,11 @@ def update_resume_with_parsed_data(
     # Store raw text for future reprocessing
     if parsed_data.get("raw_text"):
         resume.raw_text = parsed_data["raw_text"]
-        logger.info(f"Stored {len(parsed_data['raw_text'])} characters of raw text for resume {resume.id}")
+        log_info(f"Stored {len(parsed_data['raw_text'])} characters of raw text for resume {resume.id}")
     
     db.add(resume)
     db.commit()
-    logger.info(f"Resume {resume.id} updated with parsed data")
+    log_info(f"Resume {resume.id} updated with parsed data")
 
 
 # =============================================================================
@@ -289,7 +288,7 @@ def download_resume_file(file_path: str) -> bytes:
     bucket = settings.SUPABASE_STORAGE_BUCKET
     
     try:
-        logger.info(f"Downloading file from storage: {file_path}")
+        log_info(f"Downloading file from storage: {file_path}")
         
         # Download file content as bytes
         response = client.storage.from_(bucket).download(file_path)
@@ -300,18 +299,18 @@ def download_resume_file(file_path: str) -> bytes:
         # Check file size (5MB limit)
         file_size = len(response)
         if file_size > MAX_FILE_SIZE_BYTES:
-            logger.error(
+            log_error(
                 f"File {file_path} exceeds size limit: {file_size} bytes "
                 f"(max: {MAX_FILE_SIZE_BYTES} bytes)"
             )
             raise ValueError("ParseError: Oversize")
         
-        logger.info(f"Successfully downloaded file: {file_path} ({file_size} bytes)")
+        log_info(f"Successfully downloaded file: {file_path} ({file_size} bytes)")
         return response
         
     except Exception as e:
         error_msg = str(e)
-        logger.error(f"Failed to download file {file_path}: {error_msg}")
+        log_error(f"Failed to download file {file_path}: {error_msg}")
         
         # Check for specific error types
         if "not found" in error_msg.lower() or "404" in error_msg:
@@ -341,7 +340,7 @@ def parse_pdf_resume(file_content: bytes) -> str:
             - ParseError: CorruptedPdf - PDF file is corrupted/malformed
     """
     try:
-        logger.info("Parsing PDF document...")
+        log_info("Parsing PDF document...")
         
         # Create a file-like object from bytes
         pdf_file = io.BytesIO(file_content)
@@ -355,24 +354,24 @@ def parse_pdf_resume(file_content: bytes) -> str:
         # Task 4555: Scanned PDF Detection
         # If text is too short, it's likely a scanned/image-based PDF
         if len(stripped_text) < MIN_TEXT_LENGTH_THRESHOLD:
-            logger.warning(
+            log_warning(
                 f"PDF appears to be scanned - extracted only {len(stripped_text)} characters"
             )
             raise ValueError("ParseError: ScannedPdfNoText")
         
-        logger.info(f"Successfully extracted {len(stripped_text)} characters from PDF")
+        log_info(f"Successfully extracted {len(stripped_text)} characters from PDF")
         return stripped_text
         
     except PDFEncryptionError:
-        logger.error("PDF is encrypted/password protected")
+        log_error("PDF is encrypted/password protected")
         raise ValueError("ParseError: EncryptedPdf")
         
     except PDFTextExtractionNotAllowed:
-        logger.error("PDF text extraction is not allowed (restricted)")
+        log_error("PDF text extraction is not allowed (restricted)")
         raise ValueError("ParseError: EncryptedPdf")
         
     except PDFSyntaxError as e:
-        logger.error(f"PDF syntax error (corrupted file): {str(e)}")
+        log_error(f"PDF syntax error (corrupted file): {str(e)}")
         raise ValueError("ParseError: CorruptedPdf")
         
     except ValueError:
@@ -380,7 +379,7 @@ def parse_pdf_resume(file_content: bytes) -> str:
         raise
         
     except Exception as e:
-        logger.error(f"Unexpected error parsing PDF: {str(e)}")
+        log_error(f"Unexpected error parsing PDF: {str(e)}")
         # Check if it's related to encryption or corruption
         error_msg = str(e).lower()
         if "encrypt" in error_msg or "password" in error_msg:
@@ -408,7 +407,7 @@ def parse_docx_resume(file_content: bytes) -> str:
         ValueError: If the DOCX file is corrupted or invalid
     """
     try:
-        logger.info("Parsing DOCX document...")
+        log_info("Parsing DOCX document...")
         
         # Create a file-like object from bytes
         docx_file = io.BytesIO(file_content)
@@ -437,22 +436,22 @@ def parse_docx_resume(file_content: bytes) -> str:
         extracted_text = "\n".join(paragraphs)
         
         if len(extracted_text.strip()) < MIN_TEXT_LENGTH_THRESHOLD:
-            logger.warning(
+            log_warning(
                 f"DOCX has minimal text content - only {len(extracted_text.strip())} characters"
             )
             # For DOCX, minimal text might just be an empty/template document
             # Still allow it through but log the warning
         
-        logger.info(f"Successfully extracted {len(extracted_text)} characters from DOCX")
+        log_info(f"Successfully extracted {len(extracted_text)} characters from DOCX")
         return extracted_text
         
     except PackageNotFoundError:
-        logger.error("DOCX file is corrupted or not a valid DOCX")
+        log_error("DOCX file is corrupted or not a valid DOCX")
         raise ValueError("ParseError: CorruptedDocx")
         
     except Exception as e:
         error_msg = str(e).lower()
-        logger.error(f"Error parsing DOCX: {str(e)}")
+        log_error(f"Error parsing DOCX: {str(e)}")
         
         if "corrupt" in error_msg or "invalid" in error_msg:
             raise ValueError("ParseError: CorruptedDocx")
@@ -734,7 +733,7 @@ def extract_structured_data(raw_text: str, file_type: str = "") -> dict[str, Any
             - education: List of education entries
             - raw_text: The original raw text for reference
     """
-    logger.info(f"Extracting structured data from {file_type} resume text...")
+    log_info(f"Extracting structured data from {file_type} resume text...")
     
     # Initialize result structure
     result: dict[str, Any] = {
@@ -755,7 +754,7 @@ def extract_structured_data(raw_text: str, file_type: str = "") -> dict[str, Any
     }
     
     if not raw_text or not raw_text.strip():
-        logger.warning("Empty text provided for extraction")
+        log_warning("Empty text provided for extraction")
         return result
     
     # Extract contact information
@@ -793,7 +792,7 @@ def extract_structured_data(raw_text: str, file_type: str = "") -> dict[str, Any
     if projects_content:
         result["projects"] = [{"raw_text": projects_content}]
     
-    logger.info(
+    log_info(
         f"Extraction complete: name={result['full_name']}, "
         f"email={result['email']}, skills={len(result['skills'])}, "
         f"experiences={len(result['experiences'])}, education={len(result['education'])}"
@@ -831,11 +830,11 @@ def parse_resume_content(file_content: bytes, file_path: str) -> dict[str, Any]:
     """
     file_ext = _get_file_extension(file_path)
     
-    logger.info(f"Parsing resume file: {file_path} (type: {file_ext})")
+    log_info(f"Parsing resume file: {file_path} (type: {file_ext})")
     
     # Validate file type
     if file_ext not in SUPPORTED_EXTENSIONS:
-        logger.error(f"Unsupported file type: {file_ext}")
+        log_error(f"Unsupported file type: {file_ext}")
         raise ValueError("ParseError: UnsupportedFileType")
     
     # Route to appropriate parser
@@ -883,49 +882,40 @@ def parse_resume_background(resume_id: str, file_path: str) -> None:
     resume_uuid = UUID(resume_id)
     
     try:
-        # Step 1: Mark as Processing
-        logger.info(f"Starting background parsing for resume {resume_id}")
+        log_info(f"[RESUME_PARSE] Starting: resume_id={resume_id}")
         update_resume_status(resume_uuid, "Processing", db=db)
         
-        # Step 2: Retrieve resume record
         statement = select(Resume).where(Resume.id == resume_uuid)
         resume = db.exec(statement).first()
         
         if not resume:
             raise ValueError(f"ParseError: ResumeNotFound - {resume_id}")
         
-        # Step 3: Download file from Supabase storage
-        logger.info(f"Downloading file: {file_path}")
+        log_info(f"[RESUME_PARSE] Downloading: resume_id={resume_id}, path={file_path}")
         file_content = download_resume_file(file_path)
+        log_info(f"[RESUME_PARSE] Downloaded: size={len(file_content)} bytes")
         
-        # Step 4: Parse resume content and extract structured data
-        # This handles file type detection, parsing, and extraction
         parsed_data = parse_resume_content(file_content, file_path)
-        
-        # Step 5: Update resume with parsed data
         update_resume_with_parsed_data(resume, parsed_data, db)
         
-        # Step 6: Log extraction summary
-        logger.info(
-            f"Resume {resume_id} parsed successfully: "
+        log_info(
+            f"[RESUME_PARSE] Completed: resume_id={resume_id}, "
             f"name={parsed_data.get('full_name')}, "
             f"email={parsed_data.get('email')}, "
-            f"skills_count={len(parsed_data.get('skills', []))}"
+            f"skills={len(parsed_data.get('skills', []))}, "
+            f"experience={len(parsed_data.get('experiences', []))}"
         )
         
-        # Step 7: Mark as Completed
         update_resume_status(resume_uuid, "Completed", db=db)
         
     except ValueError as e:
-        # Handle specific parsing errors with frontend-friendly messages
         error_msg = str(e)
-        logger.error(f"Parsing error for resume {resume_id}: {error_msg}")
+        log_error(f"[RESUME_PARSE] Error: resume_id={resume_id}, error={error_msg}")
         update_resume_status(resume_uuid, "Failed", error_message=error_msg, db=db)
         
     except Exception as e:
-        # Handle unexpected errors
         error_msg = f"ParseError: UnexpectedError - {str(e)}"
-        logger.error(f"Unexpected error parsing resume {resume_id}: {error_msg}")
+        log_error(f"[RESUME_PARSE] Unexpected: resume_id={resume_id}, error={error_msg}")
         update_resume_status(resume_uuid, "Failed", error_message=error_msg, db=db)
         
     finally:

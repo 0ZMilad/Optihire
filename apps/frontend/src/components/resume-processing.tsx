@@ -16,7 +16,7 @@ export function ResumeProcessing({ statusMessage }: ResumeProcessingProps) {
       
       <div className="space-y-2">
         <h3 className="text-xl font-semibold tracking-tight">
-          Analyzing Your Resume
+          Analysing Your Resume
         </h3>
         
         <p className="text-muted-foreground min-h-[1.5rem] animate-pulse">

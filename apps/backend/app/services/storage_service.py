@@ -1,12 +1,10 @@
-import logging
 from functools import lru_cache
 
 from fastapi import HTTPException, status
 from supabase import create_client, Client
 
 from app.core.config import settings
-
-logger = logging.getLogger(__name__)
+from app.core.logging_config import log_error, log_warning
 
 
 @lru_cache()
@@ -43,7 +41,7 @@ def upload_file(file_data: bytes, destination_path: str, content_type: str) -> s
         return public_url
 
     except Exception as e:
-        logger.error("Upload failed to bucket '%s': %s", bucket, str(e))
+        log_error(f"Upload failed to bucket '{bucket}': {str(e)}")
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, 
             detail="Failed to upload file to storage"
@@ -74,5 +72,5 @@ def delete_file(path: str) -> bool:
         return True
         
     except Exception as e:
-        logger.warning("File deletion failed for path '%s': %s", path, str(e))
+        log_warning(f"File deletion failed for path '{path}': {str(e)}")
         return False
