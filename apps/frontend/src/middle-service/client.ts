@@ -3,6 +3,7 @@
  */
 import axios, { type AxiosError } from "axios";
 import { supabase } from "./supabase";
+import { logger } from "@/lib/logger";
 
 // Get API URL from environment
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
@@ -41,30 +42,23 @@ apiClient.interceptors.response.use(
   (error: AxiosError) => {
     // Handle common errors
     if (error.response?.status === 401) {
-      // Unauthorized - redirect to login
-      console.error("Unauthorized request:", error);
-      // TODO: Redirect to login page or refresh token
-      // window.location.href = '/login';
+      logger.error("Unauthorized request", { status: 401 });
     }
 
     if (error.response?.status === 403) {
-      // Forbidden
-      console.error("Forbidden request:", error);
+      logger.error("Forbidden request", { status: 403 });
     }
 
     if (error.response?.status === 404) {
-      // Not found
-      console.error("Resource not found:", error);
+      logger.error("Resource not found", { status: 404 });
     }
 
     if (error.response?.status && error.response.status >= 500) {
-      // Server error
-      console.error("Server error:", error);
+      logger.error("Server error", { status: error.response.status });
     }
 
-    // Network error
     if (!error.response) {
-      console.error("Network error:", error);
+      logger.error("Network error", { message: error.message });
     }
 
     return Promise.reject(error);

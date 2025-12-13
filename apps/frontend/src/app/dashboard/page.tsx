@@ -11,6 +11,7 @@ import { ResumeReviewForm } from "@/components/resume-review-form";
 import { useResumeUpload } from "@/hooks/use-resume-upload";
 import { updateResume } from "@/middle-service/resumes";
 import { ResumeRead } from "@/middle-service/types";
+import { logger } from "@/lib/logger";
 import { toast } from "sonner";
 
 export default function DashboardPage() {
@@ -31,7 +32,7 @@ export default function DashboardPage() {
       toast.success("Resume saved successfully!");
       resetUpload();
     } catch (err) {
-      console.error("Failed to save resume:", err);
+      logger.error("Failed to save resume", { error: err instanceof Error ? err.message : "Unknown error" });
       toast.error("Failed to save resume. Please try again.");
     }
   };

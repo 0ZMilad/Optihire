@@ -1,6 +1,7 @@
 import { useState } from "react"
 import { Loader2, AlertCircle } from "lucide-react"
 import { ResumeRead } from "@/middle-service/types"
+import { logger } from "@/lib/logger"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -82,7 +83,7 @@ export function ResumeReviewForm({ resumeData, onSave, onCancel }: ResumeReviewF
     try {
       await onSave(formData)
     } catch (error) {
-      console.error(error)
+      logger.error("Failed to save resume form", { error: error instanceof Error ? error.message : "Unknown error" })
     } finally {
       setIsSaving(false)
     }

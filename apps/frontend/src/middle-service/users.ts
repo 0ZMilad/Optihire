@@ -24,7 +24,6 @@ export const userService = {
 
   /**
    * Get current user profile (using session token)
-   * TODO: Implement when auth is connected
    */
   getCurrentUser: async (): Promise<UserRead> => {
     const response = await apiClient.get<UserRead>("/api/v1/users/me");

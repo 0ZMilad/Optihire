@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { logger } from "@/lib/logger";
 
 import { FormEvent, useState } from "react";
 import { authService } from "@/middle-service/supabase";
@@ -35,7 +36,7 @@ export default function Login() {
         router.refresh();
       }
     } catch (error) {
-      console.error("Login failed:", error);
+      logger.error("Login failed", { error: error instanceof Error ? error.message : "Unknown error" });
       setErrorMessage("Error occurred, check logs");
     } finally {
       setIsLoading(false);

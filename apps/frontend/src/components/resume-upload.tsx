@@ -3,29 +3,21 @@
 import { useState, useRef, useCallback } from "react";
 import { CloudUpload, AlertCircle } from "lucide-react";
 import { Card } from "./ui/card";
-
-const MAX_FILE_SIZE_BYTES = 5 * 1024 * 1024; // 5 MB
-
-const ACCEPTED_TYPES = [
-  "application/pdf",
-  "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
-  ".pdf",
-  ".docx",
-];
+import { FILE_UPLOAD } from "@/lib/constants";
 
 const validateFile = (file: File): { valid: boolean; error: string | null } => {
-  if (file.size > MAX_FILE_SIZE_BYTES) {
+  if (file.size > FILE_UPLOAD.MAX_SIZE_BYTES) {
     return {
       valid: false,
-      error: "File too large. Maximum size is 5MB.",
+      error: `File too large. Maximum size is ${FILE_UPLOAD.MAX_SIZE_MB}MB.`,
     };
   }
 
   const fileExtension = "." + file.name.split(".").pop()?.toLowerCase();
   
   const isValidType =
-    ACCEPTED_TYPES.includes(file.type) ||
-    ACCEPTED_TYPES.includes(fileExtension);
+    FILE_UPLOAD.ALLOWED_TYPES.includes(file.type) ||
+    FILE_UPLOAD.ALLOWED_EXTENSIONS.includes(fileExtension);
 
   if (!isValidType) {
     return {

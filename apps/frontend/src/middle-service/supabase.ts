@@ -1,6 +1,5 @@
 import { createBrowserClient } from "@supabase/ssr";
 import type { Session } from "@supabase/supabase-js";
-import { redirect } from "next/dist/server/api-utils";
 
 // Get Supabase configuration from environment
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;

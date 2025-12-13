@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useCountdown } from "@/hooks/use-countdown";
-import { getAuthErrorMessage, AuthErrorMap } from "@/lib/auth-erros";
+import { getAuthErrorMessage, AuthErrorMap } from "@/lib/auth-errors";
 import { authService } from "@/middle-service/supabase";
 import { Spinner } from "@/components/ui/spinner";
 import { Button } from "@/components/ui/button";

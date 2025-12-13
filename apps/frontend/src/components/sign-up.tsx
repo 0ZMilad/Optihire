@@ -16,6 +16,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { logger } from "@/lib/logger";
 
 import { authService } from "@/middle-service/supabase";
 
@@ -66,7 +67,7 @@ export default function SignupForm() {
         }
       }
     } catch (error) {
-      console.error("Login failed:", error);
+      logger.error("Signup failed", { error: error instanceof Error ? error.message : "Unknown error" });
       setErrorMessage("Error occurred, check logs");
     } finally {
       setIsLoading(false);

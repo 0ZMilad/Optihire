@@ -1,12 +1,13 @@
 import { useEffect, useRef, useState } from "react";
 import { getResumeParseStatus } from "@/middle-service/resumes";
 import { ResumeParseStatusResponse } from "@/middle-service/types";
+import { RESUME_POLLING } from "@/lib/constants";
 
 interface PollingOptions {
   onComplete?: (resumeId: string) => void;
   onError?: (error: string) => void;
-  interval?: number;     // default 2000ms
-  maxAttempts?: number;  // default 60
+  interval?: number;
+  maxAttempts?: number;
 }
 
 export const useResumePolling = (
@@ -23,8 +24,8 @@ export const useResumePolling = (
   const { 
     onComplete, 
     onError, 
-    interval = 2000, 
-    maxAttempts = 60 
+    interval = RESUME_POLLING.INTERVAL, 
+    maxAttempts = RESUME_POLLING.MAX_ATTEMPTS 
   } = options;
 
   useEffect(() => {

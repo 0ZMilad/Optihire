@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Spinner } from "./ui/spinner";
+import { logger } from "@/lib/logger";
 import { authService } from "@/middle-service/supabase";
 
 export default function ResetPassword() {
@@ -30,7 +31,7 @@ export default function ResetPassword() {
         setSuccessMessage("Reset link sent! Check your email.");
       }
     } catch (error) {
-      console.error("Reset failed:", error);
+      logger.error("Password reset email failed", { error: error instanceof Error ? error.message : "Unknown error" });
       setErrorMessage("Error occurred, check logs");
     } finally {
       setIsLoading(false);
@@ -56,7 +57,7 @@ export default function ResetPassword() {
         setSuccessMessage("Password updated successfully!");
       }
     } catch (error) {
-      console.error("Reset failed:", error);
+      logger.error("Password reset failed", { error: error instanceof Error ? error.message : "Unknown error" });
       setErrorMessage("Error occurred, check logs");
     } finally {
       setIsLoading(false);

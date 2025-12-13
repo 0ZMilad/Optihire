@@ -3,6 +3,7 @@ import { toast } from 'sonner';
 import { uploadResume, getResumeData } from '@/middle-service/resumes';
 import { useResumePolling } from './use-resume-polling';
 import { ResumeRead } from '@/middle-service/types';
+import { FILE_UPLOAD } from '@/lib/constants';
 
 export type AppState = 'IDLE' | 'PROCESSING' | 'DONE';
 
@@ -37,23 +38,16 @@ export function useResumeUpload() {
   });
 
   const handleUpload = useCallback(async (file: File) => {
-    // 1. Validation
-    const validTypes = [
-      'application/pdf', 
-      'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
-    ];
-    
-    if (!validTypes.includes(file.type)) {
+    if (!FILE_UPLOAD.ALLOWED_TYPES.includes(file.type)) {
       toast.error("Invalid file type. Please upload PDF or DOCX.");
       return;
     }
 
-    if (file.size > 5 * 1024 * 1024) { // 5MB
-      toast.error("File is too large (max 5MB).");
+    if (file.size > FILE_UPLOAD.MAX_SIZE_BYTES) {
+      toast.error(`File is too large (max ${FILE_UPLOAD.MAX_SIZE_MB}MB).`);
       return;
     }
 
-    // 2. Reset State & Start
     setError(null);
     setAppState('PROCESSING');
 

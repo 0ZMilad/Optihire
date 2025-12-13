@@ -8,7 +8,6 @@ def require_scopes(required_scopes: list[str]):
     """Factory that creates a scope-checking dependency"""
     
     async def check_scopes(request: Request) -> None:
-        # Step 1: Get user from request.state (set by middleware)
         user = getattr(request.state, "user", None)
         
         if not user:
@@ -21,13 +20,10 @@ def require_scopes(required_scopes: list[str]):
                 }
             )
         
-        # Step 2: Extract token scopes from user payload
         token_scopes = set(user.get("scopes", []))
         required = set(required_scopes)
         
-        # Step 3: Compare required vs provided scopes
         if not required.issubset(token_scopes):
-            # Step 4: Raise HTTPException with 403 if insufficient
             raise HTTPException(
                 status_code=status.HTTP_403_FORBIDDEN,
                 detail={
