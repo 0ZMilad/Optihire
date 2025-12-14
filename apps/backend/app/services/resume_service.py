@@ -921,3 +921,25 @@ def parse_resume_background(resume_id: str, file_path: str) -> None:
     finally:
         db.close()
 
+
+def get_active_resume(
+    user_id: UUID,
+    db: Session
+) -> Resume | None:
+    """
+    Retrieve the most recently uploaded active resume for the user.
+    
+    Args:
+        user_id: UUID of the current user
+        db: Database session
+    Returns:
+        Resume instance if found, None otherwise
+    """
+    statement = select(Resume).where(
+        Resume.user_id == user_id
+    ).order_by(Resume.created_at.desc())
+    
+    result = db.exec(statement)
+    resume = result.first()
+    
+    return resume

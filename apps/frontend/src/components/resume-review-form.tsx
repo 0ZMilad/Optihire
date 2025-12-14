@@ -6,14 +6,6 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardFooter,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card"
 
 interface ResumeReviewFormProps {
   resumeData: ResumeRead
@@ -90,16 +82,9 @@ export function ResumeReviewForm({ resumeData, onSave, onCancel }: ResumeReviewF
   }
 
   return (
-    <Card className="w-full max-w-4xl mx-auto">
-      <CardHeader>
-        <CardTitle>Review Extracted Data</CardTitle>
-        <CardDescription>
-          Our AI extracted this information. Please verify and edit any missing details before continuing.
-        </CardDescription>
-      </CardHeader>
-
+    <div className="w-full max-w-4xl mx-auto">
       <form onSubmit={handleSubmit}>
-        <CardContent className="space-y-6">
+        <div className="space-y-6 py-4">
           <div className="space-y-4">
             <h3 className="text-sm font-medium text-muted-foreground uppercase tracking-wider">
               Personal Details
@@ -215,16 +200,16 @@ export function ResumeReviewForm({ resumeData, onSave, onCancel }: ResumeReviewF
             />
           </div>
 
-        </CardContent>
+        </div>
 
-        <CardFooter className="flex justify-between border-t p-6 bg-muted/20">
+        <div className="flex justify-between border-t pt-6 mt-6">
           <Button 
             type="button" 
             variant="ghost" 
             onClick={onCancel}
             disabled={isSaving}
           >
-            Upload Different Resume
+            Cancel
           </Button>
           
           <Button type="submit" disabled={isSaving}>
@@ -237,8 +222,8 @@ export function ResumeReviewForm({ resumeData, onSave, onCancel }: ResumeReviewF
               "Save & Continue"
             )}
           </Button>
-        </CardFooter>
+        </div>
       </form>
-    </Card>
+    </div>
   )
 }

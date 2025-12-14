@@ -8,9 +8,9 @@ from app.core.dependencies import get_current_user_id
 from app.core.logging_config import log_info, log_error, log_warning
 from app.db.session import get_db
 from app.models.resume_model import Resume
-from app.schemas.resume_schema import ResumeParseStatusResponse, ResumeRead
+from app.schemas.resume_schema import ResumeParseStatusResponse, ResumeRead, ResumeUpdate
 from app.services.storage_service import upload_file, delete_file
-from app.services.resume_service import parse_resume_background, get_parse_status
+from app.services.resume_service import parse_resume_background, get_parse_status, get_active_resume
 from sqlmodel import select
 
 router = APIRouter()
@@ -167,6 +167,107 @@ async def get_resume(
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Resume not found or access denied"
+        )
+    
+    return resume
+
+
+@router.get(
+    "/active",
+    response_model=ResumeRead,
+    status_code=status.HTTP_200_OK,
+    summary="Get active resume for current user"
+)
+async def get_active_resume_endpoint(
+    current_user_id: UUID = Depends(get_current_user_id),
+    db: Session = Depends(get_db)
+) -> ResumeRead:
+    """
+    Retrieve the most recently uploaded resume for the authenticated user.
+    This is the 'active' resume based on the latest created_at timestamp.
+    
+    Args:
+        current_user_id: Authenticated user's ID (from token)
+        db: Database session
+        
+    Returns:
+        ResumeRead with the active resume data
+        
+    Raises:
+        404: No resume found for user
+    """
+    resume = get_active_resume(
+        user_id=current_user_id,
+        db=db
+    )
+    
+    if not resume:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="No resume found for user"
+        )
+    
+    return resume
+
+
+@router.put(
+    "/{resume_id}",
+    response_model=ResumeRead,
+    status_code=status.HTTP_200_OK,
+    summary="Update resume"
+)
+async def update_resume(
+    resume_id: UUID,
+    resume_update: ResumeUpdate,
+    current_user_id: UUID = Depends(get_current_user_id),
+    db: Session = Depends(get_db)
+) -> ResumeRead:
+    """
+    Update an existing resume.
+    
+    Args:
+        resume_id: UUID of the resume to update
+        resume_update: Resume update data
+        current_user_id: Authenticated user's ID (from token)
+        db: Database session
+        
+    Returns:
+        ResumeRead with updated resume data
+        
+    Raises:
+        404: Resume not found or user doesn't have access
+    """
+    # Fetch existing resume
+    statement = select(Resume).where(
+        Resume.id == resume_id,
+        Resume.user_id == current_user_id
+    )
+    result = db.exec(statement)
+    resume = result.first()
+    
+    if not resume:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Resume not found or access denied"
+        )
+    
+    # Update only provided fields
+    update_data = resume_update.model_dump(exclude_unset=True)
+    
+    for field, value in update_data.items():
+        setattr(resume, field, value)
+    
+    try:
+        db.add(resume)
+        db.commit()
+        db.refresh(resume)
+        log_info(f"Resume updated: resume_id={resume_id}, user_id={current_user_id}")
+    except Exception as e:
+        db.rollback()
+        log_error(f"Failed to update resume {resume_id}: {str(e)}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Failed to update resume"
         )
     
     return resume
