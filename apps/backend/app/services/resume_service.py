@@ -11,7 +11,7 @@ import io
 import logging
 import re
 from uuid import UUID
-from datetime import datetime
+from datetime import datetime, date
 from functools import lru_cache
 from typing import Any, Optional
 
@@ -27,7 +27,14 @@ from supabase import create_client, Client
 from app.core.config import settings
 from app.core.logging_config import log_info, log_error, log_warning
 from app.db.session import SessionLocal
-from app.models.resume_model import Resume
+from app.models.resume_model import (
+    Resume,
+    ResumeSkill,
+    ResumeExperience,
+    ResumeEducation,
+    ResumeCertification,
+    ResumeProject,
+)
 from app.schemas.resume_schema import ResumeParseStatusResponse
 
 # =============================================================================
@@ -231,6 +238,9 @@ def update_resume_with_parsed_data(
     """
     Update resume record with extracted/parsed data.
     
+    This function persists both flat contact fields and structured data
+    (skills, experiences, education) to their respective normalized tables.
+    
     Args:
         resume: The Resume model instance to update
         parsed_data: Dictionary containing extracted resume information
@@ -260,8 +270,98 @@ def update_resume_with_parsed_data(
         log_info(f"Stored {len(parsed_data['raw_text'])} characters of raw text for resume {resume.id}")
     
     db.add(resume)
+    
+    # ==========================================================================
+    # PERSIST STRUCTURED DATA TO NORMALIZED TABLES
+    # ==========================================================================
+    
+    # Skills - persist to resume_skills table
+    skills_list = parsed_data.get("skills", [])
+    if skills_list:
+        log_info(f"Persisting {len(skills_list)} skills for resume {resume.id}")
+        for i, skill_name in enumerate(skills_list):
+            if isinstance(skill_name, str) and skill_name.strip():
+                skill = ResumeSkill(
+                    resume_id=resume.id,
+                    skill_name=skill_name.strip()[:100],  # Enforce max length
+                    display_order=i
+                )
+                db.add(skill)
+    
+    # Experiences - persist to resume_experiences table
+    experiences_list = parsed_data.get("experiences", [])
+    if experiences_list:
+        log_info(f"Persisting {len(experiences_list)} experiences for resume {resume.id}")
+        for i, exp in enumerate(experiences_list):
+            if isinstance(exp, dict):
+                experience = ResumeExperience(
+                    resume_id=resume.id,
+                    company_name=exp.get("company_name") or "Unknown Company",
+                    job_title=exp.get("job_title") or "Position",
+                    description=exp.get("raw_text") or exp.get("description"),
+                    start_date=exp.get("start_date") or date.today(),
+                    end_date=exp.get("end_date"),
+                    is_current=exp.get("is_current", False),
+                    display_order=i
+                )
+                db.add(experience)
+    
+    # Education - persist to resume_education table
+    education_list = parsed_data.get("education", [])
+    if education_list:
+        log_info(f"Persisting {len(education_list)} education entries for resume {resume.id}")
+        for i, edu in enumerate(education_list):
+            if isinstance(edu, dict):
+                education = ResumeEducation(
+                    resume_id=resume.id,
+                    institution_name=edu.get("institution_name") or "Unknown Institution",
+                    degree_type=edu.get("degree_type"),
+                    field_of_study=edu.get("field_of_study"),
+                    start_date=edu.get("start_date"),
+                    end_date=edu.get("end_date"),
+                    is_current=edu.get("is_current", False),
+                    display_order=i
+                )
+                db.add(education)
+    
+    # Certifications - persist to resume_certifications table
+    certifications_list = parsed_data.get("certifications", [])
+    if certifications_list:
+        log_info(f"Persisting {len(certifications_list)} certifications for resume {resume.id}")
+        for i, cert in enumerate(certifications_list):
+            if isinstance(cert, dict):
+                certification = ResumeCertification(
+                    resume_id=resume.id,
+                    certification_name=cert.get("certification_name") or cert.get("raw_text", "Certification")[:200],
+                    issuing_organization=cert.get("issuing_organization"),
+                    issue_date=cert.get("issue_date"),
+                    expiry_date=cert.get("expiry_date"),
+                    display_order=i
+                )
+                db.add(certification)
+    
+    # Projects - persist to resume_projects table
+    projects_list = parsed_data.get("projects", [])
+    if projects_list:
+        log_info(f"Persisting {len(projects_list)} projects for resume {resume.id}")
+        for i, proj in enumerate(projects_list):
+            if isinstance(proj, dict):
+                project = ResumeProject(
+                    resume_id=resume.id,
+                    project_name=proj.get("project_name") or "Project",
+                    description=proj.get("raw_text") or proj.get("description"),
+                    display_order=i
+                )
+                db.add(project)
+    
+    # Single atomic commit for all changes
     db.commit()
-    log_info(f"Resume {resume.id} updated with parsed data")
+    
+    log_info(
+        f"Resume {resume.id} updated with parsed data: "
+        f"skills={len(skills_list)}, experiences={len(experiences_list)}, "
+        f"education={len(education_list)}"
+    )
 
 
 # =============================================================================
@@ -943,3 +1043,80 @@ def get_active_resume(
     resume = result.first()
     
     return resume
+
+
+def get_resume_complete(
+    resume_id: UUID,
+    user_id: UUID,
+    db: Session
+) -> dict | None:
+    """
+    Retrieve a resume with all related sections (experiences, education, skills, etc.).
+    
+    This function fetches the base resume and all associated structured data
+    from the normalized tables, returning a complete picture for the frontend.
+    
+    Args:
+        resume_id: UUID of the resume to retrieve
+        user_id: UUID of the user (for authorization check)
+        db: Database session
+        
+    Returns:
+        dict containing resume data with all sections, or None if not found/unauthorized
+    """
+    # Fetch base resume with authorization check
+    statement = select(Resume).where(
+        Resume.id == resume_id,
+        Resume.user_id == user_id
+    )
+    resume = db.exec(statement).first()
+    
+    if not resume:
+        return None
+    
+    # Fetch all related sections
+    experiences = db.exec(
+        select(ResumeExperience)
+        .where(ResumeExperience.resume_id == resume_id)
+        .order_by(ResumeExperience.display_order)
+    ).all()
+    
+    education = db.exec(
+        select(ResumeEducation)
+        .where(ResumeEducation.resume_id == resume_id)
+        .order_by(ResumeEducation.display_order)
+    ).all()
+    
+    skills = db.exec(
+        select(ResumeSkill)
+        .where(ResumeSkill.resume_id == resume_id)
+        .order_by(ResumeSkill.display_order)
+    ).all()
+    
+    certifications = db.exec(
+        select(ResumeCertification)
+        .where(ResumeCertification.resume_id == resume_id)
+        .order_by(ResumeCertification.display_order)
+    ).all()
+    
+    projects = db.exec(
+        select(ResumeProject)
+        .where(ResumeProject.resume_id == resume_id)
+        .order_by(ResumeProject.display_order)
+    ).all()
+    
+    log_info(
+        f"Fetched complete resume {resume_id}: "
+        f"experiences={len(experiences)}, education={len(education)}, "
+        f"skills={len(skills)}, certifications={len(certifications)}, "
+        f"projects={len(projects)}"
+    )
+    
+    return {
+        "resume": resume,
+        "experiences": experiences,
+        "education": education,
+        "skills": skills,
+        "certifications": certifications,
+        "projects": projects,
+    }

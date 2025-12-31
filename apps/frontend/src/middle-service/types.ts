@@ -148,3 +148,105 @@ export interface ResumeRead {
   created_at: string;
   updated_at: string;
 }
+
+// ============================================================================
+// Resume Section Types (Structured Data)
+// ============================================================================
+
+export interface ExperienceRead {
+  id: string;
+  resume_id: string;
+  company_name: string;
+  job_title: string;
+  location: string | null;
+  start_date: string;
+  end_date: string | null;
+  is_current: boolean;
+  description: string | null;
+  achievements: string[];
+  skills_used: string[];
+  display_order: number;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface EducationRead {
+  id: string;
+  resume_id: string;
+  institution_name: string;
+  degree_type: string | null;
+  field_of_study: string | null;
+  location: string | null;
+  start_date: string | null;
+  end_date: string | null;
+  is_current: boolean;
+  gpa: number | null;
+  achievements: string[];
+  relevant_coursework: string[];
+  display_order: number;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface SkillRead {
+  id: string;
+  resume_id: string;
+  skill_name: string;
+  skill_category: string | null;
+  proficiency_level: string | null;
+  years_of_experience: number | null;
+  is_primary: boolean;
+  display_order: number;
+  created_at: string;
+}
+
+export interface CertificationRead {
+  id: string;
+  resume_id: string;
+  certification_name: string;
+  issuing_organization: string | null;
+  issue_date: string | null;
+  expiry_date: string | null;
+  credential_id: string | null;
+  credential_url: string | null;
+  display_order: number;
+  created_at: string;
+}
+
+export interface ProjectRead {
+  id: string;
+  resume_id: string;
+  project_name: string;
+  role: string | null;
+  description: string | null;
+  technologies_used: string[];
+  project_url: string | null;
+  start_date: string | null;
+  end_date: string | null;
+  is_current: boolean;
+  achievements: string[];
+  display_order: number;
+  created_at: string;
+  updated_at: string;
+}
+
+/**
+ * Complete resume with all parsed sections.
+ * Use GET /api/v1/resumes/{id}/complete to fetch this.
+ */
+export interface ResumeComplete extends ResumeRead {
+  // Template & ordering
+  template_id: string | null;
+  is_primary: boolean;
+  section_order: Record<string, unknown> | null;
+  content_hash: string | null;
+  last_analyzed_at: string | null;
+  deleted_at: string | null;
+  
+  // Parsed structured sections
+  experiences: ExperienceRead[];
+  education: EducationRead[];
+  skills: SkillRead[];
+  certifications: CertificationRead[];
+  projects: ProjectRead[];
+}

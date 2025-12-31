@@ -8,9 +8,24 @@ from app.core.dependencies import get_current_user_id
 from app.core.logging_config import log_info, log_error, log_warning
 from app.db.session import get_db
 from app.models.resume_model import Resume
-from app.schemas.resume_schema import ResumeParseStatusResponse, ResumeRead, ResumeUpdate
+from app.schemas.resume_schema import (
+    ResumeParseStatusResponse,
+    ResumeRead,
+    ResumeUpdate,
+    ResumeComplete,
+    ExperienceRead,
+    EducationRead,
+    SkillRead,
+    CertificationRead,
+    ProjectRead,
+)
 from app.services.storage_service import upload_file, delete_file
-from app.services.resume_service import parse_resume_background, get_parse_status, get_active_resume
+from app.services.resume_service import (
+    parse_resume_background,
+    get_parse_status,
+    get_active_resume,
+    get_resume_complete,
+)
 from sqlmodel import select
 
 router = APIRouter()
@@ -33,22 +48,30 @@ async def upload_resume(
     Requires authentication.
     """
     
-    # 1. Read file content
+    # 1. Validate Size (Before reading content to prevent OOM)
+    # Convert MB to Bytes
+    max_size_bytes = settings.MAX_UPLOAD_SIZE_MB * 1024 * 1024
+    
     try:
+        # Check file size without loading into memory
+        file.file.seek(0, 2)
+        file_size = file.file.tell()
+        file.file.seek(0)
+        
+        if file_size > max_size_bytes:
+            raise HTTPException(
+                status_code=status.HTTP_413_REQUEST_ENTITY_TOO_LARGE,
+                detail=f"File size exceeds the limit of {settings.MAX_UPLOAD_SIZE_MB}MB"
+            )
+            
+        # 2. Read file content
         file_content = await file.read()
+    except HTTPException:
+        raise
     except Exception:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Could not read file content"
-        )
-
-    # 2. Validate Size
-    # Convert MB to Bytes
-    max_size_bytes = settings.MAX_UPLOAD_SIZE_MB * 1024 * 1024
-    if len(file_content) > max_size_bytes:
-        raise HTTPException(
-            status_code=status.HTTP_413_REQUEST_ENTITY_TOO_LARGE,
-            detail=f"File size exceeds the limit of {settings.MAX_UPLOAD_SIZE_MB}MB"
         )
 
     # 3. Validate Type
@@ -313,3 +336,89 @@ async def get_resume_parse_status(
         )
     
     return status_result
+
+
+@router.get(
+    "/{resume_id}/complete",
+    response_model=ResumeComplete,
+    status_code=status.HTTP_200_OK,
+    summary="Get complete resume with all sections"
+)
+async def get_resume_complete_endpoint(
+    resume_id: UUID,
+    current_user_id: UUID = Depends(get_current_user_id),
+    db: Session = Depends(get_db)
+) -> ResumeComplete:
+    """
+    Retrieve a resume with all related sections (experiences, education, skills, etc.).
+    
+    This endpoint returns the full parsed resume data including:
+    - Contact information (name, email, phone, etc.)
+    - Professional summary
+    - Work experiences
+    - Education history
+    - Skills
+    - Certifications
+    - Projects
+    
+    Use this endpoint after parsing is complete to display the full resume
+    for user review and editing.
+    
+    Args:
+        resume_id: UUID of the resume to retrieve
+        current_user_id: Authenticated user's ID (from token)
+        db: Database session
+        
+    Returns:
+        ResumeComplete with all resume sections
+        
+    Raises:
+        404: Resume not found or user doesn't have access
+    """
+    result = get_resume_complete(
+        resume_id=resume_id,
+        user_id=current_user_id,
+        db=db
+    )
+    
+    if not result:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Resume not found or access denied"
+        )
+    
+    # Build the complete response
+    resume = result["resume"]
+    
+    return ResumeComplete(
+        # Base resume fields
+        id=resume.id,
+        user_id=resume.user_id,
+        version_name=resume.version_name,
+        template_id=resume.template_id,
+        is_primary=resume.is_primary,
+        section_order=resume.section_order,
+        content_hash=resume.content_hash,
+        full_name=resume.full_name,
+        email=resume.email,
+        phone=resume.phone,
+        location=resume.location,
+        linkedin_url=resume.linkedin_url,
+        github_url=resume.github_url,
+        portfolio_url=resume.portfolio_url,
+        professional_summary=resume.professional_summary,
+        raw_text=resume.raw_text,
+        processing_status=resume.processing_status,
+        error_message=resume.error_message,
+        last_analyzed_at=resume.last_analyzed_at,
+        created_at=resume.created_at,
+        updated_at=resume.updated_at,
+        deleted_at=resume.deleted_at,
+        # Related sections
+        experiences=[ExperienceRead.model_validate(e) for e in result["experiences"]],
+        education=[EducationRead.model_validate(e) for e in result["education"]],
+        skills=[SkillRead.model_validate(s) for s in result["skills"]],
+        certifications=[CertificationRead.model_validate(c) for c in result["certifications"]],
+        projects=[ProjectRead.model_validate(p) for p in result["projects"]],
+        custom_sections=[],  # Not parsed yet
+    )
