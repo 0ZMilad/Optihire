@@ -28,6 +28,15 @@ export const useResumePolling = (
     maxAttempts = RESUME_POLLING.MAX_ATTEMPTS 
   } = options;
 
+  // Use refs for callbacks to avoid dependency loops
+  const onCompleteRef = useRef(onComplete);
+  const onErrorRef = useRef(onError);
+
+  useEffect(() => {
+    onCompleteRef.current = onComplete;
+    onErrorRef.current = onError;
+  });
+
   useEffect(() => {
     // 1. Don't poll if no ID provided
     if (!resumeId) {
@@ -38,6 +47,8 @@ export const useResumePolling = (
     }
 
     setIsPolling(true);
+    attemptCount.current = 0;
+    setStatusData(null);
     let timerId: NodeJS.Timeout | null = null;
     let isCancelled = false; 
 
@@ -55,21 +66,21 @@ export const useResumePolling = (
         // CASE: Completed
         if (data.status === "Completed") {
           setIsPolling(false);
-          if (onComplete && !isCancelled) onComplete(resumeId);
+          if (onCompleteRef.current && !isCancelled) onCompleteRef.current(resumeId);
           return; 
         }
 
         // CASE: Failed
         if (data.status === "Failed") {
           setIsPolling(false);
-          if (onError && !isCancelled) onError(data.error_details || "Parsing failed");
+          if (onErrorRef.current && !isCancelled) onErrorRef.current(data.error_details || "Parsing failed");
           return;
         }
 
         // CASE: Timeout
         if (attemptCount.current >= maxAttempts) {
           setIsPolling(false);
-          if (onError && !isCancelled) onError("Operation timed out");
+          if (onErrorRef.current && !isCancelled) onErrorRef.current("Operation timed out");
           return;
         }
 
@@ -81,7 +92,7 @@ export const useResumePolling = (
       } catch (error) {
         if (!isCancelled) {
           setIsPolling(false);
-          if (onError) onError("Network error during polling");
+          if (onErrorRef.current) onErrorRef.current("Network error during polling");
         }
       }
     };
@@ -95,7 +106,7 @@ export const useResumePolling = (
       if (timerId) clearTimeout(timerId);
     };
 
-  }, [resumeId, interval, maxAttempts, onComplete, onError]); 
+  }, [resumeId, interval, maxAttempts]); 
 
   return { statusData, isPolling };
 };

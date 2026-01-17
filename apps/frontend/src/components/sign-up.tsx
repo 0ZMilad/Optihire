@@ -1,6 +1,6 @@
 "use client";
 
-import { BarChart, Code, Eye, EyeOff, User } from "lucide-react";
+import { Eye, EyeOff } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState, FormEvent } from "react";
@@ -9,13 +9,6 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Spinner } from "@/components/ui/spinner";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import { logger } from "@/lib/logger";
 
 import { authService } from "@/middle-service/supabase";
@@ -31,10 +24,6 @@ export default function SignupForm() {
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [successMessage, setSuccessMessage] = useState("");
 
-  const [firstName, setFirstName] = useState("");
-  const [lastName, setLastName] = useState("");
-  const [username, setUserName] = useState("");
-  const [currentRole, setRole] = useState("designer");
   const [agreedToTerms, setAgreedToTerms] = useState(false);
 
   const handleSignUp = async (e: FormEvent<HTMLFormElement>) => {
@@ -85,89 +74,6 @@ export default function SignupForm() {
             Join us today and get started with your journey.
           </p>
           <form className="mt-6 space-y-4" onSubmit={handleSignUp}>
-            <div className="space-y-2">
-              <Label
-                htmlFor="role"
-                className="text-sm font-medium text-foreground dark:text-foreground"
-              >
-                Role
-              </Label>
-              <Select
-                defaultValue="designer"
-                onValueChange={setRole}
-                value={currentRole}
-              >
-                <SelectTrigger
-                  id="role"
-                  className="[&>span]:flex [&>span]:items-center [&>span]:gap-2 [&>span_svg]:shrink-0"
-                >
-                  <SelectValue placeholder="Select role" />
-                </SelectTrigger>
-                <SelectContent className="[&_*[role=option]]:ps-2 [&_*[role=option]]:pe-8 [&_*[role=option]>span]:start-auto [&_*[role=option]>span]:end-2 [&_*[role=option]>span]:flex [&_*[role=option]>span]:items-center [&_*[role=option]>span]:gap-2 [&_*[role=option]>span>svg]:shrink-0">
-                  <SelectItem value="designer">
-                    <User size={16} aria-hidden="true" />
-                    <span className="truncate">Product Designer</span>
-                  </SelectItem>
-                  <SelectItem value="developer">
-                    <Code size={16} aria-hidden="true" />
-                    <span className="truncate">Developer</span>
-                  </SelectItem>
-                  <SelectItem value="manager">
-                    <BarChart size={16} aria-hidden="true" />
-                    <span className="truncate">Product Manager</span>
-                  </SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label
-                  htmlFor="firstName"
-                  className="text-sm font-medium text-foreground dark:text-foreground"
-                >
-                  First name
-                </Label>
-                <Input
-                  id="firstName"
-                  placeholder="John"
-                  className="mt-1"
-                  onChange={(e) => setFirstName(e.target.value)}
-                  value={firstName}
-                />
-              </div>
-              <div className="space-y-2">
-                <Label
-                  htmlFor="lastName"
-                  className="text-sm font-medium text-foreground dark:text-foreground"
-                >
-                  Last name
-                </Label>
-                <Input
-                  id="lastName"
-                  placeholder="Doe"
-                  className="mt-1"
-                  onChange={(e) => setLastName(e.target.value)}
-                  value={lastName}
-                />
-              </div>
-            </div>
-
-            <div className="space-y-2">
-              <Label
-                htmlFor="username"
-                className="text-sm font-medium text-foreground dark:text-foreground"
-              >
-                Username
-              </Label>
-              <Input
-                id="username"
-                placeholder="johndoe"
-                className="mt-1"
-                onChange={(e) => setUserName(e.target.value)}
-                value={username}
-              />
-            </div>
 
             <div className="space-y-2">
               <Label

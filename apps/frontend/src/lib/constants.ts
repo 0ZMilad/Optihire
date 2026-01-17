@@ -29,45 +29,23 @@ export const FILE_UPLOAD = {
 } as const;
 
 // ============================================================================
-// USER-FRIENDLY ERROR MESSAGES
+// UI MESSAGES
 // ============================================================================
 
 export const ERROR_MESSAGES = {
-  // File validation errors
-  FILE_TOO_LARGE: "File size exceeds 5MB limit. Please use a smaller file.",
-  INVALID_TYPE: "Invalid file type. Only PDF and DOCX files are supported.",
-  FILE_NOT_SELECTED: "Please select a file to upload.",
-
-  // Upload errors
-  UPLOAD_FAILED: "Failed to upload resume. Please try again.",
-  UPLOAD_TIMEOUT: "Upload timed out. Check your connection and try again.",
-
-  // Parsing errors
-  PARSE_FAILED:
-    "Could not parse your resume. Please try a different format or contact support.",
-  PARSE_TIMEOUT:
-    "Parsing is taking too long. Please try again or contact support.",
-
-  // Network errors
-  NETWORK_ERROR:
-    "Network connection failed. Please check your internet connection.",
-  SERVER_ERROR: "Server error occurred. Please try again later.",
-
-  // Data retrieval errors
-  FETCH_FAILED: "Failed to retrieve resume data. Please refresh the page.",
-
-  // Save errors
-  SAVE_FAILED: "Failed to save changes. Please try again.",
+  FILE_TYPE: "Invalid file type. Please upload PDF or DOCX.",
+  FILE_SIZE_EXCEEDED: "File is too large.",
+  UPLOAD_FAILED: "Upload failed. Please try again.",
+  UPLOAD_ERROR_TOAST: "Failed to upload file",
+  PARSING_FAILED: "Failed to retrieve final resume details",
+  PARSING_DATA_MISSING: "Parsing completed but failed to load data",
+  SAVE_FAILED: "Failed to save resume. Please try again.",
 } as const;
 
-// ============================================================================
-// SUCCESS MESSAGES
-// ============================================================================
-
 export const SUCCESS_MESSAGES = {
-  UPLOAD_SUCCESS: "Resume uploaded successfully!",
-  PARSE_SUCCESS: "Resume parsed successfully!",
-  SAVE_SUCCESS: "Resume saved successfully!",
+  PARSE_COMPLETED: "Resume parsed successfully",
+  SAVE_COMPLETED: "Resume saved successfully!",
+  SIGNUP_CHECK_EMAIL: "Please check your email to verify your account.",
 } as const;
 
 // ============================================================================

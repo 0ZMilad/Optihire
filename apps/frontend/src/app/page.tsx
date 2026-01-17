@@ -1,4 +1,3 @@
-import { AnnouncementBanner } from "@/components/announcement-banner";
 import { Footer } from "@/components/footer";
 import { Header } from "@/components/header";
 import { HeroSection } from "@/components/hero-section";

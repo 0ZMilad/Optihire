@@ -66,32 +66,10 @@ export interface UserRead {
 }
 
 // ============================================================================
-// System Types
-// ============================================================================
-
-export interface HealthCheck {
-  status: string;
-  message: string;
-}
-
-// ============================================================================
 // API Error Types
 // ============================================================================
 
-export interface ApiError {
-  detail: string;
-  status_code?: number;
-}
-
-export interface ValidationError {
-  loc: (string | number)[];
-  msg: string;
-  type: string;
-}
-
-export interface ApiValidationError {
-  detail: ValidationError[];
-}
+// Error types removed as they are unused.
 
 // ============================================================================
 // Resume Parsing Types

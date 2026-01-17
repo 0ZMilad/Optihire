@@ -16,7 +16,7 @@ import { apiClient } from "@/middle-service/client";
 type LogLevel = "DEBUG" | "INFO" | "WARNING" | "ERROR" | "CRITICAL";
 
 interface LogContext {
-  [key: string]: any;
+  [key: string]: string | number | boolean | null | undefined | LogContext | Array<string | number | boolean>;
 }
 
 interface LogOptions {
@@ -36,19 +36,21 @@ class Logger {
   private static instance: Logger;
   private sessionId: string;
   private userId: string | null = null;
-  private isOnline: boolean = navigator.onLine;
+  private isOnline: boolean = typeof navigator !== 'undefined' ? navigator.onLine : true;
   private isDev: boolean = process.env.NODE_ENV === "development";
 
   private constructor() {
     this.sessionId = this.getOrCreateSessionId();
 
-    window.addEventListener("online", () => {
-      this.isOnline = true;
-    });
+    if (typeof window !== 'undefined') {
+      window.addEventListener("online", () => {
+        this.isOnline = true;
+      });
 
-    window.addEventListener("offline", () => {
-      this.isOnline = false;
-    });
+      window.addEventListener("offline", () => {
+        this.isOnline = false;
+      });
+    }
   }
 
   /**
@@ -65,6 +67,8 @@ class Logger {
    * Get or create a unique session ID
    */
   private getOrCreateSessionId(): string {
+    if (typeof sessionStorage === 'undefined') return "server-session";
+    
     const key = "optihire_session_id";
     let sessionId = sessionStorage.getItem(key);
 
@@ -81,20 +85,6 @@ class Logger {
    */
   private generateId(): string {
     return `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
-  }
-
-  /**
-   * Set the current user ID for log tracking
-   */
-  setUserId(userId: string): void {
-    this.userId = userId;
-  }
-
-  /**
-   * Clear the user ID (e.g., on logout)
-   */
-  clearUserId(): void {
-    this.userId = null;
   }
 
   /**
@@ -206,51 +196,6 @@ class Logger {
     const path = window.location.pathname;
     const source = path.split("/").filter(Boolean)[0] || "root";
     return source;
-  }
-
-  /**
-   * Log API errors with standardized format
-   */
-  logApiError(
-    endpoint: string,
-    method: string,
-    statusCode: number,
-    error: any,
-    context?: LogContext
-  ): void {
-    const message = `API Error: ${method} ${endpoint}`;
-    this.error(message, {
-      endpoint,
-      method,
-      status_code: statusCode,
-      error: error?.message || error?.toString?.(),
-      ...context,
-    });
-  }
-
-  /**
-   * Log user actions (login, logout, form submission, etc.)
-   */
-  logUserAction(
-    action: string,
-    details?: LogContext,
-    source?: string
-  ): void {
-    this.info(`User Action: ${action}`, {
-      action,
-      source: source || this.getSourceContext(),
-      ...details,
-    });
-  }
-
-  /**
-   * Log page transitions/navigation
-   */
-  logNavigation(from: string, to: string): void {
-    this.info(`Navigation`, {
-      from,
-      to,
-    });
   }
 }
 

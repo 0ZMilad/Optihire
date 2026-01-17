@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import {
@@ -21,6 +21,7 @@ import { updateResume } from "@/middle-service/resumes";
 import { ResumeRead } from "@/middle-service/types";
 import { logger } from "@/lib/logger";
 import { toast } from "sonner";
+import { ERROR_MESSAGES, SUCCESS_MESSAGES } from "@/lib/constants";
 
 export default function DashboardPage() {
   const {
@@ -33,23 +34,31 @@ export default function DashboardPage() {
   } = useResumeUpload();
 
   const [isReviewOpen, setIsReviewOpen] = useState(false);
+  // Track if we've already automatically opened the review for the current completion
+  const hasAutoOpened = useRef(false);
 
   useEffect(() => {
-    if (appState === "DONE" && !isReviewOpen) {
+    if (appState === "DONE" && !isReviewOpen && !hasAutoOpened.current) {
       setIsReviewOpen(true);
+      hasAutoOpened.current = true;
     }
-  }, [appState]);
+    
+    // Reset the flag when we're not in DONE state anymore (e.g. new upload started)
+    if (appState !== "DONE") {
+      hasAutoOpened.current = false;
+    }
+  }, [appState, isReviewOpen]);
 
   const handleSaveResume = async (editedData: Partial<ResumeRead>) => {
     if (!parsedResumeData) return;
 
     try {
       await updateResume(parsedResumeData.id, editedData);
-      toast.success("Resume saved successfully!");
+      toast.success(SUCCESS_MESSAGES.SAVE_COMPLETED);
       resetUpload();
     } catch (err) {
       logger.error("Failed to save resume", { error: err instanceof Error ? err.message : "Unknown error" });
-      toast.error("Failed to save resume. Please try again.");
+      toast.error(ERROR_MESSAGES.SAVE_FAILED);
     }
   };
 
@@ -170,7 +179,7 @@ export default function DashboardPage() {
             )}
 
             {appState === "PROCESSING" && (
-              <div className="md:col-span-2">
+              <div className="md:col-span-1">
                 <ResumeProcessing statusMessage={statusData?.message} />
               </div>
             )}

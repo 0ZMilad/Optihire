@@ -42,32 +42,32 @@ export default function AuthCallback() {
 
   const { seconds, start } = useCountdown(3, redirectUser);
 
-  const handleCallback = async () => {
-    if (error || errorCode) {
-      const errorInfo = getAuthErrorMessage(errorCode || 'default');
-      setErrorDetails(errorInfo);
-      setStatus('error');
-      return;
-    }
-
-    const detectedType = (type as AuthCallbackType) || 'recovery';
-    setCallbackType(detectedType);
-
-    const { data, error: sessionError } = await authService.getSession();
-
-    if (sessionError || !data.session) {
-      setErrorDetails(getAuthErrorMessage('token_not_found'));
-      setStatus('error');
-      return;
-    }
-
-    setStatus('success');
-    start();
-  };
-
   useEffect(() => {
+    const handleCallback = async () => {
+      if (error || errorCode) {
+        const errorInfo = getAuthErrorMessage(errorCode || 'default');
+        setErrorDetails(errorInfo);
+        setStatus('error');
+        return;
+      }
+  
+      const detectedType = (type as AuthCallbackType) || 'recovery';
+      setCallbackType(detectedType);
+  
+      const { data, error: sessionError } = await authService.getSession();
+  
+      if (sessionError || !data.session) {
+        setErrorDetails(getAuthErrorMessage('token_not_found'));
+        setStatus('error');
+        return;
+      }
+  
+      setStatus('success');
+      start();
+    };
+
     handleCallback();
-  }, []);
+  }, [error, errorCode, type, start]);
 
   if (status === 'loading') {
     return (

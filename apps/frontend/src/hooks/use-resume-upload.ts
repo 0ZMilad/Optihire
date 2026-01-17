@@ -3,7 +3,7 @@ import { toast } from 'sonner';
 import { uploadResume, getResumeData } from '@/middle-service/resumes';
 import { useResumePolling } from './use-resume-polling';
 import { ResumeRead } from '@/middle-service/types';
-import { FILE_UPLOAD } from '@/lib/constants';
+import { FILE_UPLOAD, ERROR_MESSAGES, SUCCESS_MESSAGES } from '@/lib/constants';
 
 export type AppState = 'IDLE' | 'PROCESSING' | 'DONE';
 
@@ -13,38 +13,41 @@ export function useResumeUpload() {
   const [parsedResumeData, setParsedResumeData] = useState<ResumeRead | null>(null);
   const [error, setError] = useState<string | null>(null);
 
+  const handlePollingComplete = useCallback(async (id: string) => {
+    try {
+      const data = await getResumeData(id);
+      setParsedResumeData(data);
+      setAppState('DONE');
+      toast.success(SUCCESS_MESSAGES.PARSE_COMPLETED);
+    } catch (err) {
+      setError(ERROR_MESSAGES.PARSING_FAILED);
+      setAppState('IDLE');
+      setUploadedResumeId(null);
+      toast.error(ERROR_MESSAGES.PARSING_DATA_MISSING);
+    }
+  }, []);
+
+  const handlePollingError = useCallback((msg: string) => {
+    setError(msg);
+    setAppState('IDLE');
+    setUploadedResumeId(null); // Stop polling
+    toast.error(msg);
+  }, []);
+
   // Initialise polling hook. It will only activate when uploadedResumeId is set.
   const { statusData, isPolling } = useResumePolling(uploadedResumeId, {
-    onComplete: async (id) => {
-      try {
-        // Fetch the full parsed data object once status is 'completed'
-        const data = await getResumeData(id);
-        setParsedResumeData(data);
-        setAppState('DONE');
-        toast.success("Resume parsed successfully");
-      } catch (err) {
-        setError("Failed to retrieve final resume details");
-        setAppState('IDLE');
-        setUploadedResumeId(null);
-        toast.error("Parsing completed but failed to load data");
-      }
-    },
-    onError: (msg) => {
-      setError(msg);
-      setAppState('IDLE');
-      setUploadedResumeId(null); // Stop polling
-      toast.error(msg);
-    }
+    onComplete: handlePollingComplete,
+    onError: handlePollingError
   });
 
   const handleUpload = useCallback(async (file: File) => {
-    if (!FILE_UPLOAD.ALLOWED_TYPES.includes(file.type)) {
-      toast.error("Invalid file type. Please upload PDF or DOCX.");
+    if (!(FILE_UPLOAD.ALLOWED_TYPES as readonly string[]).includes(file.type)) {
+      toast.error(ERROR_MESSAGES.FILE_TYPE);
       return;
     }
 
     if (file.size > FILE_UPLOAD.MAX_SIZE_BYTES) {
-      toast.error(`File is too large (max ${FILE_UPLOAD.MAX_SIZE_MB}MB).`);
+      toast.error(`${ERROR_MESSAGES.FILE_SIZE_EXCEEDED} (max ${FILE_UPLOAD.MAX_SIZE_MB}MB).`);
       return;
     }
 
@@ -56,9 +59,9 @@ export function useResumeUpload() {
       // Setting this ID automatically triggers the useResumePolling hook
       setUploadedResumeId(response.id);
     } catch (err) {
-      setError("Upload failed. Please try again.");
+      setError(ERROR_MESSAGES.UPLOAD_FAILED);
       setAppState('IDLE');
-      toast.error("Failed to upload file");
+      toast.error(ERROR_MESSAGES.UPLOAD_ERROR_TOAST);
     }
   }, []);
 
