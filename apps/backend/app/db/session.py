@@ -1,3 +1,5 @@
+from contextlib import contextmanager
+
 from sqlmodel import Session, create_engine
 
 from app.core.config import settings
@@ -18,6 +20,24 @@ def SessionLocal():
     Used for background tasks and non-request contexts.
     """
     return Session(engine)
+
+
+@contextmanager
+def get_session_context():
+    """
+    Context manager for database sessions in background tasks.
+    Ensures proper cleanup even if exceptions occur.
+    
+    Usage:
+        with get_session_context() as db:
+            # do database operations
+            pass
+    """
+    session = Session(engine)
+    try:
+        yield session
+    finally:
+        session.close()
 
 
 def get_db():

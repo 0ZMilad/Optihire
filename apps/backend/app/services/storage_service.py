@@ -8,10 +8,13 @@ from app.core.logging_config import log_error, log_warning
 
 
 @lru_cache()
-def _get_supabase_client() -> Client:
+def get_supabase_client() -> Client:
     """
     Returns a cached Supabase client.
     Prioritises Service Role Key to bypass RLS for backend operations.
+    
+    This is the single source of truth for Supabase client creation.
+    Import this function in other modules instead of creating new clients.
     """
     return create_client(
         supabase_url=str(settings.SUPABASE_URL),
@@ -23,7 +26,7 @@ def upload_file(file_data: bytes, destination_path: str, content_type: str) -> s
     """
     Uploads a file to Supabase storage and returns its public URL.
     """
-    client = _get_supabase_client()
+    client = get_supabase_client()
     bucket = settings.SUPABASE_STORAGE_BUCKET
 
     try:
@@ -52,7 +55,7 @@ def get_public_url(path: str) -> str:
     Retrieves the public URL for a file without re-uploading it.
     Useful when you already have the path stored in the DB.
     """
-    client = _get_supabase_client()
+    client = get_supabase_client()
     bucket = settings.SUPABASE_STORAGE_BUCKET
     
     # get_public_url is a synchronous operation that just formats the string
@@ -63,7 +66,7 @@ def delete_file(path: str) -> bool:
     """
     Deletes a file from storage. Returns True if successful.
     """
-    client = _get_supabase_client()
+    client = get_supabase_client()
     bucket = settings.SUPABASE_STORAGE_BUCKET
 
     try:

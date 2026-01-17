@@ -1,6 +1,28 @@
 from http import HTTPStatus
-from typing import Dict, Optional, Union, List
+from typing import Dict, Optional, Union, List, TypeVar
+
+from fastapi import HTTPException
 from fastapi.responses import JSONResponse
+
+T = TypeVar("T")
+
+
+def require_found(resource: T | None, resource_name: str = "Resource") -> T:
+    """
+    Raises HTTPException 404 if resource is None.
+    
+    Usage:
+        user = require_found(user_service.get_user_by_id(db, user_id), "User")
+        # If user is None, raises 404
+        # Otherwise, returns the user
+    """
+    if resource is None:
+        raise HTTPException(
+            status_code=404,
+            detail=f"{resource_name} not found"
+        )
+    return resource
+
 
 def create_error_response(status_code: Union[int, HTTPStatus], code: str, message: str, details: Optional[Dict] = None) -> JSONResponse:
      error_body = {

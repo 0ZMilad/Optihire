@@ -1,10 +1,13 @@
-from fastapi import FastAPI
-from fastapi.middleware.cors import CORSMiddleware
 import logging
+
+from fastapi import FastAPI, Request
+from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse
+from sqlalchemy.exc import IntegrityError
 
 from app.api.v1.endpoints import system_api, user_api, resumes
 from app.core.config import settings
-from app.core.logging_config import backend_logger, log_info
+from app.core.logging_config import backend_logger, log_info, log_error
 from app.middleware.auth import JWTMiddleware
 from app.middleware.logging_middleware import LoggingMiddleware
 
@@ -20,6 +23,44 @@ app = FastAPI(
     docs_url="/docs",
     redoc_url="/redoc",
 )
+
+
+# =============================================================================
+# GLOBAL EXCEPTION HANDLERS
+# =============================================================================
+
+@app.exception_handler(IntegrityError)
+async def integrity_error_handler(request: Request, exc: IntegrityError) -> JSONResponse:
+    """
+    Handle database integrity errors (unique constraint violations, etc.)
+    Returns a 409 Conflict response with details.
+    """
+    log_error(f"Database integrity error: {str(exc)}", logger_name="backend")
+    return JSONResponse(
+        status_code=409,
+        content={
+            "code": "INTEGRITY_ERROR",
+            "message": "A database constraint was violated",
+            "detail": "The resource already exists or conflicts with existing data"
+        }
+    )
+
+
+@app.exception_handler(ValueError)
+async def value_error_handler(request: Request, exc: ValueError) -> JSONResponse:
+    """
+    Handle ValueError exceptions (often from parsing/validation).
+    Returns a 400 Bad Request response.
+    """
+    log_error(f"Value error: {str(exc)}", logger_name="backend")
+    return JSONResponse(
+        status_code=400,
+        content={
+            "code": "VALIDATION_ERROR",
+            "message": str(exc)
+        }
+    )
+
 
 # Initialize logging
 log_info("Application starting up", logger_name="backend")
@@ -62,9 +103,5 @@ def read_root():
         "version": "1.0.0",
         "docs": "/docs",
         "redoc": "/redoc",
+        "health": "/api/v1/system/health",
     }
-
-
-@app.get("/health")
-def health_check():
-    return {"status": "healthy", "service": "Optihire Backend"}

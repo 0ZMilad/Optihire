@@ -8,11 +8,9 @@ This module handles:
 - Background processing with status updates
 """
 import io
-import logging
 import re
 from uuid import UUID
 from datetime import datetime, date
-from functools import lru_cache
 from typing import Any, Optional
 
 from docx import Document
@@ -22,7 +20,6 @@ from pdfminer.pdfparser import PDFSyntaxError
 from pdfminer.pdfdocument import PDFEncryptionError
 from pdfminer.pdfpage import PDFTextExtractionNotAllowed
 from sqlmodel import Session, select
-from supabase import create_client, Client
 
 from app.core.config import settings
 from app.core.logging_config import log_info, log_error, log_warning
@@ -36,6 +33,7 @@ from app.models.resume_model import (
     ResumeProject,
 )
 from app.schemas.resume_schema import ResumeParseStatusResponse
+from app.services.storage_service import get_supabase_client
 
 # =============================================================================
 # STATUS MANAGEMENT
@@ -161,22 +159,6 @@ SECTION_HEADERS = {
         re.IGNORECASE | re.MULTILINE
     ),
 }
-
-
-# =============================================================================
-# SUPABASE CLIENT
-# =============================================================================
-
-@lru_cache()
-def _get_supabase_client() -> Client:
-    """
-    Returns a cached Supabase client for storage operations.
-    Uses Service Role Key to bypass RLS.
-    """
-    return create_client(
-        supabase_url=str(settings.SUPABASE_URL),
-        supabase_key=str(settings.SUPABASE_SERVICE_ROLE_KEY or settings.SUPABASE_KEY),
-    )
 
 
 # =============================================================================
@@ -384,7 +366,7 @@ def download_resume_file(file_path: str) -> bytes:
             - ParseError: Oversize - File exceeds 5MB limit
             - ParseError: DownloadFailed - Storage download error
     """
-    client = _get_supabase_client()
+    client = get_supabase_client()
     bucket = settings.SUPABASE_STORAGE_BUCKET
     
     try:

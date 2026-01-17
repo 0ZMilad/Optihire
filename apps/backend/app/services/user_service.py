@@ -1,7 +1,6 @@
 from datetime import datetime, timezone
 from uuid import UUID
 
-from fastapi import HTTPException
 from sqlalchemy.exc import IntegrityError
 from sqlmodel import Session, select
 
@@ -10,18 +9,15 @@ from app.schemas.user_schema import UserCreate, UserUpdate
 
 
 def create_user(db: Session, user_data: UserCreate) -> User:
-    """Create a new user in the database."""
+    """
+    Create a new user in the database.
+    
+    Raises IntegrityError if user with email/supabase_id already exists.
+    This is handled by the global exception handler in main.py.
+    """
     user = User.model_validate(user_data)
     db.add(user)
-    try:
-        db.commit()
-    except IntegrityError as err:
-        db.rollback()
-        # You can add more specific checks here to see which constraint failed
-        raise HTTPException(
-            status_code=409,
-            detail="User with this email or Supabase User ID already exists",
-        ) from err
+    db.commit()
     db.refresh(user)
     return user
 
@@ -43,7 +39,12 @@ def get_user_by_supabase_id(db: Session, supabase_user_id: UUID) -> User | None:
 
 
 def update_user(db: Session, user_id: UUID, user_data: UserUpdate) -> User | None:
-    """Update a user's information."""
+    """
+    Update a user's information.
+    
+    Raises IntegrityError if update violates unique constraints.
+    This is handled by the global exception handler in main.py.
+    """
     user = get_user_by_id(db, user_id)
     if not user:
         return None
@@ -55,16 +56,9 @@ def update_user(db: Session, user_id: UUID, user_data: UserUpdate) -> User | Non
 
     user.updated_at = datetime.now(timezone.utc)
 
-    try:
-        db.add(user)
-        db.commit()
-        db.refresh(user)
-    except IntegrityError as err:
-        db.rollback()
-        raise HTTPException(
-            status_code=409,
-            detail="User with this email already exists",
-        ) from err
+    db.add(user)
+    db.commit()
+    db.refresh(user)
 
     return user
 

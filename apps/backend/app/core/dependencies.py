@@ -39,6 +39,45 @@ def require_scopes(required_scopes: list[str]):
     return check_scopes
 
 
+def require_self_access(resource_user_id_param: str = "user_id"):
+    """
+    Factory that creates a dependency to verify a user is only accessing their own resource.
+    
+    Usage:
+        @router.get("/{user_id}", dependencies=[Depends(require_self_access("user_id"))])
+        async def get_user(user_id: UUID, ...):
+            ...
+    """
+    async def check_self_access(
+        request: Request,
+        current_user_id: UUID = Depends(get_current_user_id),
+    ) -> None:
+        # Get the resource user_id from path parameters
+        resource_user_id = request.path_params.get(resource_user_id_param)
+        
+        if resource_user_id is None:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=f"Missing path parameter: {resource_user_id_param}"
+            )
+        
+        try:
+            resource_uuid = UUID(resource_user_id)
+        except ValueError:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Invalid user ID format"
+            )
+        
+        if resource_uuid != current_user_id:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="You can only access your own resources"
+            )
+    
+    return check_self_access
+
+
 async def get_current_user(
     request: Request,
 ) -> dict:

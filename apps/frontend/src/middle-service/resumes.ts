@@ -1,5 +1,5 @@
 import { apiClient } from "./client";
-import { ResumeParseStatusResponse, ResumeRead, ResumeUploadResponse } from "./types";
+import { ResumeParseStatusResponse, ResumeRead, ResumeComplete, ResumeUploadResponse } from "./types";
 
 export const uploadResume = async (file: File) => {
   const formData = new FormData();
@@ -22,6 +22,12 @@ export const getResumeParseStatus = async (resumeId: string) => {
 
 export const getResumeData = async (resumeId: string) => {
   const response = await apiClient.get<ResumeRead>(`/api/v1/resumes/${resumeId}`);
+  
+  return response.data;
+}
+
+export const getResumeCompleteData = async (resumeId: string) => {
+  const response = await apiClient.get<ResumeComplete>(`/api/v1/resumes/${resumeId}/complete`);
   
   return response.data;
 }

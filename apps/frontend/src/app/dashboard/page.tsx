@@ -18,7 +18,7 @@ import { ResumeProcessing } from "@/components/resume-processing";
 import { ResumeReviewForm } from "@/components/resume-review-form";
 import { useResumeUpload } from "@/hooks/use-resume-upload";
 import { updateResume } from "@/middle-service/resumes";
-import { ResumeRead } from "@/middle-service/types";
+import { ResumeComplete } from "@/middle-service/types";
 import { logger } from "@/lib/logger";
 import { toast } from "sonner";
 import { ERROR_MESSAGES, SUCCESS_MESSAGES } from "@/lib/constants";
@@ -49,7 +49,7 @@ export default function DashboardPage() {
     }
   }, [appState, isReviewOpen]);
 
-  const handleSaveResume = async (editedData: Partial<ResumeRead>) => {
+  const handleSaveResume = async (editedData: Partial<ResumeComplete>) => {
     if (!parsedResumeData) return;
 
     try {

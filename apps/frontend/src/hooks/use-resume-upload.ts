@@ -1,8 +1,8 @@
 import { useState, useCallback } from 'react';
 import { toast } from 'sonner';
-import { uploadResume, getResumeData } from '@/middle-service/resumes';
+import { uploadResume, getResumeCompleteData } from '@/middle-service/resumes';
 import { useResumePolling } from './use-resume-polling';
-import { ResumeRead } from '@/middle-service/types';
+import { ResumeComplete } from '@/middle-service/types';
 import { FILE_UPLOAD, ERROR_MESSAGES, SUCCESS_MESSAGES } from '@/lib/constants';
 
 export type AppState = 'IDLE' | 'PROCESSING' | 'DONE';
@@ -10,12 +10,12 @@ export type AppState = 'IDLE' | 'PROCESSING' | 'DONE';
 export function useResumeUpload() {
   const [appState, setAppState] = useState<AppState>('IDLE');
   const [uploadedResumeId, setUploadedResumeId] = useState<string | null>(null);
-  const [parsedResumeData, setParsedResumeData] = useState<ResumeRead | null>(null);
+  const [parsedResumeData, setParsedResumeData] = useState<ResumeComplete | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   const handlePollingComplete = useCallback(async (id: string) => {
     try {
-      const data = await getResumeData(id);
+      const data = await getResumeCompleteData(id);
       setParsedResumeData(data);
       setAppState('DONE');
       toast.success(SUCCESS_MESSAGES.PARSE_COMPLETED);

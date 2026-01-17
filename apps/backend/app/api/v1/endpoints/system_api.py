@@ -26,7 +26,7 @@ router = APIRouter()
 
 
 @router.get("/health")
-def check_system_health(db: Session = Depends(get_db)):
+async def check_system_health(db: Session = Depends(get_db)):
     """
     Check the health of the system by verifying database connectivity.
     Returns service status and database connection state.
