@@ -37,7 +37,8 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { useAuth } from "@/components/auth-provider";
 
 // Navigation items
 const navItems = [
@@ -56,6 +57,7 @@ function checkIsActive(pathname: string, url: string) {
 // User Navigation
 function NavUser() {
   const { isMobile } = useSidebar();
+  const { user } = useAuth();
   const router = useRouter();
 
   const handleSignout = async () => {
@@ -73,11 +75,17 @@ function NavUser() {
               className="data-[state=open]:bg-sidebar-accent data-[state=open]:text-sidebar-accent-foreground"
             >
               <Avatar className="h-8 w-8 rounded-lg">
-                <AvatarFallback className="rounded-lg">US</AvatarFallback>
+                <AvatarFallback className="rounded-lg">
+                  {user?.user_metadata?.full_name ? 
+                    user.user_metadata.full_name.split(' ').map((n: string) => n[0]).join('').toUpperCase() : 
+                    user?.email?.substring(0, 2).toUpperCase() || 'U'}
+                </AvatarFallback>
               </Avatar>
               <div className="grid flex-1 text-start text-sm leading-tight">
-                <span className="truncate font-semibold">User</span>
-                <span className="truncate text-xs">user@optihire.com</span>
+                <span className="truncate font-semibold">
+                  {user?.user_metadata?.full_name || user?.email?.split('@')[0] || 'User'}
+                </span>
+                <span className="truncate text-xs">{user?.email || 'No email'}</span>
               </div>
               <ChevronsUpDown className="ms-auto size-4" />
             </SidebarMenuButton>
