@@ -185,16 +185,17 @@ export default function DashboardPage() {
             )}
 
             <Dialog open={isReviewOpen} onOpenChange={setIsReviewOpen}>
-              <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+              <DialogContent className="max-w-7xl w-[95vw] max-h-[90vh] overflow-y-auto">
                 <DialogHeader>
                   <DialogTitle>Review Extracted Data</DialogTitle>
                   <DialogDescription>
-                    Our AI extracted this information. Please verify and edit any missing details before continuing.
+                    Our AI extracted this information. Compare with your original document and edit any missing details before continuing.
                   </DialogDescription>
                 </DialogHeader>
                 {parsedResumeData && (
                   <ResumeReviewForm
                     resumeData={parsedResumeData}
+                    showPdfViewer={true}
                     onSave={async (data) => {
                       await handleSaveResume(data);
                       setIsReviewOpen(false);

@@ -8,11 +8,14 @@ import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
+import { PdfViewer } from "@/components/pdf-viewer"
 
 interface ResumeReviewFormProps {
   resumeData: ResumeComplete
   onSave: (data: Partial<ResumeComplete>) => Promise<void>
   onCancel: () => void
+  /** Whether to show the PDF viewer in split view mode */
+  showPdfViewer?: boolean
 }
 
 const PersonalDetails = memo(({ 
@@ -248,7 +251,7 @@ const EducationSection = memo(({ education }: { education: EducationRead[] }) =>
 ));
 EducationSection.displayName = "EducationSection";
 
-export function ResumeReviewForm({ resumeData, onSave, onCancel }: ResumeReviewFormProps) {
+export function ResumeReviewForm({ resumeData, onSave, onCancel, showPdfViewer = true }: ResumeReviewFormProps) {
   const [formData, setFormData] = useState({
     full_name: resumeData.full_name || "",
     email: resumeData.email || "",
@@ -266,6 +269,10 @@ export function ResumeReviewForm({ resumeData, onSave, onCancel }: ResumeReviewF
 
   const [errors, setErrors] = useState<Record<string, string>>({})
   const [isSaving, setIsSaving] = useState(false)
+
+  // Determine if we have a viewable file
+  const fileUrl = resumeData.file_url
+  const hasFileToShow = showPdfViewer && !!fileUrl
 
   const handleChange = useCallback((
     e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
@@ -322,61 +329,81 @@ export function ResumeReviewForm({ resumeData, onSave, onCancel }: ResumeReviewF
   }
 
   return (
-    <div className="w-full max-w-4xl mx-auto">
-      <form onSubmit={handleSubmit}>
-        <div className="space-y-6 py-4">
-          <PersonalDetails 
-            data={{
-              full_name: formData.full_name,
-              email: formData.email,
-              phone: formData.phone,
-              location: formData.location
-            }}
-            errors={errors}
-            onChange={handleChange}
-          />
+    <div className="w-full">
+      {/* Split View Container - stacks on mobile, side-by-side on desktop */}
+      <div className={`flex flex-col ${hasFileToShow ? 'lg:flex-row lg:gap-6' : ''}`}>
+        
+        {/* Left Panel: PDF Viewer (only shown if file available) */}
+        {hasFileToShow && (
+          <div className="w-full lg:w-1/2 mb-6 lg:mb-0 lg:sticky lg:top-0 lg:self-start">
+            <div className="h-[400px] lg:h-[calc(100vh-200px)] min-h-[500px]">
+              <PdfViewer 
+                url={fileUrl} 
+                filename={resumeData.version_name}
+                className="h-full rounded-lg border"
+              />
+            </div>
+          </div>
+        )}
 
-          <ProfessionalLinks 
-            data={{
-              linkedin_url: formData.linkedin_url,
-              github_url: formData.github_url,
-              portfolio_url: formData.portfolio_url
-            }}
-            onChange={handleChange}
-          />
+        {/* Right Panel: Editable Form */}
+        <div className={`w-full ${hasFileToShow ? 'lg:w-1/2' : 'max-w-4xl mx-auto'}`}>
+          <form onSubmit={handleSubmit}>
+            <div className="space-y-6 py-4">
+              <PersonalDetails 
+                data={{
+                  full_name: formData.full_name,
+                  email: formData.email,
+                  phone: formData.phone,
+                  location: formData.location
+                }}
+                errors={errors}
+                onChange={handleChange}
+              />
 
-          <SummarySection 
-            value={formData.professional_summary}
-            onChange={handleChange}
-          />
+              <ProfessionalLinks 
+                data={{
+                  linkedin_url: formData.linkedin_url,
+                  github_url: formData.github_url,
+                  portfolio_url: formData.portfolio_url
+                }}
+                onChange={handleChange}
+              />
 
-          <SkillsSection skills={formData.skills} />
-          <ExperienceSection experiences={formData.experiences} />
-          <EducationSection education={formData.education} />
+              <SummarySection 
+                value={formData.professional_summary}
+                onChange={handleChange}
+              />
+
+              <SkillsSection skills={formData.skills} />
+              <ExperienceSection experiences={formData.experiences} />
+              <EducationSection education={formData.education} />
+            </div>
+
+            <div className="flex justify-between border-t pt-6 mt-6">
+              <Button 
+                type="button" 
+                variant="ghost" 
+                onClick={onCancel}
+                disabled={isSaving}
+              >
+                Cancel
+              </Button>
+              
+              <Button type="submit" disabled={isSaving}>
+                {isSaving ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Saving...
+                  </>
+                ) : (
+                  "Save & Continue"
+                )}
+              </Button>
+            </div>
+          </form>
         </div>
-
-        <div className="flex justify-between border-t pt-6 mt-6">
-          <Button 
-            type="button" 
-            variant="ghost" 
-            onClick={onCancel}
-            disabled={isSaving}
-          >
-            Cancel
-          </Button>
-          
-          <Button type="submit" disabled={isSaving}>
-            {isSaving ? (
-              <>
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                Saving...
-              </>
-            ) : (
-              "Save & Continue"
-            )}
-          </Button>
-        </div>
-      </form>
+      </div>
     </div>
   )
 }

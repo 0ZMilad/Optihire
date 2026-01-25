@@ -99,6 +99,10 @@ export interface ResumeRead {
   user_id: string;
   version_name: string;
 
+  // File storage
+  file_path: string | null;
+  file_url: string | null;
+
   // Parsed Contact Info & Links
   full_name: string | null;
   email: string | null;
@@ -220,6 +224,7 @@ export interface ResumeComplete extends ResumeRead {
   content_hash: string | null;
   last_analyzed_at: string | null;
   deleted_at: string | null;
+  file_url: string | null;
   
   // Parsed structured sections
   experiences: ExperienceRead[];

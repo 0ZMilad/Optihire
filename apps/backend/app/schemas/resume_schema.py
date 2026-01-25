@@ -73,6 +73,8 @@ class ResumeRead(BaseModel):
     is_primary: bool
     section_order: dict | None
     content_hash: str | None
+    file_path: str | None
+    file_url: str | None
     full_name: str | None
     email: str | None
     phone: str | None

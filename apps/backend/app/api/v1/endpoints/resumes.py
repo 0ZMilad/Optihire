@@ -399,6 +399,8 @@ async def get_resume_complete_endpoint(
         is_primary=resume.is_primary,
         section_order=resume.section_order,
         content_hash=resume.content_hash,
+        file_path=resume.file_path,
+        file_url=resume.file_url,
         full_name=resume.full_name,
         email=resume.email,
         phone=resume.phone,
