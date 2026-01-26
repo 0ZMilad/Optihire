@@ -718,75 +718,384 @@ def _parse_experience_section(experience_text: str) -> list[dict[str, Any]]:
     Parse experience section into structured entries.
     
     Returns a list of experience dictionaries with:
-    - company_name, job_title, description (raw text for now)
+    - company_name, job_title, start_date, end_date, description, is_current
     """
     if not experience_text:
         return []
     
     experiences = []
     
-    # Split by common patterns that indicate new job entries
-    # Look for patterns like: Company Name followed by date range
+    # Date pattern to identify the start of a new job entry
+    # Matches formats like: 01/2015-06/2017, Jan 2015 - Present, 2015-2017, etc.
     date_pattern = re.compile(
-        r"(?:Jan(?:uary)?|Feb(?:ruary)?|Mar(?:ch)?|Apr(?:il)?|May|Jun(?:e)?|"
+        r"(?:"
+        # MM/YYYY format: 01/2015-06/2017 or 01/2015 - Present
+        r"(?:\d{1,2}/\d{4}\s*[-–—to]+\s*(?:\d{1,2}/\d{4}|[Pp]resent|[Cc]urrent))"
+        r"|"
+        # Month YYYY format: Jan 2015 - June 2017 or January 2015 - Present
+        r"(?:(?:Jan(?:uary)?|Feb(?:ruary)?|Mar(?:ch)?|Apr(?:il)?|May|Jun(?:e)?|"
         r"Jul(?:y)?|Aug(?:ust)?|Sep(?:tember)?|Oct(?:ober)?|Nov(?:ember)?|Dec(?:ember)?)"
-        r"[\s,\.]*\d{2,4}\s*[-–—to]+\s*"
-        r"(?:Jan(?:uary)?|Feb(?:ruary)?|Mar(?:ch)?|Apr(?:il)?|May|Jun(?:e)?|"
-        r"Jul(?:y)?|Aug(?:ust)?|Sep(?:tember)?|Oct(?:ober)?|Nov(?:ember)?|Dec(?:ember)?|Present|Current)"
-        r"[\s,\.]*\d{0,4}",
+        r"[\s,\.]*\d{4}\s*[-–—to]+\s*"
+        r"(?:(?:Jan(?:uary)?|Feb(?:ruary)?|Mar(?:ch)?|Apr(?:il)?|May|Jun(?:e)?|"
+        r"Jul(?:y)?|Aug(?:ust)?|Sep(?:tember)?|Oct(?:ober)?|Nov(?:ember)?|Dec(?:ember)?)"
+        r"[\s,\.]*\d{4}|[Pp]resent|[Cc]urrent))"
+        r"|"
+        # YYYY-YYYY format: 2015-2017 or 2015 - Present
+        r"(?:\d{4}\s*[-–—to]+\s*(?:\d{4}|[Pp]resent|[Cc]urrent))"
+        r")",
         re.IGNORECASE
     )
     
-    # For now, store raw text chunks as experience entries
-    # A more sophisticated parser would use NLP/ML
-    paragraphs = experience_text.split("\n\n")
+    # Company/location pattern - looks for "Company Name – City, STATE" or similar
+    company_location_pattern = re.compile(
+        r"^(.+?)\s*[-–—]\s*([A-Za-z\s]+,\s*[A-Z]{2})\s*$"
+    )
     
-    for para in paragraphs:
-        para = para.strip()
-        if len(para) > 20:  # Minimum content threshold
-            experiences.append({
-                "raw_text": para,
-                "company_name": None,  # Would need NER to extract
-                "job_title": None,     # Would need NER to extract
-            })
+    # Job title pattern - typically capitalized words at start of line
+    job_title_pattern = re.compile(
+        r"^([A-Z][A-Za-z\s]+(?:Manager|Engineer|Developer|Analyst|Director|"
+        r"Coordinator|Specialist|Associate|Intern|Lead|Senior|Junior|"
+        r"Assistant|Supervisor|Executive|Officer|Administrator|Consultant|"
+        r"Technician|Representative|Designer|Architect|Host|Server|Bartender|"
+        r"Cook|Chef|Cashier|Clerk|Teacher|Professor|Nurse|Doctor|Lawyer|"
+        r"Accountant|Writer|Editor|Photographer|Artist|Scientist|Researcher))\s*$",
+        re.IGNORECASE
+    )
+    
+    # Normalize the text - collapse multiple newlines but preserve structure
+    lines = experience_text.split("\n")
+    
+    # Group lines into job entries based on date patterns
+    current_entry_lines = []
+    entries = []
+    
+    for line in lines:
+        line = line.strip()
+        if not line:
+            continue
+        
+        # Check if this line contains a date range (indicates new job entry)
+        date_match = date_pattern.search(line)
+        
+        if date_match and current_entry_lines:
+            # Save current entry and start a new one
+            entries.append(current_entry_lines)
+            current_entry_lines = [line]
+        else:
+            current_entry_lines.append(line)
+    
+    # Don't forget the last entry
+    if current_entry_lines:
+        entries.append(current_entry_lines)
+    
+    # If no date-based entries were found, try to group by double-spacing
+    if len(entries) <= 1 and experience_text.strip():
+        # Fallback: try splitting by multiple newlines
+        paragraphs = re.split(r"\n\s*\n", experience_text)
+        entries = [[p.strip()] for p in paragraphs if p.strip() and len(p.strip()) > 20]
+    
+    # Parse each entry
+    for entry_lines in entries:
+        if not entry_lines:
+            continue
+        
+        raw_text = "\n".join(entry_lines)
+        if len(raw_text) < 10:  # Skip very short entries
+            continue
+        
+        entry = {
+            "raw_text": raw_text,
+            "company_name": None,
+            "job_title": None,
+            "start_date": None,
+            "end_date": None,
+            "is_current": False,
+        }
+        
+        # Track which lines have been used for which purpose
+        company_line_idx = -1
+        
+        # Try to extract structured fields from entry lines
+        for idx, line in enumerate(entry_lines):
+            line_stripped = line.strip()
+            
+            # Extract dates first (they're on the same line as job title usually)
+            date_match = date_pattern.search(line_stripped)
+            if date_match and not entry["start_date"]:
+                date_str = date_match.group(0)
+                entry["is_current"] = "present" in date_str.lower() or "current" in date_str.lower()
+                # Parse date range
+                dates = re.split(r"\s*[-–—to]+\s*", date_str, maxsplit=1)
+                if len(dates) >= 1:
+                    entry["start_date"] = _parse_date_string(dates[0])
+                if len(dates) >= 2 and not entry["is_current"]:
+                    entry["end_date"] = _parse_date_string(dates[1])
+                
+                # The remaining text after removing date is likely the job title
+                line_no_date = date_pattern.sub("", line_stripped).strip()
+                if line_no_date and not entry["job_title"]:
+                    entry["job_title"] = line_no_date
+            
+            # Extract company and location (pattern: "Company Name – City, STATE")
+            company_match = company_location_pattern.match(line_stripped)
+            if company_match and not entry["company_name"]:
+                entry["company_name"] = company_match.group(1).strip()
+                company_line_idx = idx
+        
+        # If no job title found yet, look for title pattern in lines that aren't company
+        if not entry["job_title"]:
+            for idx, line in enumerate(entry_lines):
+                if idx == company_line_idx:
+                    continue  # Skip the company line
+                line_stripped = line.strip()
+                title_match = job_title_pattern.match(line_stripped)
+                if title_match:
+                    entry["job_title"] = title_match.group(1).strip()
+                    break
+        
+        experiences.append(entry)
     
     return experiences[:20]  # Limit to 20 experiences
+
+
+def _parse_date_string(date_str: str) -> date | None:
+    """
+    Parse a date string into a date object.
+    
+    Handles formats like: 01/2015, Jan 2015, January 2015, 2015
+    """
+    if not date_str:
+        return None
+    
+    date_str = date_str.strip()
+    
+    # Skip "Present" or "Current"
+    if date_str.lower() in ("present", "current"):
+        return None
+    
+    try:
+        # Try MM/YYYY format
+        match = re.match(r"(\d{1,2})/(\d{4})", date_str)
+        if match:
+            month, year = int(match.group(1)), int(match.group(2))
+            return date(year, month, 1)
+        
+        # Try Month YYYY format
+        month_names = {
+            "jan": 1, "january": 1, "feb": 2, "february": 2, "mar": 3, "march": 3,
+            "apr": 4, "april": 4, "may": 5, "jun": 6, "june": 6,
+            "jul": 7, "july": 7, "aug": 8, "august": 8, "sep": 9, "september": 9,
+            "oct": 10, "october": 10, "nov": 11, "november": 11, "dec": 12, "december": 12
+        }
+        match = re.match(r"([A-Za-z]+)\s*(\d{4})", date_str)
+        if match:
+            month_str = match.group(1).lower()
+            year = int(match.group(2))
+            if month_str in month_names:
+                return date(year, month_names[month_str], 1)
+        
+        # Try just YYYY
+        match = re.match(r"^(\d{4})$", date_str)
+        if match:
+            return date(int(match.group(1)), 1, 1)
+    except (ValueError, TypeError):
+        pass
+    
+    return None
 
 
 def _parse_education_section(education_text: str) -> list[dict[str, Any]]:
     """
     Parse education section into structured entries.
+    
+    Returns a list of education dictionaries with:
+    - institution_name, degree_type, field_of_study, start_date, end_date, is_current
     """
     if not education_text:
         return []
     
     education = []
     
-    # Common degree patterns
+    # Common degree patterns - expanded to capture more variations
+    # Use word boundaries and avoid matching state abbreviations like "MA" at end of addresses
     degree_pattern = re.compile(
-        r"(?:Bachelor|Master|PhD|Ph\.D|Doctorate|Associate|B\.S\.|B\.A\.|M\.S\.|M\.A\.|MBA|"
-        r"B\.Sc|M\.Sc|BBA|BS|BA|MS|MA)\.?",
+        r"(?<![,\s][A-Z])"  # Negative lookbehind to avoid ", MA" (state abbrev)
+        r"(?:"
+        r"Bachelor(?:'s)?(?:\s+(?:of\s+)?(?:Science|Arts|Engineering|Business|Fine Arts))?"
+        r"|Master(?:'s)?(?:\s+(?:of\s+)?(?:Science|Arts|Business|Engineering|Fine Arts))?"
+        r"|PhD|Ph\.?D\.?"
+        r"|Doctorate"
+        r"|Associate(?:'s)?(?:\s+(?:of\s+)?(?:Science|Arts|Applied Science))?"
+        r"|B\.S\.?(?:\s|$)|B\.A\.?(?:\s|$)"  # Require space or end after B.S./B.A.
+        r"|M\.S\.?(?:\s|$)|M\.A\.?(?:\s|$)"  # Require space or end after M.S./M.A.
+        r"|MBA|M\.B\.A\.?"
+        r"|B\.?Sc\.?|M\.?Sc\.?"
+        r"|BBA|B\.B\.A\.?"
+        r"|Doctor of"
+        r"|Diploma"
+        r"|Certificate"
+        r"|GED"
+        r"|High School(?:\s+Diploma)?"
+        r")"
+        r"(?:\s+Degree)?",
         re.IGNORECASE
     )
     
-    paragraphs = education_text.split("\n\n")
+    # Date pattern for graduation dates
+    date_pattern = re.compile(
+        r"(?:"
+        # Date range: 2016-2020, 2016 - 2020
+        r"(\d{4})\s*[-–—to]+\s*(\d{4}|[Pp]resent|[Cc]urrent|[Ee]xpected)"
+        r"|"
+        # Month Year format: May 2020, Expected May 2021
+        r"(?:[Ee]xpected\s+)?(?:Jan(?:uary)?|Feb(?:ruary)?|Mar(?:ch)?|Apr(?:il)?|May|Jun(?:e)?|"
+        r"Jul(?:y)?|Aug(?:ust)?|Sep(?:tember)?|Oct(?:ober)?|Nov(?:ember)?|Dec(?:ember)?)"
+        r"\s+(\d{4})"
+        r"|"
+        # Class of 2020
+        r"Class of\s+(\d{4})"
+        r")",
+        re.IGNORECASE
+    )
     
-    for para in paragraphs:
-        para = para.strip()
-        if len(para) > 10:
-            entry = {
-                "raw_text": para,
-                "institution_name": None,
-                "degree_type": None,
-                "field_of_study": None,
-            }
+    # Institution pattern - universities, colleges, schools
+    institution_pattern = re.compile(
+        r"(?:University|College|Institute|School|Academy|Polytechnic|"
+        r"Community College|State University|Technical School)",
+        re.IGNORECASE
+    )
+    
+    lines = education_text.split("\n")
+    
+    # Group lines into education entries based on degree patterns
+    # Key insight: a new degree line typically starts a new entry
+    current_entry_lines = []
+    entries = []
+    
+    for line in lines:
+        line = line.strip()
+        if not line:
+            continue
+        
+        # Check if this line starts a new education entry
+        has_degree = degree_pattern.search(line)
+        
+        # A new degree line signals a new entry (if we already have content)
+        if has_degree and current_entry_lines:
+            # Save current entry and start a new one
+            entries.append(current_entry_lines)
+            current_entry_lines = [line]
+        else:
+            current_entry_lines.append(line)
+    
+    # Don't forget the last entry
+    if current_entry_lines:
+        entries.append(current_entry_lines)
+    
+    # If no entries were properly grouped (no degree patterns found), try fallback strategies
+    if len(entries) <= 1 and education_text.strip():
+        # Try splitting by double newlines
+        paragraphs = re.split(r"\n\s*\n", education_text)
+        if len(paragraphs) > 1:
+            entries = [[p.strip()] for p in paragraphs if p.strip() and len(p.strip()) > 10]
+        # Or try to identify entries by degree patterns
+        elif len(entries) == 1:
+            # Keep as is but try to parse better
+            pass
+    
+    # Parse each entry
+    for entry_lines in entries:
+        if not entry_lines:
+            continue
+        
+        raw_text = "\n".join(entry_lines)
+        if len(raw_text) < 5:  # Skip very short entries
+            continue
+        
+        entry = {
+            "raw_text": raw_text,
+            "institution_name": None,
+            "degree_type": None,
+            "field_of_study": None,
+            "start_date": None,
+            "end_date": None,
+            "is_current": False,
+        }
+        
+        # Process each line separately for better extraction
+        institution_line_idx = -1
+        degree_line_idx = -1
+        
+        for idx, line in enumerate(entry_lines):
+            line = line.strip()
             
-            # Try to extract degree
-            degree_match = degree_pattern.search(para)
-            if degree_match:
-                entry["degree_type"] = degree_match.group(0)
+            # Check for institution on this line
+            if institution_pattern.search(line) and not entry["institution_name"]:
+                # Clean up institution name
+                inst_name = line
+                inst_name = date_pattern.sub("", inst_name)  # Remove dates
+                inst_name = re.sub(r"\s*[-–—]+\s*[A-Za-z\s]+,\s*[A-Z]{2}\s*$", "", inst_name)  # Remove location suffix
+                inst_name = inst_name.strip()
+                if inst_name and len(inst_name) > 3:
+                    entry["institution_name"] = inst_name
+                    institution_line_idx = idx
             
-            education.append(entry)
+            # Check for degree on this line
+            degree_match = degree_pattern.search(line)
+            if degree_match and not entry["degree_type"]:
+                entry["degree_type"] = degree_match.group(0).strip()
+                degree_line_idx = idx
+                
+                # Try to extract field of study from degree line
+                # Pattern: "Bachelor of Science in Computer Science" -> "Computer Science"
+                # Or: "BS in Computer Science" -> "Computer Science"
+                after_degree = line[degree_match.end():].strip()
+                # Also check before the degree for "in" patterns
+                full_line_field_match = re.search(
+                    r"(?:Bachelor|Master|Associate|Doctor)(?:'s)?\s+(?:of\s+)?(?:Science|Arts|Engineering|Business)?\s*(?:in|of)?\s+([A-Za-z\s,&]+?)(?:\s*[-–—,]|\s*$|\s*\d)",
+                    line, re.IGNORECASE
+                )
+                if full_line_field_match:
+                    field = full_line_field_match.group(1).strip()
+                    field = re.sub(r"[,\.\-]+$", "", field).strip()
+                    if field and len(field) > 2 and len(field) < 80:
+                        entry["field_of_study"] = field
+                elif "in " in after_degree.lower():
+                    # Extract text after "in"
+                    in_match = re.search(r"in\s+([A-Za-z\s,&]+?)(?:\s*[-–—,]|\s*$|\s*\d)", after_degree, re.IGNORECASE)
+                    if in_match:
+                        field = in_match.group(1).strip()
+                        field = re.sub(r"[,\.\-]+$", "", field).strip()
+                        if field and len(field) > 2 and len(field) < 80:
+                            entry["field_of_study"] = field
+        
+        # If no institution found by pattern, look for lines with location patterns
+        if not entry["institution_name"]:
+            for idx, line in enumerate(entry_lines):
+                line = line.strip()
+                # Check for "Name – City, STATE" pattern
+                loc_match = re.match(r"^(.+?)\s*[-–—]+\s*[A-Za-z\s]+,\s*[A-Z]{2}\s*$", line)
+                if loc_match:
+                    entry["institution_name"] = loc_match.group(1).strip()
+                    break
+        
+        # Extract dates
+        combined_text = " ".join(entry_lines)
+        entry["is_current"] = bool(re.search(r"present|current|expected", combined_text, re.IGNORECASE))
+        
+        # Try to extract year(s)
+        all_years = re.findall(r"\b(20\d{2}|19\d{2})\b", combined_text)
+        if all_years:
+            years = sorted([int(y) for y in set(all_years)])
+            if len(years) >= 2:
+                entry["start_date"] = date(years[0], 1, 1)
+                if not entry["is_current"]:
+                    entry["end_date"] = date(years[-1], 1, 1)
+            elif len(years) == 1:
+                # Single year - likely graduation year
+                entry["end_date"] = date(years[0], 1, 1)
+        
+        education.append(entry)
     
     return education[:10]  # Limit to 10 education entries
 

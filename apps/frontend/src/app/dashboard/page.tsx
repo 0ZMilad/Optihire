@@ -185,24 +185,26 @@ export default function DashboardPage() {
             )}
 
             <Dialog open={isReviewOpen} onOpenChange={setIsReviewOpen}>
-              <DialogContent className="max-w-7xl w-[95vw] max-h-[90vh] overflow-y-auto">
-                <DialogHeader>
+              <DialogContent className="sm:max-w-none w-[95vw] h-[90vh] max-h-[90vh] p-0 gap-0 flex flex-col overflow-hidden">
+                <DialogHeader className="px-6 py-4 border-b shrink-0">
                   <DialogTitle>Review Extracted Data</DialogTitle>
                   <DialogDescription>
-                    Our AI extracted this information. Compare with your original document and edit any missing details before continuing.
+                    Compare with your original document and edit any details.
                   </DialogDescription>
                 </DialogHeader>
-                {parsedResumeData && (
-                  <ResumeReviewForm
-                    resumeData={parsedResumeData}
-                    showPdfViewer={true}
-                    onSave={async (data) => {
-                      await handleSaveResume(data);
-                      setIsReviewOpen(false);
-                    }}
-                    onCancel={() => setIsReviewOpen(false)}
-                  />
-                )}
+                <div className="flex-1 overflow-hidden p-6">
+                  {parsedResumeData && (
+                    <ResumeReviewForm
+                      resumeData={parsedResumeData}
+                      showPdfViewer={true}
+                      onSave={async (data) => {
+                        await handleSaveResume(data);
+                        setIsReviewOpen(false);
+                      }}
+                      onCancel={() => setIsReviewOpen(false)}
+                    />
+                  )}
+                </div>
               </DialogContent>
             </Dialog>
           </div>
