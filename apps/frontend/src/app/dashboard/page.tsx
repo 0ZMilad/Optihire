@@ -1,8 +1,6 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
-import { Button } from "@/components/ui/button";
-import { Card } from "@/components/ui/card";
 import {
   Dialog,
   DialogContent,
@@ -13,9 +11,8 @@ import {
 import { DashboardHeader } from "@/components/dashboard-header";
 import { Main } from "@/components/main";
 import { DashboardLayout } from "@/components/dashboard-layout";
-import { ResumeUpload } from "@/components/resume-upload";
-import { ResumeProcessing } from "@/components/resume-processing";
 import { ResumeReviewForm } from "@/components/resume-review-form";
+import { DashboardUI } from "@/components/dashboard";
 import { useResumeUpload } from "@/hooks/use-resume-upload";
 import { updateResume } from "@/middle-service/resumes";
 import { ResumeComplete } from "@/middle-service/types";
@@ -34,6 +31,8 @@ export default function DashboardPage() {
   } = useResumeUpload();
 
   const [isReviewOpen, setIsReviewOpen] = useState(false);
+  const [fileName, setFileName] = useState<string | null>(null);
+  const inputRef = useRef<HTMLInputElement>(null);
   // Track if we've already automatically opened the review for the current completion
   const hasAutoOpened = useRef(false);
 
@@ -62,153 +61,54 @@ export default function DashboardPage() {
     }
   };
 
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      setFileName(file.name);
+      handleUpload(file);
+    }
+  };
+
   return (
     <DashboardLayout>
-      <DashboardHeader>
-        <div className="flex flex-1 items-center justify-between">
-          <h1 className="text-lg font-semibold">Dashboard</h1>
-          <div className="flex items-center gap-4">
-            <Button variant="outline" size="sm">
-              Upload Resume
-            </Button>
-          </div>
-        </div>
-      </DashboardHeader>
+      <DashboardHeader />
 
       <Main>
-        <div className="space-y-6">
-          <div>
-            <h2 className="text-2xl font-bold mb-2">Welcome back!</h2>
-            <p className="text-muted-foreground">
-              Here's an overview of your applications.
-            </p>
-          </div>
+        <DashboardUI
+          appState={appState}
+          fileName={fileName}
+          inputRef={inputRef}
+          error={error}
+          onFileChange={handleFileChange}
+          onUploadClick={() => inputRef.current?.click()}
+          onReviewClick={() => setIsReviewOpen(true)}
+          statusMessage={statusData?.message}
+        />
 
-          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-            <Card className="p-6">
-              <div className="space-y-2">
-                <p className="text-sm font-medium text-muted-foreground">
-                  Total Applications
-                </p>
-                <p className="text-3xl font-bold">0</p>
-                <p className="text-xs text-muted-foreground">
-                  Start applying to jobs
-                </p>
-              </div>
-            </Card>
-
-            <Card className="p-6">
-              <div className="space-y-2">
-                <p className="text-sm font-medium text-muted-foreground">
-                  Active Jobs
-                </p>
-                <p className="text-3xl font-bold">0</p>
-                <p className="text-xs text-muted-foreground">
-                  Jobs you're tracking
-                </p>
-              </div>
-            </Card>
-
-            <Card className="p-6">
-              <div className="space-y-2">
-                <p className="text-sm font-medium text-muted-foreground">
-                  Interview Rate
-                </p>
-                <p className="text-3xl font-bold">0%</p>
-                <p className="text-xs text-muted-foreground">
-                  Applications to interviews
-                </p>
-              </div>
-            </Card>
-
-            <Card className="p-6">
-              <div className="space-y-2">
-                <p className="text-sm font-medium text-muted-foreground">
-                  ATS Score
-                </p>
-                <p className="text-3xl font-bold">--</p>
-                <p className="text-xs text-muted-foreground">
-                  Upload resume to analyse
-                </p>
-              </div>
-            </Card>
-          </div>
-
-          <div className="grid gap-4 md:grid-cols-2">
-            <Card className="p-6">
-              <h3 className="text-lg font-semibold mb-4">Quick Actions</h3>
-              <div className="space-y-3">
-                <Button className="w-full justify-start" variant="outline">
-                  Upload Resume
-                </Button>
-                <Button className="w-full justify-start" variant="outline">
-                  Search Jobs
-                </Button>
-                <Button className="w-full justify-start" variant="outline">
-                  Analyse Resume
-                </Button>
-                {appState === "DONE" && (
-                  <Button 
-                    className="w-full justify-start" 
-                    variant="default"
-                    onClick={() => setIsReviewOpen(true)}
-                  >
-                    Review Parsed Resume
-                  </Button>
-                )}
-              </div>
-            </Card>
-
-            {appState !== "PROCESSING" && (
-              <Card className="p-6">
-                <h3 className="text-lg font-semibold mb-4">
-                  Upload New Resume
-                </h3>
-                <p className="text-sm text-muted-foreground mb-4">
-                  Upload your resume to get started with AI-powered analysis
-                  and job matching.
-                </p>
-                <div className="min-h-[200px]">
-                  <ResumeUpload
-                    onFileSelect={handleUpload}
-                    disabled={false}
-                    error={error}
-                  />
-                </div>
-              </Card>
-            )}
-
-            {appState === "PROCESSING" && (
-              <div className="md:col-span-1">
-                <ResumeProcessing statusMessage={statusData?.message} />
-              </div>
-            )}
-
-            <Dialog open={isReviewOpen} onOpenChange={setIsReviewOpen}>
-              <DialogContent className="sm:max-w-none w-[95vw] h-[90vh] max-h-[90vh] p-0 gap-0 flex flex-col overflow-hidden">
-                <DialogHeader className="px-6 py-4 border-b shrink-0">
-                  <DialogTitle>Review Extracted Data</DialogTitle>
-                  <DialogDescription>
-                    Compare with your original document and edit any details.
-                  </DialogDescription>
-                </DialogHeader>
-                <div className="flex-1 overflow-hidden p-6">
-                  {parsedResumeData && (
-                    <ResumeReviewForm
-                      resumeData={parsedResumeData}
-                      showPdfViewer={true}
-                      onSave={async (data) => {
-                        await handleSaveResume(data);
-                        setIsReviewOpen(false);
-                      }}
-                      onCancel={() => setIsReviewOpen(false)}
-                    />
-                  )}
-                </div>
-              </DialogContent>
-            </Dialog>
-          </div>
-        </div>
+        {/* Review Dialog */}
+        <Dialog open={isReviewOpen} onOpenChange={setIsReviewOpen}>
+          <DialogContent className="sm:max-w-none w-[95vw] h-[90vh] max-h-[90vh] p-0 gap-0 flex flex-col overflow-hidden">
+            <DialogHeader className="px-6 py-4 border-b shrink-0">
+              <DialogTitle>Review Extracted Data</DialogTitle>
+              <DialogDescription>
+                Compare with your original document and edit any details.
+              </DialogDescription>
+            </DialogHeader>
+            <div className="flex-1 overflow-hidden p-6">
+              {parsedResumeData && (
+                <ResumeReviewForm
+                  resumeData={parsedResumeData}
+                  showPdfViewer={true}
+                  onSave={async (data) => {
+                    await handleSaveResume(data);
+                    setIsReviewOpen(false);
+                  }}
+                  onCancel={() => setIsReviewOpen(false)}
+                />
+              )}
+            </div>
+          </DialogContent>
+        </Dialog>
       </Main>
     </DashboardLayout>
   );
