@@ -5,7 +5,7 @@ import { Main } from "@/components/main";
 import { DashboardLayout } from "@/components/dashboard-layout";
 import { Button } from "@/components/ui/button";
 import { FileText } from "lucide-react";
-import { ResumeBuilderUI } from "@/components/resume";
+import { EnhancedResumeBuilderUI } from "@/components/resume";
 
 export default function ResumesPage() {
   const [showBuilder, setShowBuilder] = useState(false);
@@ -16,7 +16,7 @@ export default function ResumesPage() {
       <Main>
         <div className="mx-auto max-w-7xl space-y-8 px-4">
           {showBuilder ? (
-            <ResumeBuilderUI onBack={() => setShowBuilder(false)} />
+            <EnhancedResumeBuilderUI onBack={() => setShowBuilder(false)} />
           ) : (
             <>
               {/* Header */}
