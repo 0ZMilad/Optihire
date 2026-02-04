@@ -99,16 +99,26 @@ function CertificationCard({
           <div className="mt-4 space-y-4 pl-6">
             <div className="grid gap-4 sm:grid-cols-2">
               <div className="space-y-2">
-                <Label>Certification Name</Label>
+                <Label>
+                  Certification Name <span className="text-destructive">*</span>
+                </Label>
                 <Input
+                  required
+                  minLength={2}
+                  maxLength={150}
                   value={certification.certificationName}
                   onChange={(e) => onUpdate(certification.id, { certificationName: e.target.value })}
                   placeholder="AWS Solutions Architect"
                 />
               </div>
               <div className="space-y-2">
-                <Label>Issuing Organization</Label>
+                <Label>
+                  Issuing Organization <span className="text-destructive">*</span>
+                </Label>
                 <Input
+                  required
+                  minLength={2}
+                  maxLength={100}
                   value={certification.issuingOrganization}
                   onChange={(e) => onUpdate(certification.id, { issuingOrganization: e.target.value })}
                   placeholder="Amazon Web Services"
@@ -118,9 +128,12 @@ function CertificationCard({
 
             <div className="grid gap-4 sm:grid-cols-2">
               <div className="space-y-2">
-                <Label>Issue Date</Label>
+                <Label>
+                  Issue Date <span className="text-destructive">*</span>
+                </Label>
                 <Input
                   type="month"
+                  required
                   value={certification.issueDate}
                   onChange={(e) => onUpdate(certification.id, { issueDate: e.target.value })}
                 />
@@ -142,6 +155,7 @@ function CertificationCard({
               <div className="space-y-2">
                 <Label>Credential ID (optional)</Label>
                 <Input
+                  maxLength={100}
                   value={certification.credentialId}
                   onChange={(e) => onUpdate(certification.id, { credentialId: e.target.value })}
                   placeholder="ABC123XYZ"
@@ -151,6 +165,7 @@ function CertificationCard({
                 <Label>Credential URL (optional)</Label>
                 <Input
                   type="url"
+                  pattern="^https?://.*"
                   value={certification.credentialUrl}
                   onChange={(e) => onUpdate(certification.id, { credentialUrl: e.target.value })}
                   placeholder="https://www.credly.com/badges/..."

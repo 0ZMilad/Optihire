@@ -90,8 +90,13 @@ function EducationCard({
         {isExpanded && (
           <div className="mt-4 space-y-4 pl-6">
             <div className="space-y-2">
-              <Label>Institution Name</Label>
+              <Label>
+                Institution Name <span className="text-destructive">*</span>
+              </Label>
               <Input
+                required
+                minLength={2}
+                maxLength={150}
                 value={education.institutionName}
                 onChange={(e) => onUpdate(education.id, { institutionName: e.target.value })}
                 placeholder="Stanford University"
@@ -100,16 +105,26 @@ function EducationCard({
 
             <div className="grid gap-4 sm:grid-cols-2">
               <div className="space-y-2">
-                <Label>Degree Type</Label>
+                <Label>
+                  Degree Type <span className="text-destructive">*</span>
+                </Label>
                 <Input
+                  required
+                  minLength={2}
+                  maxLength={100}
                   value={education.degreeType}
                   onChange={(e) => onUpdate(education.id, { degreeType: e.target.value })}
                   placeholder="Bachelor of Science"
                 />
               </div>
               <div className="space-y-2">
-                <Label>Field of Study</Label>
+                <Label>
+                  Field of Study <span className="text-destructive">*</span>
+                </Label>
                 <Input
+                  required
+                  minLength={2}
+                  maxLength={100}
                   value={education.fieldOfStudy}
                   onChange={(e) => onUpdate(education.id, { fieldOfStudy: e.target.value })}
                   placeholder="Computer Science"
@@ -120,6 +135,7 @@ function EducationCard({
             <div className="space-y-2">
               <Label>Location</Label>
               <Input
+                maxLength={100}
                 value={education.location}
                 onChange={(e) => onUpdate(education.id, { location: e.target.value })}
                 placeholder="Stanford, CA"
@@ -169,6 +185,8 @@ function EducationCard({
               <div className="space-y-2">
                 <Label>GPA (optional)</Label>
                 <Input
+                  maxLength={20}
+                  pattern="^[0-9./ ]+$"
                   value={education.gpa}
                   onChange={(e) => onUpdate(education.id, { gpa: e.target.value })}
                   placeholder="3.8 / 4.0"

@@ -88,16 +88,26 @@ function ExperienceCard({
           <div className="mt-4 space-y-4 pl-6">
             <div className="grid gap-4 sm:grid-cols-2">
               <div className="space-y-2">
-                <Label>Job Title</Label>
+                <Label>
+                  Job Title <span className="text-destructive">*</span>
+                </Label>
                 <Input
+                  required
+                  minLength={2}
+                  maxLength={100}
                   value={experience.jobTitle}
                   onChange={(e) => onUpdate(experience.id, { jobTitle: e.target.value })}
                   placeholder="Software Engineer"
                 />
               </div>
               <div className="space-y-2">
-                <Label>Company</Label>
+                <Label>
+                  Company <span className="text-destructive">*</span>
+                </Label>
                 <Input
+                  required
+                  minLength={2}
+                  maxLength={100}
                   value={experience.companyName}
                   onChange={(e) => onUpdate(experience.id, { companyName: e.target.value })}
                   placeholder="Acme Corp"
@@ -108,6 +118,7 @@ function ExperienceCard({
             <div className="space-y-2">
               <Label>Location</Label>
               <Input
+                maxLength={100}
                 value={experience.location}
                 onChange={(e) => onUpdate(experience.id, { location: e.target.value })}
                 placeholder="San Francisco, CA (or Remote)"
@@ -116,17 +127,21 @@ function ExperienceCard({
 
             <div className="grid gap-4 sm:grid-cols-2">
               <div className="space-y-2">
-                <Label>Start Date</Label>
+                <Label>
+                  Start Date <span className="text-destructive">*</span>
+                </Label>
                 <Input
                   type="month"
+                  required
                   value={experience.startDate}
                   onChange={(e) => onUpdate(experience.id, { startDate: e.target.value })}
                 />
               </div>
               <div className="space-y-2">
-                <Label>End Date</Label>
+                <Label>End Date {!experience.isCurrent && <span className="text-destructive">*</span>}</Label>
                 <Input
                   type="month"
+                  required={!experience.isCurrent}
                   value={experience.endDate}
                   onChange={(e) => onUpdate(experience.id, { endDate: e.target.value })}
                   disabled={experience.isCurrent}
@@ -156,13 +171,14 @@ function ExperienceCard({
             <div className="space-y-2">
               <Label>Description & Achievements</Label>
               <Textarea
+                maxLength={2000}
                 value={experience.description}
                 onChange={(e) => onUpdate(experience.id, { description: e.target.value })}
                 placeholder="• Led development of...\n• Improved performance by...\n• Collaborated with..."
                 rows={6}
               />
               <p className="text-xs text-muted-foreground">
-                Use bullet points to highlight key achievements and impact
+                Use bullet points to highlight key achievements and impact. {experience.description.length}/2000
               </p>
             </div>
 

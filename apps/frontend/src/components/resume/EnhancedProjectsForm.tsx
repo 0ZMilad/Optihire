@@ -92,8 +92,13 @@ function ProjectCard({
           <div className="mt-4 space-y-4 pl-6">
             <div className="grid gap-4 sm:grid-cols-2">
               <div className="space-y-2">
-                <Label>Project Name</Label>
+                <Label>
+                  Project Name <span className="text-destructive">*</span>
+                </Label>
                 <Input
+                  required
+                  minLength={2}
+                  maxLength={100}
                   value={project.projectName}
                   onChange={(e) => onUpdate(project.id, { projectName: e.target.value })}
                   placeholder="E-commerce Platform"
@@ -102,6 +107,7 @@ function ProjectCard({
               <div className="space-y-2">
                 <Label>Your Role</Label>
                 <Input
+                  maxLength={100}
                   value={project.role}
                   onChange={(e) => onUpdate(project.id, { role: e.target.value })}
                   placeholder="Lead Developer"
@@ -113,10 +119,12 @@ function ProjectCard({
               <Label>Project URL (optional)</Label>
               <Input
                 type="url"
+                pattern="^https?://.*"
                 value={project.projectUrl}
                 onChange={(e) => onUpdate(project.id, { projectUrl: e.target.value })}
                 placeholder="https://github.com/user/project"
               />
+              <p className="text-xs text-muted-foreground">Must start with https://</p>
             </div>
 
             <div className="grid gap-4 sm:grid-cols-2">
@@ -161,16 +169,19 @@ function ProjectCard({
             <div className="space-y-2">
               <Label>Description</Label>
               <Textarea
+                maxLength={1500}
                 value={project.description}
                 onChange={(e) => onUpdate(project.id, { description: e.target.value })}
                 placeholder="Describe the project, your contributions, and key outcomes..."
                 rows={4}
               />
+              <p className="text-xs text-muted-foreground">{project.description.length}/1500 characters</p>
             </div>
 
             <div className="space-y-2">
               <Label>Technologies Used</Label>
               <Input
+                maxLength={300}
                 value={project.technologiesUsed.join(", ")}
                 onChange={(e) =>
                   onUpdate(project.id, {
@@ -185,6 +196,7 @@ function ProjectCard({
             <div className="space-y-2">
               <Label>Key Achievements (optional)</Label>
               <Textarea
+                maxLength={1000}
                 value={project.achievements.join("\n")}
                 onChange={(e) =>
                   onUpdate(project.id, {

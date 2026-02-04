@@ -10,7 +10,8 @@ import {
   GraduationCap, 
   Wrench, 
   FolderKanban,
-  Award
+  Award,
+  Eye
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -30,6 +31,7 @@ import EnhancedCertificationsForm from "./EnhancedCertificationsForm";
 import SaveStatusIndicator from "./SaveStatusIndicator";
 import DraftRecoveryDialog from "./DraftRecoveryDialog";
 import EnhancedResumeSidebar from "./EnhancedResumeSidebar";
+import EnhancedResumePreview from "./EnhancedResumePreview";
 
 interface EnhancedResumeBuilderUIProps {
   className?: string;
@@ -44,6 +46,7 @@ const TABS = [
   { id: "skills", label: "Skills", icon: Wrench },
   { id: "projects", label: "Projects", icon: FolderKanban },
   { id: "certifications", label: "Certifications", icon: Award },
+  { id: "preview", label: "Preview", icon: Eye },
 ] as const;
 
 export default function EnhancedResumeBuilderUI({ 
@@ -122,15 +125,15 @@ export default function EnhancedResumeBuilderUI({
       </div>
 
       {/* Main content */}
-      <div className="grid gap-6 lg:grid-cols-[1fr,400px]">
+      <div className="grid gap-6 grid-cols-1">
         {/* Editor */}
-        <div className="order-2 lg:order-1">
+        <div>
           <Tabs 
             value={activeSection} 
             onValueChange={setActiveSection}
             className="w-full"
           >
-            <TabsList className="w-full grid grid-cols-3 lg:grid-cols-6 h-auto p-1">
+            <TabsList className="w-full grid grid-cols-4 lg:grid-cols-7 h-auto p-1">
               {TABS.map((tab) => (
                 <TabsTrigger
                   key={tab.id}
@@ -167,13 +170,40 @@ export default function EnhancedResumeBuilderUI({
               <TabsContent value="certifications" className="mt-0">
                 <EnhancedCertificationsForm />
               </TabsContent>
+
+              <TabsContent value="preview" className="mt-0">
+                {/* Gray background for document metaphor */}
+                <div className="min-h-screen bg-gray-100 -mx-6 px-6 py-6">
+                  {/* Header Bar with Actions */}
+                  <div className="bg-white border border-gray-200 rounded-lg p-4 mb-6 shadow-sm">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-3">
+                        <h2 className="text-lg font-semibold text-gray-900">Resume Preview</h2>
+                        <span className="inline-flex items-center px-2 py-1 text-xs font-medium bg-green-100 text-green-800 rounded-full">
+                          ● Saved
+                        </span>
+                      </div>
+                      
+                      {/* Action Buttons */}
+                      <div className="flex items-center gap-3">
+                        {/* Primary Action */}
+                        <EnhancedResumeSidebar layout="full" className="" />
+                      </div>
+                    </div>
+                  </div>
+                  
+                  {/* Document Preview */}
+                  <div className="flex justify-center">
+                    <div className="w-full max-w-[8.5in] bg-white shadow-lg rounded-lg overflow-hidden" style={{aspectRatio: '8.5/11'}}>
+                      <div className="p-8 h-full">
+                        <EnhancedResumePreview hideLabel={true} />
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </TabsContent>
             </div>
           </Tabs>
-        </div>
-
-        {/* Sidebar with preview */}
-        <div className="order-1 lg:order-2">
-          <EnhancedResumeSidebar className="lg:sticky lg:top-6" />
         </div>
       </div>
 

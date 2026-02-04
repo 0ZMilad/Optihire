@@ -5,12 +5,22 @@ import { cn } from "@/lib/utils";
 import { FileText, FileDown, Sparkles } from "lucide-react";
 import { useResumeData } from "@/stores/resume-builder-store";
 import EnhancedResumePreview from "./EnhancedResumePreview";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 
 interface EnhancedResumeSidebarProps {
   className?: string;
+  layout?: 'sidebar' | 'full'; // Add layout prop to control appearance
 }
 
-export default function EnhancedResumeSidebar({ className }: EnhancedResumeSidebarProps) {
+export default function EnhancedResumeSidebar({ 
+  className, 
+  layout = 'sidebar' 
+}: EnhancedResumeSidebarProps) {
   const resumeData = useResumeData();
 
   // Build export HTML from the enhanced data structure
@@ -167,30 +177,81 @@ export default function EnhancedResumeSidebar({ className }: EnhancedResumeSideb
   };
 
   return (
-    <aside className={cn("border rounded-xl p-4 bg-card", className)}>
-      {/* Actions */}
-      <div className="space-y-3">
-        <Button className="w-full" variant="default">
-          <Sparkles className="mr-2 size-4" />
-          Analyze Resume
-        </Button>
-        
-        <div className="grid grid-cols-2 gap-2">
-          <Button variant="outline" size="sm" onClick={downloadPDF}>
-            <FileText className="mr-1 size-4" />
-            PDF
-          </Button>
-          <Button variant="outline" size="sm" onClick={downloadHTML}>
-            <FileDown className="mr-1 size-4" />
-            HTML
-          </Button>
+    <TooltipProvider>
+      <aside className={cn(
+        "border rounded-xl p-4 bg-card", 
+        layout === 'full' ? 'border-0 p-0 bg-transparent' : '',
+        className
+      )}>
+        {/* Actions */}
+        <div className={cn(
+          "space-y-3",
+          layout === 'full' ? 'flex flex-row items-center gap-3 space-y-0' : ''
+        )}>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button className={cn("w-full", layout === 'full' ? 'w-auto' : '')} variant="default">
+                <Sparkles className="mr-2 size-4" />
+                Analyze Resume
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent>
+              <p>Get AI feedback on your resume content</p>
+            </TooltipContent>
+          </Tooltip>
+          
+          {/* Divider */}
+          {layout === 'full' && (
+            <div className="w-px h-6 bg-gray-300" />
+          )}
+          
+          <div className={cn(
+            "grid grid-cols-2 gap-2",
+            layout === 'full' ? 'flex gap-2' : ''
+          )}>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button 
+                  variant="outline" 
+                  size="sm" 
+                  onClick={downloadPDF}
+                  className="hover:bg-gray-50 transition-colors"
+                >
+                  <FileText className="mr-1 size-4" />
+                  PDF
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>
+                <p>Download as PDF</p>
+              </TooltipContent>
+            </Tooltip>
+            
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button 
+                  variant="outline" 
+                  size="sm" 
+                  onClick={downloadHTML}
+                  className="hover:bg-gray-50 transition-colors"
+                >
+                  <FileDown className="mr-1 size-4" />
+                  HTML
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>
+                <p>Download as HTML</p>
+              </TooltipContent>
+            </Tooltip>
+          </div>
         </div>
-      </div>
 
-      {/* Preview */}
-      <div className="mt-6">
-        <EnhancedResumePreview />
-      </div>
-    </aside>
+        {/* Preview - only show in sidebar mode */}
+        {layout === 'sidebar' && (
+          <div className="mt-6">
+            <EnhancedResumePreview />
+          </div>
+        )}
+      </aside>
+    </TooltipProvider>
   );
 }
