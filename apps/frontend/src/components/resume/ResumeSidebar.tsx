@@ -1,7 +1,6 @@
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import ResumePreview from "./ResumePreview";
-import ResumeExport from "./ResumeExport";
 import type { ResumeData } from "./types";
 
 interface ResumeSidebarProps {
@@ -15,8 +14,6 @@ export default function ResumeSidebar({ resumeData, className }: ResumeSidebarPr
       <Button className="w-full">
         Analyze your resume against a job
       </Button>
-
-      <ResumeExport resumeData={resumeData} className="mt-3" />
       
       <ResumePreview resumeData={resumeData} className="mt-6" />
     </aside>

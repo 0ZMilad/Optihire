@@ -1,7 +1,8 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { 
   ArrowLeft, 
@@ -11,13 +12,17 @@ import {
   Wrench, 
   FolderKanban,
   Award,
-  Eye
+  Eye,
+  Save,
+  Loader2
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { toast } from "sonner";
 
 // Store and hooks
-import { useResumeBuilderStore } from "@/stores/resume-builder-store";
-import { useAutoSave, useDraftRecovery, useBeforeUnload } from "@/hooks/use-resume-builder";
+import { useResumeBuilderStore, useResumeData } from "@/stores/resume-builder-store";
+import { useSavedResumesStore } from "@/stores/saved-resumes-store";
+import { useBeforeUnload } from "@/hooks/use-resume-builder";
 
 // Form components
 import EnhancedProfileForm from "./EnhancedProfileForm";
@@ -28,14 +33,13 @@ import EnhancedProjectsForm from "./EnhancedProjectsForm";
 import EnhancedCertificationsForm from "./EnhancedCertificationsForm";
 
 // UI components
-import SaveStatusIndicator from "./SaveStatusIndicator";
-import DraftRecoveryDialog from "./DraftRecoveryDialog";
 import EnhancedResumeSidebar from "./EnhancedResumeSidebar";
 import EnhancedResumePreview from "./EnhancedResumePreview";
 
 interface EnhancedResumeBuilderUIProps {
   className?: string;
   onBack?: () => void;
+  onSave?: (resumeId: string) => void;
   resumeId?: string; // For loading existing resume
 }
 
@@ -52,6 +56,7 @@ const TABS = [
 export default function EnhancedResumeBuilderUI({ 
   className, 
   onBack,
+  onSave,
   resumeId,
 }: EnhancedResumeBuilderUIProps) {
   // Store state
@@ -59,20 +64,23 @@ export default function EnhancedResumeBuilderUI({
   const setActiveSection = useResumeBuilderStore((state) => state.setActiveSection);
   const initialize = useResumeBuilderStore((state) => state.initialize);
   const isInitialized = useResumeBuilderStore((state) => state.isInitialized);
+  const reset = useResumeBuilderStore((state) => state.reset);
+  const resumeData = useResumeData();
   
-  // Draft recovery
-  const { 
-    hasDraft, 
-    lastSaved, 
-    recoverDraft, 
-    discardDraft,
-  } = useDraftRecovery({ autoLoad: false });
+  // Saved resumes store
+  const saveResume = useSavedResumesStore((state) => state.saveResume);
+  const updateResume = useSavedResumesStore((state) => state.updateResume);
   
-  // Show draft recovery dialog
-  const [showDraftDialog, setShowDraftDialog] = useState(false);
-
-  // Setup auto-save
-  useAutoSave({ debounceMs: 2000 });
+  // Saving state
+  const [isSaving, setIsSaving] = useState(false);
+  const [resumeTitle, setResumeTitle] = useState("");
+  const resumeTitleRef = useRef("");
+  
+  // Debug: Track resumeTitle changes
+  useEffect(() => {
+    console.log("resumeTitle state changed to:", resumeTitle);
+    resumeTitleRef.current = resumeTitle;
+  }, [resumeTitle]);
   
   // Setup before unload warning
   useBeforeUnload();
@@ -83,24 +91,85 @@ export default function EnhancedResumeBuilderUI({
       initialize();
     }
   }, [isInitialized, initialize]);
-
-  // Check for draft after initialization
+  
+  // Always start with profile section when opening resume builder
   useEffect(() => {
-    if (isInitialized && hasDraft && !resumeId) {
-      setShowDraftDialog(true);
+    if (isInitialized) {
+      setActiveSection("profile");
     }
-  }, [isInitialized, hasDraft, resumeId]);
+  }, [isInitialized, setActiveSection]);
+  
+  // Initialize resume title when editing existing resume
+  useEffect(() => {
+    if (resumeId && isInitialized) {
+      // Get the resume from the store using the hook instead of getState()
+      const getResume = useSavedResumesStore.getState().getResume;
+      const existingResume = getResume(resumeId);
+      if (existingResume) {
+        console.log("Loading existing resume:", existingResume.name); // Debug log
+        setResumeTitle(existingResume.name);
+        resumeTitleRef.current = existingResume.name;
+      }
+    } else if (!resumeId && isInitialized) {
+      // Clear title when creating new resume
+      setResumeTitle("");
+      resumeTitleRef.current = "";
+    }
+  }, [resumeId, isInitialized]); // Include isInitialized to ensure proper timing
 
-  // Handle draft recovery
-  const handleRecoverDraft = useCallback(() => {
-    recoverDraft();
-    setShowDraftDialog(false);
-  }, [recoverDraft]);
+  // Handle save resume
+  const handleSaveResume = useCallback(() => {
+    setIsSaving(true);
+    
+    try {
+      // Validate required fields
+      if (!resumeData.personal.fullName.trim()) {
+        toast.error("Please enter your full name before saving");
+        setActiveSection("profile");
+        setIsSaving(false);
+        return;
+      }
+      
+      if (!resumeData.personal.email.trim()) {
+        toast.error("Please enter your email before saving");
+        setActiveSection("profile");
+        setIsSaving(false);
+        return;
+      }
 
-  const handleDiscardDraft = useCallback(() => {
-    discardDraft();
-    setShowDraftDialog(false);
-  }, [discardDraft]);
+      let savedId: string;
+      const finalTitle = resumeTitle.trim() || undefined;
+      console.log("Saving with title:", finalTitle, "from state:", resumeTitle); // Debug log
+      
+      if (resumeId) {
+        // Update existing resume
+        console.log("Updating existing resume with id:", resumeId); // Debug log
+        updateResume(resumeId, resumeData, finalTitle);
+        savedId = resumeId;
+        toast.success("Resume updated successfully!");
+      } else {
+        // Save new resume
+        console.log("Saving new resume"); // Debug log
+        savedId = saveResume(resumeData, finalTitle);
+        toast.success("Resume saved successfully!");
+      }
+      
+      // Callback to parent first
+      if (onSave) {
+        onSave(savedId);
+      } else if (onBack) {
+        onBack();
+      }
+      
+      // Reset the builder after navigation
+      reset();
+    } catch (error) {
+      console.error("Failed to save resume:", error);
+      toast.error("Failed to save resume. Please try again.");
+    } finally {
+      setIsSaving(false);
+    }
+  }, [resumeData, resumeId, resumeTitle, saveResume, updateResume, reset, onSave, onBack, setActiveSection]);
 
   return (
     <div className={cn("mx-auto max-w-7xl", className)}>
@@ -113,15 +182,39 @@ export default function EnhancedResumeBuilderUI({
               Back
             </Button>
           )}
-          <div>
-            <h1 className="text-2xl font-semibold">Resume Builder</h1>
-            <p className="text-sm text-muted-foreground">
+          <div className="flex-1 max-w-md">
+            <Input
+              placeholder="Untitled Resume"
+              value={resumeTitle}
+              onChange={(e) => {
+                const newValue = e.target.value;
+                console.log("Input changed:", newValue); // Debug log
+                setResumeTitle(newValue);
+                resumeTitleRef.current = newValue; // Keep ref in sync
+              }}
+              className="text-lg font-semibold border-0 bg-transparent px-2 shadow-none focus-visible:ring-0 focus-visible:ring-offset-0"
+            />
+            <p className="text-sm text-muted-foreground mt-1">
               Build your professional resume with live preview
             </p>
           </div>
         </div>
         
-        <SaveStatusIndicator />
+        <div className="flex items-center gap-3">
+          <Button onClick={handleSaveResume} disabled={isSaving}>
+            {isSaving ? (
+              <>
+                <Loader2 className="mr-2 size-4 animate-spin" />
+                Saving...
+              </>
+            ) : (
+              <>
+                <Save className="mr-2 size-4" />
+                Save Resume
+              </>
+            )}
+          </Button>
+        </div>
       </div>
 
       {/* Main content */}
@@ -206,14 +299,6 @@ export default function EnhancedResumeBuilderUI({
           </Tabs>
         </div>
       </div>
-
-      {/* Draft recovery dialog */}
-      <DraftRecoveryDialog
-        open={showDraftDialog}
-        onRecover={handleRecoverDraft}
-        onDiscard={handleDiscardDraft}
-        lastSaved={lastSaved}
-      />
     </div>
   );
 }
