@@ -1,6 +1,9 @@
 import { create } from 'zustand';
 import { persist, createJSONStorage } from 'zustand/middleware';
 import { useShallow } from 'zustand/react/shallow';
+import { toast } from 'sonner';
+import { createResume } from '../middle-service/resumes';
+import { useSavedResumesStore } from './saved-resumes-store';
 import type {
   ResumeBuilderData,
   PersonalInfo,
@@ -84,6 +87,7 @@ interface ResumeBuilderActions {
   setVersionName: (name: string) => void;
   setIsPrimary: (isPrimary: boolean) => void;
   saveDraft: () => void;
+  saveToBackend: () => Promise<void>;
   loadDraft: () => boolean;
   clearDraft: () => void;
   markAsSaved: () => void;
@@ -516,6 +520,63 @@ export const useResumeBuilderStore = create<ResumeBuilderStore>()(
         } catch (error) {
           console.error('Failed to save draft:', error);
           set({ saveStatus: 'error' });
+        }
+      },
+
+      // Save to Backend
+      saveToBackend: async () => {
+        const state = get();
+        
+        // Validation: Check required fields
+        if (!state.data.versionName?.trim()) {
+          toast.error('Please enter a version name for your resume');
+          return;
+        }
+
+        if (!state.data.personal.fullName?.trim()) {
+          toast.error('Please enter your full name');
+          return;
+        }
+
+        set({ saveStatus: 'saving' });
+
+        try {
+          const createdResume = await createResume(state.data);
+          
+          // Update the local data with the created resume ID
+          set((prevState) => ({
+            data: {
+              ...prevState.data,
+              id: createdResume.id,
+            },
+            isDirty: false,
+            saveStatus: 'saved',
+            lastSaved: new Date().toISOString(),
+          }));
+
+          // Add the newly created resume to the saved resumes store
+          const savedResumesStore = useSavedResumesStore.getState();
+          savedResumesStore.addNewResume(createdResume);
+
+          toast.success(`Resume "${state.data.versionName}" saved successfully!`);
+          
+          // Clear the draft since it's now saved to backend
+          localStorage.removeItem(STORAGE_KEYS.DRAFT);
+          
+        } catch (error: any) {
+          console.error('Failed to save resume to backend:', error);
+          set({ saveStatus: 'error' });
+          
+          // Handle specific error types
+          if (error.response?.status === 409) {
+            toast.error('A resume with this version name already exists. Please choose a different name.');
+          } else if (error.response?.status === 403) {
+            toast.error('You are not authorized to perform this action.');
+          } else if (error.message === 'User not authenticated') {
+            toast.error('Please log in to save your resume.');
+          } else {
+            toast.error('Failed to save resume. Please try again.');
+          }
         }
       },
 

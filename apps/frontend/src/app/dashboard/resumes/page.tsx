@@ -68,10 +68,10 @@ function ResumeCard({
                 <FileText className="size-5 text-primary" />
               </div>
               <div className="min-w-0">
-                <h3 className="font-semibold truncate">{resume.name}</h3>
+                <h3 className="font-semibold truncate">{resume.version_name}</h3>
                 <p className="text-sm text-muted-foreground flex items-center gap-1">
                   <User className="size-3" />
-                  {resume.data.personal.fullName || "No name"}
+                  {resume.full_name || "No name"}
                 </p>
               </div>
             </div>
@@ -100,13 +100,17 @@ function ResumeCard({
         </CardHeader>
         <CardContent className="pb-3">
           <div className="text-sm text-muted-foreground space-y-1">
-            {resume.data.personal.email && (
-              <p className="truncate">{resume.data.personal.email}</p>
+            {resume.email && (
+              <p className="truncate">{resume.email}</p>
             )}
             <p className="flex items-center gap-1">
-              <span>{resume.data.experiences.length} experience{resume.data.experiences.length !== 1 ? 's' : ''}</span>
-              <span>•</span>
-              <span>{resume.data.skills.length} skill{resume.data.skills.length !== 1 ? 's' : ''}</span>
+              <span>Status: {resume.processing_status}</span>
+              {resume.professional_summary && (
+                <>
+                  <span>•</span>
+                  <span>Summary available</span>
+                </>
+              )}
             </p>
           </div>
         </CardContent>
@@ -114,7 +118,7 @@ function ResumeCard({
           <div className="flex items-center justify-between w-full text-xs text-muted-foreground">
             <span className="flex items-center gap-1">
               <Calendar className="size-3" />
-              Updated {formatDate(resume.updatedAt)}
+              Updated {formatDate(resume.updated_at)}
             </span>
             <Button variant="ghost" size="sm" onClick={() => onEdit(resume.id)}>
               Edit
@@ -128,7 +132,7 @@ function ResumeCard({
           <AlertDialogHeader>
             <AlertDialogTitle>Delete Resume</AlertDialogTitle>
             <AlertDialogDescription>
-              Are you sure you want to delete "{resume.name}"? This action cannot be undone.
+              Are you sure you want to delete "{resume.version_name}"? This action cannot be undone.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
@@ -150,7 +154,7 @@ export default function ResumesPage() {
   const [showBuilder, setShowBuilder] = useState(false);
   const [editingResumeId, setEditingResumeId] = useState<string | null>(null);
   
-  const resumes = useSavedResumes();
+  const { resumes, isLoading } = useSavedResumes();
   const deleteResume = useSavedResumesStore((state) => state.deleteResume);
   const duplicateResume = useSavedResumesStore((state) => state.duplicateResume);
   const getResume = useSavedResumesStore((state) => state.getResume);
@@ -164,21 +168,42 @@ export default function ResumesPage() {
   const handleEdit = (id: string) => {
     const resume = getResume(id);
     if (resume) {
-      loadFromData(resume.data);
+      // Convert ResumeRead to ResumeBuilderData format
+      const builderData = {
+        id: resume.id,
+        versionName: resume.version_name,
+        templateId: resume.template_id,
+        isPrimary: resume.is_primary,
+        personal: {
+          fullName: resume.full_name || '',
+          email: resume.email || '',
+          phone: resume.phone || '',
+          location: resume.location || '',
+          linkedinUrl: resume.linkedin_url || '',
+          githubUrl: resume.github_url || '',
+          portfolioUrl: resume.portfolio_url || '',
+        },
+        summary: resume.professional_summary || '',
+        experiences: [],
+        education: [],
+        skills: [],
+        projects: [],
+        certifications: [],
+        sectionOrder: ['personal', 'summary', 'experiences', 'education', 'skills', 'projects', 'certifications'],
+      };
+      loadFromData(builderData);
       setEditingResumeId(id);
       setShowBuilder(true);
     }
   };
 
-  const handleDuplicate = (id: string) => {
-    const newId = duplicateResume(id);
-    if (newId) {
-      toast.success("Resume duplicated successfully!");
-    }
+  const handleDuplicate = async (id: string) => {
+    await duplicateResume(id);
+    toast.success("Resume duplicated successfully!");
   };
 
-  const handleDelete = (id: string) => {
-    deleteResume(id);
+  const handleDelete = async (id: string) => {
+    await deleteResume(id);
     toast.success("Resume deleted");
   };
 
@@ -208,7 +233,10 @@ export default function ResumesPage() {
               <div className="flex items-center justify-between">
                 <div>
                   <h1 className="text-2xl font-semibold">My Resumes</h1>
-                  <p className="text-sm text-muted-foreground">Manage and organize your resumes</p>
+                  <p className="text-sm text-muted-foreground">
+                    Manage and organize your resumes 
+                    {isLoading && " • Syncing..."}
+                  </p>
                 </div>
                 {resumes.length > 0 && (
                   <Button onClick={handleCreateNew}>

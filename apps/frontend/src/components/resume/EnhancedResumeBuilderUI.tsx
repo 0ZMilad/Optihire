@@ -17,12 +17,10 @@ import {
   Loader2
 } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { toast } from "sonner";
 
 // Store and hooks
 import { useResumeBuilderStore, useResumeData } from "@/stores/resume-builder-store";
-import { useSavedResumesStore } from "@/stores/saved-resumes-store";
-import { useBeforeUnload } from "@/hooks/use-resume-builder";
+import { useBeforeUnload, useAutoSave } from "@/hooks/use-resume-builder";
 
 // Form components
 import EnhancedProfileForm from "./EnhancedProfileForm";
@@ -33,8 +31,8 @@ import EnhancedProjectsForm from "./EnhancedProjectsForm";
 import EnhancedCertificationsForm from "./EnhancedCertificationsForm";
 
 // UI components
-import EnhancedResumeSidebar from "./EnhancedResumeSidebar";
 import EnhancedResumePreview from "./EnhancedResumePreview";
+import SaveStatusIndicator from "./SaveStatusIndicator";
 
 interface EnhancedResumeBuilderUIProps {
   className?: string;
@@ -59,26 +57,20 @@ export default function EnhancedResumeBuilderUI({
   onSave,
   resumeId,
 }: EnhancedResumeBuilderUIProps) {
-  // Store state
   const activeSection = useResumeBuilderStore((state) => state.activeSection);
   const setActiveSection = useResumeBuilderStore((state) => state.setActiveSection);
   const initialize = useResumeBuilderStore((state) => state.initialize);
   const isInitialized = useResumeBuilderStore((state) => state.isInitialized);
-  const reset = useResumeBuilderStore((state) => state.reset);
+  const saveToBackend = useResumeBuilderStore((state) => state.saveToBackend);
+  const setVersionName = useResumeBuilderStore((state) => state.setVersionName);
+  const saveStatus = useResumeBuilderStore((state) => state.saveStatus);
   const resumeData = useResumeData();
   
-  // Saved resumes store
-  const saveResume = useSavedResumesStore((state) => state.saveResume);
-  const updateResume = useSavedResumesStore((state) => state.updateResume);
-  
-  // Saving state
-  const [isSaving, setIsSaving] = useState(false);
   const [resumeTitle, setResumeTitle] = useState("");
   
-  // Setup before unload warning
   useBeforeUnload();
+  useAutoSave();
 
-  // Initialize store and set active section
   useEffect(() => {
     if (!isInitialized) {
       initialize();
@@ -86,70 +78,21 @@ export default function EnhancedResumeBuilderUI({
     }
   }, [isInitialized, initialize, setActiveSection]);
   
-  // Initialize resume title when editing existing resume
   useEffect(() => {
     if (resumeId && isInitialized) {
-      // Get the resume from the store using the hook instead of getState()
-      const getResume = useSavedResumesStore.getState().getResume;
-      const existingResume = getResume(resumeId);
-      if (existingResume) {
-        setResumeTitle(existingResume.name);
-      }
+      setResumeTitle(resumeData.versionName || "");
     } else if (!resumeId && isInitialized) {
       setResumeTitle("");
     }
-  }, [resumeId, isInitialized]); // Include isInitialized to ensure proper timing
+  }, [resumeId, isInitialized, resumeData.versionName]);
 
-  // Handle save resume
-  const handleSaveResume = useCallback(() => {
-    setIsSaving(true);
-    
-    try {
-      // Validate required fields
-      if (!resumeData.personal.fullName.trim()) {
-        toast.error("Please enter your full name before saving");
-        setActiveSection("profile");
-        setIsSaving(false);
-        return;
-      }
-      
-      if (!resumeData.personal.email.trim()) {
-        toast.error("Please enter your email before saving");
-        setActiveSection("profile");
-        setIsSaving(false);
-        return;
-      }
-
-      let savedId: string;
-      const finalTitle = resumeTitle.trim() || undefined;
-      
-      if (resumeId) {
-        // Update existing resume
-        updateResume(resumeId, resumeData, finalTitle);
-        savedId = resumeId;
-        toast.success("Resume updated successfully!");
-      } else {
-        // Save new resume
-        savedId = saveResume(resumeData, finalTitle);
-        toast.success("Resume saved successfully!");
-      }
-      
-      // Callback to parent first
-      if (onSave) {
-        onSave(savedId);
-      } else if (onBack) {
-        onBack();
-      }
-      
-      // Reset the builder after navigation
-      reset();
-    } catch (error) {
-      console.error("Failed to save resume:", error);
-      toast.error("Failed to save resume. Please try again.");
-    } finally {
-      setIsSaving(false);
+  const handleSaveToBackend = useCallback(async () => {
+    if (resumeTitle.trim() && resumeTitle !== resumeData.versionName) {
+      setVersionName(resumeTitle.trim());
     }
-  }, [resumeData, resumeId, resumeTitle, saveResume, updateResume, reset, onSave, onBack, setActiveSection]);
+    
+    await saveToBackend();
+  }, [resumeTitle, resumeData.versionName, setVersionName, saveToBackend]);
 
   return (
     <div className={cn("mx-auto max-w-7xl", className)}>
@@ -178,8 +121,13 @@ export default function EnhancedResumeBuilderUI({
         </div>
         
         <div className="flex items-center gap-3">
-          <Button onClick={handleSaveResume} disabled={isSaving}>
-            {isSaving ? (
+          <SaveStatusIndicator className="hidden sm:flex" />
+          
+          <Button 
+            onClick={handleSaveToBackend} 
+            disabled={saveStatus === 'saving'}
+          >
+            {saveStatus === 'saving' ? (
               <>
                 <Loader2 className="mr-2 size-4 animate-spin" />
                 Saving...

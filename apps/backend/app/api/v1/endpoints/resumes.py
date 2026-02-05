@@ -2,6 +2,7 @@ import uuid
 from fastapi import APIRouter, Depends, File, UploadFile, HTTPException, status, BackgroundTasks
 from sqlmodel import Session
 from uuid import UUID
+from typing import List
 
 from app.core.config import settings
 from app.core.dependencies import get_current_user_id
@@ -11,6 +12,7 @@ from app.models.resume_model import Resume
 from app.schemas.resume_schema import (
     ResumeParseStatusResponse,
     ResumeRead,
+    ResumeCreate,
     ResumeUpdate,
     ResumeComplete,
     ExperienceRead,
@@ -25,6 +27,7 @@ from app.services.resume_service import (
     get_parse_status,
     get_active_resume,
     get_resume_complete,
+    create_resume,
 )
 from sqlmodel import select
 
@@ -34,6 +37,83 @@ ALLOWED_MIME_TYPES = [
     "application/pdf",
     "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
 ]
+
+@router.post("", response_model=ResumeRead, status_code=status.HTTP_201_CREATED)
+async def create_resume_endpoint(
+    resume_data: ResumeCreate,
+    current_user_id: UUID = Depends(get_current_user_id),
+    db: Session = Depends(get_db)
+):
+    """
+    Create a new resume with manual data input.
+    
+    Creates a resume without file upload, allowing manual entry of resume data.
+    The resume is immediately marked as "Completed" since no parsing is required.
+    Version names must be unique per user.
+    
+    Requires authentication and user can only create resumes for themselves.
+    """
+    
+    # Ensure user can only create resumes for themselves
+    if resume_data.user_id != current_user_id:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="You can only create resumes for yourself"
+        )
+    
+    try:
+        resume = create_resume(db, resume_data)
+        log_info(f"Resume created successfully: id={resume.id}, user_id={current_user_id}")
+        return resume
+    
+    except Exception as e:
+        error_msg = str(e)
+        
+        # Handle version name uniqueness violation
+        if "Version name already exists" in error_msg:
+            raise HTTPException(
+                status_code=status.HTTP_409_CONFLICT,
+                detail="A resume with this version name already exists. Please choose a different name."
+            )
+        
+        log_error(f"Failed to create resume: user_id={current_user_id}, error={error_msg}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Failed to create resume"
+        )
+
+
+@router.get("", response_model=List[ResumeRead], status_code=status.HTTP_200_OK)
+async def list_user_resumes(
+    current_user_id: UUID = Depends(get_current_user_id),
+    db: Session = Depends(get_db)
+):
+    """
+    Get all resumes for the authenticated user.
+    
+    Returns a list of all resumes belonging to the current user,
+    ordered by creation date (most recent first).
+    
+    Requires authentication and only returns resumes for the current user.
+    """
+    try:
+        statement = select(Resume).where(
+            Resume.user_id == current_user_id,
+            Resume.deleted_at.is_(None)
+        ).order_by(Resume.created_at.desc())
+        
+        resumes = db.exec(statement).all()
+        
+        log_info(f"Retrieved {len(resumes)} resumes for user: {current_user_id}")
+        return resumes
+        
+    except Exception as e:
+        log_error(f"Failed to retrieve resumes for user {current_user_id}: {str(e)}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Failed to retrieve resumes"
+        )
+
 
 @router.post("/upload", status_code=status.HTTP_201_CREATED)
 async def upload_resume(

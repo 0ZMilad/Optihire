@@ -1,144 +1,114 @@
 import { create } from 'zustand';
-import { persist, createJSONStorage } from 'zustand/middleware';
 import { useState, useEffect } from 'react';
-import type { ResumeBuilderData } from '../components/resume/types';
+import { getUserResumes } from '../middle-service/resumes';
+import type { ResumeRead } from '../middle-service/types';
 
 // ============================================================================
-// Types
+// Types - Simplified to match backend exactly  
 // ============================================================================
-
-export interface SavedResume {
-  id: string;
-  name: string;
-  data: ResumeBuilderData;
-  createdAt: string;
-  updatedAt: string;
-}
 
 interface SavedResumesState {
-  resumes: SavedResume[];
+  resumes: ResumeRead[];
+  isLoading: boolean;
+  error: string | null;
 }
 
 interface SavedResumesActions {
-  saveResume: (data: ResumeBuilderData, name?: string) => string;
-  updateResume: (id: string, data: ResumeBuilderData, name?: string) => void;
-  deleteResume: (id: string) => void;
-  getResume: (id: string) => SavedResume | undefined;
-  duplicateResume: (id: string) => string | null;
+  fetchResumes: () => Promise<void>;
+  refreshResumes: () => Promise<void>;
+  deleteResume: (id: string) => Promise<void>;
+  duplicateResume: (id: string) => Promise<void>;
+  addNewResume: (resume: ResumeRead) => void;
+  getResume: (id: string) => ResumeRead | undefined;
 }
 
 type SavedResumesStore = SavedResumesState & SavedResumesActions;
 
 // ============================================================================
-// Helper Functions
+// Store - Pure API approach, no localStorage
 // ============================================================================
 
-const generateId = () => `resume_${Date.now()}_${Math.random().toString(36).slice(2, 9)}`;
+export const useSavedResumesStore = create<SavedResumesStore>()((set, get) => ({
+  resumes: [],
+  isLoading: false,
+  error: null,
 
-const generateDefaultName = (data: ResumeBuilderData) => {
-  if (data.versionName) return data.versionName;
-  if (data.personal.fullName) return `${data.personal.fullName}'s Resume`;
-  return `Resume ${new Date().toLocaleDateString()}`;
-};
-
-// ============================================================================
-// Store
-// ============================================================================
-
-export const useSavedResumesStore = create<SavedResumesStore>()(
-  persist(
-    (set, get) => ({
-      resumes: [],
-
-      saveResume: (data, name) => {
-        const id = generateId();
-        const now = new Date().toISOString();
-        
-        const newResume: SavedResume = {
-          id,
-          name: name || generateDefaultName(data),
-          data: { ...data, id },
-          createdAt: now,
-          updatedAt: now,
-        };
-
-        set((state) => ({
-          resumes: [newResume, ...state.resumes],
-        }));
-
-        return id;
-      },
-
-      updateResume: (id, data, name) => {
-        set((state) => ({
-          resumes: state.resumes.map((resume) =>
-            resume.id === id
-              ? {
-                  ...resume,
-                  data: { ...data, id },
-                  name: name || resume.name,
-                  updatedAt: new Date().toISOString(),
-                }
-              : resume
-          ),
-        }));
-      },
-
-      deleteResume: (id) => {
-        set((state) => ({
-          resumes: state.resumes.filter((resume) => resume.id !== id),
-        }));
-      },
-
-      getResume: (id) => {
-        return get().resumes.find((resume) => resume.id === id);
-      },
-
-      duplicateResume: (id) => {
-        const original = get().getResume(id);
-        if (!original) return null;
-
-        const newId = generateId();
-        const now = new Date().toISOString();
-
-        const duplicated: SavedResume = {
-          id: newId,
-          name: `${original.name} (Copy)`,
-          data: { ...original.data, id: newId },
-          createdAt: now,
-          updatedAt: now,
-        };
-
-        set((state) => ({
-          resumes: [duplicated, ...state.resumes],
-        }));
-
-        return newId;
-      },
-    }),
-    {
-      name: 'optihire_saved_resumes',
-      storage: createJSONStorage(() => localStorage),
+  fetchResumes: async () => {
+    set({ isLoading: true, error: null });
+    try {
+      const resumes = await getUserResumes();
+      set({ resumes, isLoading: false });
+    } catch (error: any) {
+      console.error('Failed to fetch resumes:', error);
+      set({ 
+        error: error.message || 'Failed to load resumes', 
+        isLoading: false 
+      });
     }
-  )
-);
+  },
+
+  refreshResumes: async () => {
+    const { fetchResumes } = get();
+    await fetchResumes();
+  },
+
+  deleteResume: async (id: string) => {
+    try {
+      // TODO: Add API call for delete when backend endpoint is ready
+      // await deleteResumeAPI(id);
+      
+      // Optimistically remove from local state
+      set((state) => ({
+        resumes: state.resumes.filter(r => r.id !== id)
+      }));
+    } catch (error) {
+      console.error('Failed to delete resume:', error);
+    }
+  },
+
+  duplicateResume: async (id: string) => {
+    try {
+      // TODO: Add API call for duplicate when backend endpoint is ready
+      console.log('Duplicate resume:', id);
+      // For now, just refresh to get updated list
+      await get().refreshResumes();
+    } catch (error) {
+      console.error('Failed to duplicate resume:', error);
+    }
+  },
+
+  addNewResume: (resume: ResumeRead) => {
+    set((state) => ({
+      resumes: [resume, ...state.resumes]
+    }));
+  },
+
+  getResume: (id: string) => {
+    return get().resumes.find((resume) => resume.id === id);
+  },
+}));
 
 // ============================================================================
-// Selector Hooks
+// Simplified Hook - Always fetches from API
 // ============================================================================
 
-// Basic selector (may have hydration issues on initial render)
-export const useSavedResumesRaw = () => useSavedResumesStore((state) => state.resumes);
-
-// Hydration-safe hook for use in components
 export const useSavedResumes = () => {
-  const resumes = useSavedResumesStore((state) => state.resumes);
+  const { resumes, isLoading, error, fetchResumes } = useSavedResumesStore();
   const [hydrated, setHydrated] = useState(false);
   
   useEffect(() => {
     setHydrated(true);
-  }, []);
+    // Always fetch on mount
+    fetchResumes();
+  }, [fetchResumes]);
   
-  // Return empty array during SSR/initial hydration
-  return hydrated ? resumes : [];
+  return { 
+    resumes: hydrated ? resumes : [], 
+    isLoading: hydrated ? isLoading : true,
+    error: hydrated ? error : null,
+    refresh: fetchResumes,
+  };
 };
+
+// Export for backward compatibility
+export type SavedResume = ResumeRead;

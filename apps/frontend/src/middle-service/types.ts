@@ -72,8 +72,24 @@ export interface UserRead {
 // Error types removed as they are unused.
 
 // ============================================================================
-// Resume Parsing Types
+// Resume Types
 // ============================================================================
+
+// Resume creation payload (matches backend ResumeCreate schema)
+export interface ResumeCreate {
+  user_id: string;
+  version_name: string;
+  template_id?: string | null;
+  is_primary?: boolean;
+  full_name?: string | null;
+  email?: string | null;
+  phone?: string | null;
+  location?: string | null;
+  linkedin_url?: string | null;
+  github_url?: string | null;
+  portfolio_url?: string | null;
+  professional_summary?: string | null;
+}
 
 export interface ResumeUploadResponse {
   id: string;
@@ -98,12 +114,12 @@ export interface ResumeRead {
   id: string;
   user_id: string;
   version_name: string;
-
-  // File storage
+  template_id: string | null;
+  is_primary: boolean;
+  section_order: object | null;
+  content_hash: string | null;
   file_path: string | null;
   file_url: string | null;
-
-  // Parsed Contact Info & Links
   full_name: string | null;
   email: string | null;
   phone: string | null;
@@ -111,24 +127,14 @@ export interface ResumeRead {
   linkedin_url: string | null;
   github_url: string | null;
   portfolio_url: string | null;
-  
-  // Parsed Content
   professional_summary: string | null;
   raw_text: string | null;
-
-  // File Metadata
-  url: string;
-  filename: string;
-  stored_name: string;
-
-  // System Status
-  processing_status: 'Pending' | 'Processing' | 'Completed' | 'Failed';
-  message?: string;
-  error_details?: string | null;
-  
-  // Timestamps
+  processing_status: string;
+  error_message: string | null;
+  last_analyzed_at: string | null;
   created_at: string;
   updated_at: string;
+  deleted_at: string | null;
 }
 
 // ============================================================================

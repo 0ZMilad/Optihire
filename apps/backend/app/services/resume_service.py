@@ -20,6 +20,7 @@ from pdfminer.pdfparser import PDFSyntaxError
 from pdfminer.pdfdocument import PDFEncryptionError
 from pdfminer.pdfpage import PDFTextExtractionNotAllowed
 from sqlmodel import Session, select
+from sqlalchemy.exc import IntegrityError
 
 from app.core.config import settings
 from app.core.logging_config import log_info, log_error, log_warning
@@ -32,8 +33,69 @@ from app.models.resume_model import (
     ResumeCertification,
     ResumeProject,
 )
-from app.schemas.resume_schema import ResumeParseStatusResponse
+from app.schemas.resume_schema import ResumeParseStatusResponse, ResumeCreate
 from app.services.storage_service import get_supabase_client
+
+# =============================================================================
+# RESUME CREATION
+# =============================================================================
+
+def create_resume(db: Session, resume_data: ResumeCreate) -> Resume:
+    """
+    Create a new resume with manual data input.
+    
+    Args:
+        db: Database session
+        resume_data: Resume creation data
+        
+    Returns:
+        Created Resume instance
+        
+    Raises:
+        IntegrityError: If version name already exists for the user
+    """
+    # Check if version name already exists for this user
+    existing_resume = db.exec(
+        select(Resume).where(
+            Resume.user_id == resume_data.user_id,
+            Resume.version_name == resume_data.version_name,
+            Resume.deleted_at.is_(None)
+        )
+    ).first()
+    
+    if existing_resume:
+        raise IntegrityError(
+            "Version name already exists for this user",
+            None,
+            None
+        )
+    
+    # Create the resume with "Completed" status since it's manually created
+    resume = Resume(
+        user_id=resume_data.user_id,
+        version_name=resume_data.version_name,
+        template_id=resume_data.template_id,
+        is_primary=resume_data.is_primary,
+        full_name=resume_data.full_name,
+        email=resume_data.email,
+        phone=resume_data.phone,
+        location=resume_data.location,
+        linkedin_url=resume_data.linkedin_url,
+        github_url=resume_data.github_url,
+        portfolio_url=resume_data.portfolio_url,
+        professional_summary=resume_data.professional_summary,
+        processing_status="Completed",  # Manual creation is immediately complete
+        last_analyzed_at=datetime.utcnow()
+    )
+    
+    db.add(resume)
+    db.commit()
+    db.refresh(resume)
+    
+    log_info(f"Created new resume manually: user_id={resume_data.user_id}, version_name={resume_data.version_name}")
+    
+    return resume
+
 
 # =============================================================================
 # STATUS MANAGEMENT

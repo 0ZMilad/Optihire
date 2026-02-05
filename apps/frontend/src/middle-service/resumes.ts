@@ -1,5 +1,50 @@
 import { apiClient } from "./client";
-import { ResumeParseStatusResponse, ResumeRead, ResumeComplete, ResumeUploadResponse } from "./types";
+import { supabase } from "./supabase";
+import { ResumeParseStatusResponse, ResumeRead, ResumeComplete, ResumeUploadResponse, ResumeCreate } from "./types";
+import type { ResumeBuilderData } from "../components/resume/types";
+
+// Transform frontend ResumeBuilderData to backend ResumeCreate format
+function transformToResumeCreate(data: ResumeBuilderData, userId: string): ResumeCreate {
+  // Helper function to convert empty strings to null
+  const emptyToNull = (value: string | undefined | null): string | null => {
+    return value && value.trim() ? value.trim() : null;
+  };
+
+  return {
+    user_id: userId,
+    version_name: data.versionName,
+    template_id: data.templateId || null,
+    is_primary: data.isPrimary,
+    full_name: emptyToNull(data.personal.fullName),
+    email: emptyToNull(data.personal.email),
+    phone: emptyToNull(data.personal.phone),
+    location: emptyToNull(data.personal.location),
+    linkedin_url: emptyToNull(data.personal.linkedinUrl),
+    github_url: emptyToNull(data.personal.githubUrl),
+    portfolio_url: emptyToNull(data.personal.portfolioUrl),
+    professional_summary: emptyToNull(data.summary),
+  };
+}
+
+export const createResume = async (data: ResumeBuilderData) => {
+  // Get current user from Supabase session
+  const { data: { session } } = await supabase.auth.getSession();
+  
+  if (!session?.user?.id) {
+    throw new Error("User not authenticated");
+  }
+
+  // Basic validation
+  if (!data.versionName?.trim()) {
+    throw new Error("Version name is required");
+  }
+
+  // Transform frontend data to backend format
+  const resumeCreateData = transformToResumeCreate(data, session.user.id);
+
+  const response = await apiClient.post<ResumeRead>("/api/v1/resumes", resumeCreateData);
+  return response.data;
+};
 
 export const uploadResume = async (file: File) => {
   const formData = new FormData();
@@ -40,5 +85,10 @@ export const updateResume = async (resumeId: string, data: Partial<ResumeRead>) 
 
 export const getActiveResume = async () => {
   const response = await apiClient.get<ResumeRead>(`/api/v1/resumes/active`);
+  return response.data;
+}
+
+export const getUserResumes = async () => {
+  const response = await apiClient.get<ResumeRead[]>(`/api/v1/resumes`);
   return response.data;
 }
