@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback, useRef } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -74,30 +74,17 @@ export default function EnhancedResumeBuilderUI({
   // Saving state
   const [isSaving, setIsSaving] = useState(false);
   const [resumeTitle, setResumeTitle] = useState("");
-  const resumeTitleRef = useRef("");
-  
-  // Debug: Track resumeTitle changes
-  useEffect(() => {
-    console.log("resumeTitle state changed to:", resumeTitle);
-    resumeTitleRef.current = resumeTitle;
-  }, [resumeTitle]);
   
   // Setup before unload warning
   useBeforeUnload();
 
-  // Initialize store
+  // Initialize store and set active section
   useEffect(() => {
     if (!isInitialized) {
       initialize();
-    }
-  }, [isInitialized, initialize]);
-  
-  // Always start with profile section when opening resume builder
-  useEffect(() => {
-    if (isInitialized) {
       setActiveSection("profile");
     }
-  }, [isInitialized, setActiveSection]);
+  }, [isInitialized, initialize, setActiveSection]);
   
   // Initialize resume title when editing existing resume
   useEffect(() => {
@@ -106,14 +93,10 @@ export default function EnhancedResumeBuilderUI({
       const getResume = useSavedResumesStore.getState().getResume;
       const existingResume = getResume(resumeId);
       if (existingResume) {
-        console.log("Loading existing resume:", existingResume.name); // Debug log
         setResumeTitle(existingResume.name);
-        resumeTitleRef.current = existingResume.name;
       }
     } else if (!resumeId && isInitialized) {
-      // Clear title when creating new resume
       setResumeTitle("");
-      resumeTitleRef.current = "";
     }
   }, [resumeId, isInitialized]); // Include isInitialized to ensure proper timing
 
@@ -139,17 +122,14 @@ export default function EnhancedResumeBuilderUI({
 
       let savedId: string;
       const finalTitle = resumeTitle.trim() || undefined;
-      console.log("Saving with title:", finalTitle, "from state:", resumeTitle); // Debug log
       
       if (resumeId) {
         // Update existing resume
-        console.log("Updating existing resume with id:", resumeId); // Debug log
         updateResume(resumeId, resumeData, finalTitle);
         savedId = resumeId;
         toast.success("Resume updated successfully!");
       } else {
         // Save new resume
-        console.log("Saving new resume"); // Debug log
         savedId = saveResume(resumeData, finalTitle);
         toast.success("Resume saved successfully!");
       }
@@ -187,10 +167,7 @@ export default function EnhancedResumeBuilderUI({
               placeholder="Untitled Resume"
               value={resumeTitle}
               onChange={(e) => {
-                const newValue = e.target.value;
-                console.log("Input changed:", newValue); // Debug log
-                setResumeTitle(newValue);
-                resumeTitleRef.current = newValue; // Keep ref in sync
+                setResumeTitle(e.target.value);
               }}
               className="text-lg font-semibold border-0 bg-transparent px-2 shadow-none focus-visible:ring-0 focus-visible:ring-offset-0"
             />
@@ -266,25 +243,7 @@ export default function EnhancedResumeBuilderUI({
 
               <TabsContent value="preview" className="mt-0">
                 {/* Gray background for document metaphor */}
-                <div className="min-h-screen bg-gray-100 -mx-6 px-6 py-6">
-                  {/* Header Bar with Actions */}
-                  <div className="bg-white border border-gray-200 rounded-lg p-4 mb-6 shadow-sm">
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-3">
-                        <h2 className="text-lg font-semibold text-gray-900">Resume Preview</h2>
-                        <span className="inline-flex items-center px-2 py-1 text-xs font-medium bg-green-100 text-green-800 rounded-full">
-                          ● Saved
-                        </span>
-                      </div>
-                      
-                      {/* Action Buttons */}
-                      <div className="flex items-center gap-3">
-                        {/* Primary Action */}
-                        <EnhancedResumeSidebar layout="full" className="" />
-                      </div>
-                    </div>
-                  </div>
-                  
+                <div className="bg-gray-100 -mx-6 px-6 py-6">
                   {/* Document Preview */}
                   <div className="flex justify-center">
                     <div className="w-full max-w-[8.5in] bg-white shadow-lg rounded-lg overflow-hidden" style={{aspectRatio: '8.5/11'}}>

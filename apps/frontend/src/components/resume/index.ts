@@ -1,6 +1,3 @@
-// Legacy exports (for backward compatibility)
-export { default as ResumeBuilderUI } from "./ResumeBuilderUI";
-
 // Enhanced Resume Builder exports
 export { default as EnhancedResumeBuilderUI } from "./EnhancedResumeBuilderUI";
 export { default as EnhancedProfileForm } from "./EnhancedProfileForm";

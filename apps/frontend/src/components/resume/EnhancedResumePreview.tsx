@@ -1,5 +1,6 @@
 "use client";
 
+import { useMemo, memo } from "react";
 import { useResumeData } from "@/stores/resume-builder-store";
 import { cn } from "@/lib/utils";
 import { Mail, Phone, MapPin, Linkedin, Github, Globe, Briefcase, GraduationCap, Award, FolderKanban } from "lucide-react";
@@ -9,18 +10,20 @@ interface EnhancedResumePreviewProps {
   hideLabel?: boolean; // For full preview mode
 }
 
-export default function EnhancedResumePreview({ className, hideLabel = false }: EnhancedResumePreviewProps) {
+export default memo(function EnhancedResumePreview({ className, hideLabel = false }: EnhancedResumePreviewProps) {
   const resumeData = useResumeData();
   const { personal, summary, experiences, education, skills, projects, certifications } = resumeData;
 
-  const hasContent = 
+  const hasContent = useMemo(() => 
     personal.fullName || 
     summary || 
     experiences.length > 0 || 
     education.length > 0 || 
     skills.length > 0 ||
     projects.length > 0 ||
-    certifications.length > 0;
+    certifications.length > 0,
+    [personal.fullName, summary, experiences.length, education.length, skills.length, projects.length, certifications.length]
+  );
 
   // Empty state with proper placeholder
   if (!hasContent) {
@@ -295,4 +298,4 @@ export default function EnhancedResumePreview({ className, hideLabel = false }: 
       </div>
     </div>
   );
-}
+});

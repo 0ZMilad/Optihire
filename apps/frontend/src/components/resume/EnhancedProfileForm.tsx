@@ -1,5 +1,6 @@
 "use client";
 
+import { useCallback, memo } from "react";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
@@ -15,15 +16,15 @@ interface EnhancedProfileFormProps {
 const PHONE_PATTERN = "^[+]?[(]?[0-9]{1,4}[)]?[-\\s./0-9]*$";
 const URL_PATTERN = "^https?://.*";
 
-export default function EnhancedProfileForm({ className }: EnhancedProfileFormProps) {
+export default memo(function EnhancedProfileForm({ className }: EnhancedProfileFormProps) {
   const personal = usePersonalInfo();
   const summary = useSummary();
   const updatePersonalInfo = useResumeBuilderStore((state) => state.updatePersonalInfo);
   const updateSummary = useResumeBuilderStore((state) => state.updateSummary);
 
-  const handlePersonalChange = <K extends keyof PersonalInfo>(field: K, value: string) => {
+  const handlePersonalChange = useCallback(<K extends keyof PersonalInfo>(field: K, value: string) => {
     updatePersonalInfo(field, value);
-  };
+  }, [updatePersonalInfo]);
 
   return (
     <div className={className}>
@@ -164,4 +165,4 @@ export default function EnhancedProfileForm({ className }: EnhancedProfileFormPr
       </div>
     </div>
   );
-}
+});
