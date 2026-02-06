@@ -39,6 +39,14 @@ const PROFICIENCY_LEVELS = [
   { value: "expert", label: "Expert" },
 ] as const;
 
+// Hoisted outside component to avoid re-creation on every render
+const PROFICIENCY_COLORS: Record<string, string> = {
+  beginner: "bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-300",
+  intermediate: "bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-300",
+  advanced: "bg-purple-100 text-purple-700 dark:bg-purple-900 dark:text-purple-300",
+  expert: "bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-300",
+};
+
 function SkillBadge({ 
   skill, 
   onRemove 
@@ -46,18 +54,11 @@ function SkillBadge({
   skill: Skill; 
   onRemove: (id: string) => void;
 }) {
-  const proficiencyColors = {
-    beginner: "bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-300",
-    intermediate: "bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-300",
-    advanced: "bg-purple-100 text-purple-700 dark:bg-purple-900 dark:text-purple-300",
-    expert: "bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-300",
-  };
-
   return (
     <span
       className={cn(
         "inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-sm",
-        proficiencyColors[skill.proficiencyLevel]
+        PROFICIENCY_COLORS[skill.proficiencyLevel]
       )}
     >
       {skill.skillName}

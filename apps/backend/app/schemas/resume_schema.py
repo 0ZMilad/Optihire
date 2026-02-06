@@ -94,6 +94,26 @@ class ResumeRead(BaseModel):
     model_config = {"from_attributes": True}
 
 
+class ResumeListItem(BaseModel):
+    """Lightweight resume data for list views — excludes raw_text and error_message."""
+
+    id: UUID
+    user_id: UUID
+    version_name: str
+    template_id: UUID | None
+    is_primary: bool
+    full_name: str | None
+    email: str | None
+    phone: str | None
+    location: str | None
+    professional_summary: str | None
+    processing_status: str
+    created_at: datetime
+    updated_at: datetime
+
+    model_config = {"from_attributes": True}
+
+
 class ResumeParseStatusResponse(BaseModel):
     """Response schema for resume parsing status."""
 

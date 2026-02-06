@@ -239,15 +239,3 @@ export const createEmptyResumeData = (): ResumeBuilderData => ({
   versionName: 'Untitled Resume',
   isPrimary: false,
 });
-
-// ============================================================================
-// Legacy type for backward compatibility
-// ============================================================================
-
-export interface ResumeData {
-  name: string;
-  title: string;
-  summary: string;
-  experience: string;
-  skills: string;
-}

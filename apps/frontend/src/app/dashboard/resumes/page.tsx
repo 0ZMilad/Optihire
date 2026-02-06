@@ -36,7 +36,7 @@ import {
 import { EnhancedResumeBuilderUI } from "@/components/resume";
 import { useSavedResumesStore, useSavedResumes, type SavedResume } from "@/stores/saved-resumes-store";
 import { useResumeBuilderStore } from "@/stores/resume-builder-store";
-import { downloadResumePdf } from "@/middle-service/resumes";
+import { downloadResumePdf, getResumeCompleteData } from "@/middle-service/resumes";
 import { toast } from "sonner";
 
 function ResumeCard({ 
@@ -165,7 +165,6 @@ export default function ResumesPage() {
   const { resumes, isLoading } = useSavedResumes();
   const deleteResume = useSavedResumesStore((state) => state.deleteResume);
   const duplicateResume = useSavedResumesStore((state) => state.duplicateResume);
-  const getResume = useSavedResumesStore((state) => state.getResume);
   const loadFromData = useResumeBuilderStore((state) => state.loadFromData);
 
   const handleCreateNew = () => {
@@ -173,35 +172,93 @@ export default function ResumesPage() {
     setShowBuilder(true);
   };
 
-  const handleEdit = (id: string) => {
-    const resume = getResume(id);
-    if (resume) {
-      // Convert ResumeRead to ResumeBuilderData format
+  const handleEdit = async (id: string) => {
+    try {
+      // Fetch full resume with all sections from the API
+      const complete = await getResumeCompleteData(id);
+      
       const builderData = {
-        id: resume.id,
-        versionName: resume.version_name,
-        templateId: resume.template_id,
-        isPrimary: resume.is_primary,
+        id: complete.id,
+        versionName: complete.version_name,
+        templateId: complete.template_id,
+        isPrimary: complete.is_primary,
         personal: {
-          fullName: resume.full_name || '',
-          email: resume.email || '',
-          phone: resume.phone || '',
-          location: resume.location || '',
-          linkedinUrl: resume.linkedin_url || '',
-          githubUrl: resume.github_url || '',
-          portfolioUrl: resume.portfolio_url || '',
+          fullName: complete.full_name || '',
+          email: complete.email || '',
+          phone: complete.phone || '',
+          location: complete.location || '',
+          linkedinUrl: complete.linkedin_url || '',
+          githubUrl: complete.github_url || '',
+          portfolioUrl: complete.portfolio_url || '',
         },
-        summary: resume.professional_summary || '',
-        experiences: [],
-        education: [],
-        skills: [],
-        projects: [],
-        certifications: [],
+        summary: complete.professional_summary || '',
+        experiences: (complete.experiences || []).map((exp) => ({
+          id: exp.id,
+          companyName: exp.company_name,
+          jobTitle: exp.job_title,
+          location: exp.location || '',
+          startDate: exp.start_date || '',
+          endDate: exp.end_date || '',
+          isCurrent: exp.is_current,
+          description: exp.description || '',
+          achievements: exp.achievements || [],
+          skillsUsed: exp.skills_used || [],
+          displayOrder: exp.display_order,
+        })),
+        education: (complete.education || []).map((edu) => ({
+          id: edu.id,
+          institutionName: edu.institution_name,
+          degreeType: edu.degree_type || '',
+          fieldOfStudy: edu.field_of_study || '',
+          location: edu.location || '',
+          startDate: edu.start_date || '',
+          endDate: edu.end_date || '',
+          isCurrent: edu.is_current,
+          gpa: edu.gpa != null ? String(edu.gpa) : '',
+          achievements: edu.achievements || [],
+          relevantCoursework: edu.relevant_coursework || [],
+          displayOrder: edu.display_order,
+        })),
+        skills: (complete.skills || []).map((s) => ({
+          id: s.id,
+          skillName: s.skill_name,
+          skillCategory: s.skill_category || '',
+          proficiencyLevel: (s.proficiency_level || 'intermediate') as 'beginner' | 'intermediate' | 'advanced' | 'expert',
+          yearsOfExperience: s.years_of_experience,
+          isPrimary: s.is_primary,
+          displayOrder: s.display_order,
+        })),
+        projects: (complete.projects || []).map((p) => ({
+          id: p.id,
+          projectName: p.project_name,
+          role: p.role || '',
+          description: p.description || '',
+          technologiesUsed: p.technologies_used || [],
+          projectUrl: p.project_url || '',
+          startDate: p.start_date || '',
+          endDate: p.end_date || '',
+          isCurrent: p.is_current,
+          achievements: p.achievements || [],
+          displayOrder: p.display_order,
+        })),
+        certifications: (complete.certifications || []).map((c) => ({
+          id: c.id,
+          certificationName: c.certification_name,
+          issuingOrganization: c.issuing_organization || '',
+          issueDate: c.issue_date || '',
+          expiryDate: c.expiry_date || '',
+          credentialId: c.credential_id || '',
+          credentialUrl: c.credential_url || '',
+          displayOrder: c.display_order,
+        })),
         sectionOrder: ['personal', 'summary', 'experiences', 'education', 'skills', 'projects', 'certifications'],
       };
       loadFromData(builderData);
       setEditingResumeId(id);
       setShowBuilder(true);
+    } catch (error: any) {
+      console.error('Failed to load resume for editing:', error);
+      toast.error('Failed to load resume data. Please try again.');
     }
   };
 
@@ -231,6 +288,8 @@ export default function ResumesPage() {
   };
 
   const handleSaveComplete = () => {
+    // Force refresh resume list from backend to reflect the new save
+    useSavedResumesStore.getState().refreshResumes();
     setShowBuilder(false);
     setEditingResumeId(null);
   };

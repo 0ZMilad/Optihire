@@ -1,16 +1,17 @@
 import { create } from 'zustand';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { getUserResumes, deleteResume as deleteResumeAPI } from '../middle-service/resumes';
-import type { ResumeRead } from '../middle-service/types';
+import type { ResumeListItem } from '../middle-service/types';
 
 // ============================================================================
-// Types - Simplified to match backend exactly  
+// Types - Using lightweight ResumeListItem for list views
 // ============================================================================
 
 interface SavedResumesState {
-  resumes: ResumeRead[];
+  resumes: ResumeListItem[];
   isLoading: boolean;
   error: string | null;
+  lastFetchedAt: number | null;
 }
 
 interface SavedResumesActions {
@@ -18,11 +19,14 @@ interface SavedResumesActions {
   refreshResumes: () => Promise<void>;
   deleteResume: (id: string) => Promise<void>;
   duplicateResume: (id: string) => Promise<void>;
-  addNewResume: (resume: ResumeRead) => void;
-  getResume: (id: string) => ResumeRead | undefined;
+  addNewResume: (resume: ResumeListItem) => void;
+  getResume: (id: string) => ResumeListItem | undefined;
 }
 
 type SavedResumesStore = SavedResumesState & SavedResumesActions;
+
+// Stale time: 30 seconds — avoid re-fetching on every page navigation
+const STALE_TIME_MS = 30_000;
 
 // ============================================================================
 // Store - Pure API approach, no localStorage
@@ -32,12 +36,18 @@ export const useSavedResumesStore = create<SavedResumesStore>()((set, get) => ({
   resumes: [],
   isLoading: false,
   error: null,
+  lastFetchedAt: null,
 
   fetchResumes: async () => {
+    // Skip if data is still fresh (stale-while-revalidate)
+    const { lastFetchedAt, isLoading } = get();
+    if (isLoading) return; // Deduplicate concurrent calls
+    if (lastFetchedAt && Date.now() - lastFetchedAt < STALE_TIME_MS) return;
+
     set({ isLoading: true, error: null });
     try {
       const resumes = await getUserResumes();
-      set({ resumes, isLoading: false });
+      set({ resumes, isLoading: false, lastFetchedAt: Date.now() });
     } catch (error: any) {
       console.error('Failed to fetch resumes:', error);
       set({ 
@@ -48,8 +58,9 @@ export const useSavedResumesStore = create<SavedResumesStore>()((set, get) => ({
   },
 
   refreshResumes: async () => {
-    const { fetchResumes } = get();
-    await fetchResumes();
+    // Force refresh — bypass stale check
+    set({ lastFetchedAt: null });
+    await get().fetchResumes();
   },
 
   deleteResume: async (id: string) => {
@@ -78,7 +89,7 @@ export const useSavedResumesStore = create<SavedResumesStore>()((set, get) => ({
     }
   },
 
-  addNewResume: (resume: ResumeRead) => {
+  addNewResume: (resume: ResumeListItem) => {
     set((state) => ({
       resumes: [resume, ...state.resumes]
     }));
@@ -90,26 +101,29 @@ export const useSavedResumesStore = create<SavedResumesStore>()((set, get) => ({
 }));
 
 // ============================================================================
-// Simplified Hook - Always fetches from API
+// Simplified Hook - Fetches from API with stale-while-revalidate
 // ============================================================================
 
 export const useSavedResumes = () => {
   const { resumes, isLoading, error, fetchResumes } = useSavedResumesStore();
   const [hydrated, setHydrated] = useState(false);
+  const fetchedRef = useRef(false);
   
   useEffect(() => {
     setHydrated(true);
-    // Always fetch on mount
-    fetchResumes();
+    if (!fetchedRef.current) {
+      fetchedRef.current = true;
+      fetchResumes();
+    }
   }, [fetchResumes]);
   
   return { 
     resumes: hydrated ? resumes : [], 
     isLoading: hydrated ? isLoading : true,
     error: hydrated ? error : null,
-    refresh: fetchResumes,
+    refresh: useSavedResumesStore.getState().refreshResumes,
   };
 };
 
 // Export for backward compatibility
-export type SavedResume = ResumeRead;
+export type SavedResume = ResumeListItem;

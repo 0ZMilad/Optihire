@@ -22,6 +22,7 @@ from app.models.resume_model import (
 from app.schemas.resume_schema import (
     ResumeParseStatusResponse,
     ResumeRead,
+    ResumeListItem,
     ResumeCreate,
     ResumeUpdate,
     ResumeComplete,
@@ -94,24 +95,35 @@ async def create_resume_endpoint(
         )
 
 
-@router.get("", response_model=List[ResumeRead], status_code=status.HTTP_200_OK)
+@router.get("", response_model=List[ResumeListItem], status_code=status.HTTP_200_OK)
 async def list_user_resumes(
     current_user_id: UUID = Depends(get_current_user_id),
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    limit: int = 50,
+    offset: int = 0,
 ):
     """
-    Get all resumes for the authenticated user.
+    Get all resumes for the authenticated user (paginated, lightweight).
     
-    Returns a list of all resumes belonging to the current user,
+    Returns a lightweight list of resumes (no raw_text/error_message)
     ordered by creation date (most recent first).
     
-    Requires authentication and only returns resumes for the current user.
+    Query params:
+        limit: max results (default 50, max 100)
+        offset: pagination offset
     """
+    limit = min(limit, 100)  # Cap at 100
     try:
-        statement = select(Resume).where(
-            Resume.user_id == current_user_id,
-            Resume.deleted_at.is_(None)
-        ).order_by(Resume.created_at.desc())
+        statement = (
+            select(Resume)
+            .where(
+                Resume.user_id == current_user_id,
+                Resume.deleted_at.is_(None)
+            )
+            .order_by(Resume.created_at.desc())
+            .offset(offset)
+            .limit(limit)
+        )
         
         resumes = db.exec(statement).all()
         
@@ -319,47 +331,8 @@ async def download_resume_pdf(
     )
 
 
-@router.get(
-    "/{resume_id}",
-    response_model=ResumeRead,
-    status_code=status.HTTP_200_OK,
-    summary="Get resume by ID"
-)
-async def get_resume(
-    resume_id: UUID,
-    current_user_id: UUID = Depends(get_current_user_id),
-    db: Session = Depends(get_db)
-) -> ResumeRead:
-    """
-    Retrieve a resume by its ID.
-    
-    Args:
-        resume_id: UUID of the resume to retrieve
-        current_user_id: Authenticated user's ID (from token)
-        db: Database session
-        
-    Returns:
-        ResumeRead with full resume data
-        
-    Raises:
-        404: Resume not found or user doesn't have access
-    """
-    statement = select(Resume).where(
-        Resume.id == resume_id,
-        Resume.user_id == current_user_id
-    )
-    result = db.exec(statement)
-    resume = result.first()
-    
-    if not resume:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Resume not found or access denied"
-        )
-    
-    return resume
-
-
+# IMPORTANT: /active must be defined BEFORE /{resume_id} so FastAPI doesn't
+# treat "active" as a UUID path parameter.
 @router.get(
     "/active",
     response_model=ResumeRead,
@@ -373,16 +346,6 @@ async def get_active_resume_endpoint(
     """
     Retrieve the most recently uploaded resume for the authenticated user.
     This is the 'active' resume based on the latest created_at timestamp.
-    
-    Args:
-        current_user_id: Authenticated user's ID (from token)
-        db: Database session
-        
-    Returns:
-        ResumeRead with the active resume data
-        
-    Raises:
-        404: No resume found for user
     """
     resume = get_active_resume(
         user_id=current_user_id,
@@ -393,6 +356,36 @@ async def get_active_resume_endpoint(
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="No resume found for user"
+        )
+    
+    return resume
+
+
+@router.get(
+    "/{resume_id}",
+    response_model=ResumeRead,
+    status_code=status.HTTP_200_OK,
+    summary="Get resume by ID"
+)
+async def get_resume(
+    resume_id: UUID,
+    current_user_id: UUID = Depends(get_current_user_id),
+    db: Session = Depends(get_db)
+) -> ResumeRead:
+    """
+    Retrieve a resume by its ID.
+    """
+    statement = select(Resume).where(
+        Resume.id == resume_id,
+        Resume.user_id == current_user_id
+    )
+    result = db.exec(statement)
+    resume = result.first()
+    
+    if not resume:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Resume not found or access denied"
         )
     
     return resume
@@ -499,77 +492,32 @@ async def delete_resume(
         )
     
     try:
-        # Cascading delete: Remove all child records first (level by level due to dependencies)
+        # Cascading delete using bulk SQL DELETEs (much faster than row-by-row)
+        from sqlmodel import delete as sql_delete
         
-        # First, get all analysis results for this resume
-        analysis_stmt = select(AnalysisResult).where(AnalysisResult.resume_id == resume_id)
-        analysis_results = db.exec(analysis_stmt).all()
-        analysis_ids = [analysis.id for analysis in analysis_results]
+        # First, handle analysis chain: interactions → suggestions → analysis results
+        analysis_stmt = select(AnalysisResult.id).where(AnalysisResult.resume_id == resume_id)
+        analysis_ids = [row for row in db.exec(analysis_stmt).all()]
         
-        # Delete suggestion interactions (depends on suggestions)
         if analysis_ids:
-            # Get all suggestions for these analysis results
-            suggestion_stmt = select(Suggestion).where(Suggestion.analysis_id.in_(analysis_ids))
-            suggestions = db.exec(suggestion_stmt).all()
-            suggestion_ids = [suggestion.id for suggestion in suggestions]
+            suggestion_stmt = select(Suggestion.id).where(Suggestion.analysis_id.in_(analysis_ids))
+            suggestion_ids = [row for row in db.exec(suggestion_stmt).all()]
             
-            # Delete suggestion interactions
             if suggestion_ids:
-                interaction_stmt = select(SuggestionInteraction).where(SuggestionInteraction.suggestion_id.in_(suggestion_ids))
-                interactions = db.exec(interaction_stmt).all()
-                for interaction in interactions:
-                    db.delete(interaction)
+                db.exec(sql_delete(SuggestionInteraction).where(SuggestionInteraction.suggestion_id.in_(suggestion_ids)))
             
-            # Delete suggestions
-            for suggestion in suggestions:
-                db.delete(suggestion)
+            db.exec(sql_delete(Suggestion).where(Suggestion.analysis_id.in_(analysis_ids)))
         
-        # Delete analysis results
-        for analysis in analysis_results:
-            db.delete(analysis)
+        db.exec(sql_delete(AnalysisResult).where(AnalysisResult.resume_id == resume_id))
         
-        # Delete skill corrections (directly linked to resume)
-        skill_correction_stmt = select(SkillCorrection).where(SkillCorrection.resume_id == resume_id)
-        skill_corrections = db.exec(skill_correction_stmt).all()
-        for correction in skill_corrections:
-            db.delete(correction)
-        
-        # Delete resume sections
-        # Delete experiences
-        experience_stmt = select(ResumeExperience).where(ResumeExperience.resume_id == resume_id)
-        experiences = db.exec(experience_stmt).all()
-        for experience in experiences:
-            db.delete(experience)
-        
-        # Delete education
-        education_stmt = select(ResumeEducation).where(ResumeEducation.resume_id == resume_id)
-        education = db.exec(education_stmt).all()
-        for edu in education:
-            db.delete(edu)
-        
-        # Delete skills
-        skill_stmt = select(ResumeSkill).where(ResumeSkill.resume_id == resume_id)
-        skills = db.exec(skill_stmt).all()
-        for skill in skills:
-            db.delete(skill)
-        
-        # Delete certifications
-        cert_stmt = select(ResumeCertification).where(ResumeCertification.resume_id == resume_id)
-        certifications = db.exec(cert_stmt).all()
-        for cert in certifications:
-            db.delete(cert)
-        
-        # Delete projects
-        project_stmt = select(ResumeProject).where(ResumeProject.resume_id == resume_id)
-        projects = db.exec(project_stmt).all()
-        for project in projects:
-            db.delete(project)
-        
-        # Delete custom sections
-        custom_stmt = select(ResumeCustomSection).where(ResumeCustomSection.resume_id == resume_id)
-        custom_sections = db.exec(custom_stmt).all()
-        for section in custom_sections:
-            db.delete(section)
+        # Bulk delete all resume child records
+        db.exec(sql_delete(SkillCorrection).where(SkillCorrection.resume_id == resume_id))
+        db.exec(sql_delete(ResumeExperience).where(ResumeExperience.resume_id == resume_id))
+        db.exec(sql_delete(ResumeEducation).where(ResumeEducation.resume_id == resume_id))
+        db.exec(sql_delete(ResumeSkill).where(ResumeSkill.resume_id == resume_id))
+        db.exec(sql_delete(ResumeCertification).where(ResumeCertification.resume_id == resume_id))
+        db.exec(sql_delete(ResumeProject).where(ResumeProject.resume_id == resume_id))
+        db.exec(sql_delete(ResumeCustomSection).where(ResumeCustomSection.resume_id == resume_id))
         
         # Delete the file if it exists
         if resume.file_path:
@@ -638,7 +586,11 @@ async def get_resume_parse_status(
         )
     
     # Use the service layer to get parse status
-    status_response = get_parse_status(resume_id=resume_id)
+    status_response = get_parse_status(
+        resume_id=resume_id,
+        user_id=current_user_id,
+        db=db
+    )
     
     return status_response
 
@@ -671,35 +623,23 @@ async def get_resume_complete_endpoint(
     Raises:
         404: Resume not found or user doesn't have access
     """
-    # First verify the user has access to this resume
-    statement = select(Resume).where(
-        Resume.id == resume_id,
-        Resume.user_id == current_user_id
+    # Single call to service layer — handles auth check + data fetch (no double query)
+    complete_resume_data = get_resume_complete(
+        resume_id=resume_id,
+        user_id=current_user_id,
+        db=db
     )
-    result = db.exec(statement)
-    resume = result.first()
     
-    if not resume:
+    if not complete_resume_data:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Resume not found or access denied"
         )
     
-    # Use the service layer to get complete resume data
-    complete_resume_data = get_resume_complete(resume_id=resume_id, db=db)
-    
-    if not complete_resume_data:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Resume not found"
-        )
-    
-    # Extract the main resume data and related sections from service response
-    result = complete_resume_data
+    resume = complete_resume_data["resume"]
     
     # Build the complete response
     return ResumeComplete(
-        # Main resume fields
         id=resume.id,
         user_id=resume.user_id,
         version_name=resume.version_name,
@@ -724,11 +664,10 @@ async def get_resume_complete_endpoint(
         created_at=resume.created_at,
         updated_at=resume.updated_at,
         deleted_at=resume.deleted_at,
-        # Related sections
-        experiences=[ExperienceRead.model_validate(e) for e in result["experiences"]],
-        education=[EducationRead.model_validate(e) for e in result["education"]],
-        skills=[SkillRead.model_validate(s) for s in result["skills"]],
-        certifications=[CertificationRead.model_validate(c) for c in result["certifications"]],
-        projects=[ProjectRead.model_validate(p) for p in result["projects"]],
-        custom_sections=[],  # Not parsed yet
+        experiences=[ExperienceRead.model_validate(e) for e in complete_resume_data["experiences"]],
+        education=[EducationRead.model_validate(e) for e in complete_resume_data["education"]],
+        skills=[SkillRead.model_validate(s) for s in complete_resume_data["skills"]],
+        certifications=[CertificationRead.model_validate(c) for c in complete_resume_data["certifications"]],
+        projects=[ProjectRead.model_validate(p) for p in complete_resume_data["projects"]],
+        custom_sections=[],
     )

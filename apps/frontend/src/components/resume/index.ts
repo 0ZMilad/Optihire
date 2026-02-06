@@ -6,14 +6,11 @@ export { default as EnhancedEducationForm } from "./EnhancedEducationForm";
 export { default as EnhancedSkillsForm } from "./EnhancedSkillsForm";
 export { default as EnhancedProjectsForm } from "./EnhancedProjectsForm";
 export { default as EnhancedCertificationsForm } from "./EnhancedCertificationsForm";
-export { default as EnhancedResumeSidebar } from "./EnhancedResumeSidebar";
 export { default as EnhancedResumePreview } from "./EnhancedResumePreview";
 export { default as SaveStatusIndicator } from "./SaveStatusIndicator";
-export { default as DraftRecoveryDialog } from "./DraftRecoveryDialog";
 
 // Type exports
 export type {
-  ResumeData,
   ResumeBuilderData,
   PersonalInfo,
   WorkExperience,

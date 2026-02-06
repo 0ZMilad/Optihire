@@ -17,6 +17,7 @@ import {
   Loader2
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { useShallow } from "zustand/react/shallow";
 
 // Store and hooks
 import { useResumeBuilderStore, useResumeData } from "@/stores/resume-builder-store";
@@ -57,13 +58,26 @@ export default function EnhancedResumeBuilderUI({
   onSave,
   resumeId,
 }: EnhancedResumeBuilderUIProps) {
-  const activeSection = useResumeBuilderStore((state) => state.activeSection);
-  const setActiveSection = useResumeBuilderStore((state) => state.setActiveSection);
-  const initialize = useResumeBuilderStore((state) => state.initialize);
-  const isInitialized = useResumeBuilderStore((state) => state.isInitialized);
-  const saveToBackend = useResumeBuilderStore((state) => state.saveToBackend);
-  const setVersionName = useResumeBuilderStore((state) => state.setVersionName);
-  const saveStatus = useResumeBuilderStore((state) => state.saveStatus);
+  // Single shallow selector instead of 8 separate subscriptions
+  const {
+    activeSection,
+    setActiveSection,
+    initialize,
+    isInitialized,
+    saveToBackend,
+    setVersionName,
+    saveStatus,
+  } = useResumeBuilderStore(
+    useShallow((state) => ({
+      activeSection: state.activeSection,
+      setActiveSection: state.setActiveSection,
+      initialize: state.initialize,
+      isInitialized: state.isInitialized,
+      saveToBackend: state.saveToBackend,
+      setVersionName: state.setVersionName,
+      saveStatus: state.saveStatus,
+    }))
+  );
   const resumeData = useResumeData();
   
   const [resumeTitle, setResumeTitle] = useState("");
@@ -92,7 +106,13 @@ export default function EnhancedResumeBuilderUI({
     }
     
     await saveToBackend();
-  }, [resumeTitle, resumeData.versionName, setVersionName, saveToBackend]);
+
+    // Notify parent after successful backend save
+    const storedId = useResumeBuilderStore.getState().data.id;
+    if (storedId && onSave) {
+      onSave(storedId);
+    }
+  }, [resumeTitle, resumeData.versionName, setVersionName, saveToBackend, onSave]);
 
   return (
     <div className={cn("mx-auto max-w-7xl", className)}>

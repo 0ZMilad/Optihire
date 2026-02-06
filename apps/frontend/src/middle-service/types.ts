@@ -137,6 +137,26 @@ export interface ResumeRead {
   deleted_at: string | null;
 }
 
+/**
+ * Lightweight resume item for list views — no raw_text or error_message.
+ * Returned by GET /api/v1/resumes.
+ */
+export interface ResumeListItem {
+  id: string;
+  user_id: string;
+  version_name: string;
+  template_id: string | null;
+  is_primary: boolean;
+  full_name: string | null;
+  email: string | null;
+  phone: string | null;
+  location: string | null;
+  professional_summary: string | null;
+  processing_status: string;
+  created_at: string;
+  updated_at: string;
+}
+
 // ============================================================================
 // Resume Section Types (Structured Data)
 // ============================================================================

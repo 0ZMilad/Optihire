@@ -1389,7 +1389,8 @@ def get_active_resume(
         Resume instance if found, None otherwise
     """
     statement = select(Resume).where(
-        Resume.user_id == user_id
+        Resume.user_id == user_id,
+        Resume.deleted_at.is_(None)
     ).order_by(Resume.created_at.desc())
     
     result = db.exec(statement)
