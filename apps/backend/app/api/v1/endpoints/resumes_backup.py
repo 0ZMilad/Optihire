@@ -7,8 +7,7 @@ from typing import List
 from app.core.config import settings
 from app.core.dependencies import get_current_user_id
 from app.core.logging_config import log_info, log_error, log_warning
-from app.db.session import get_db
-from app.models.analysis_model import AnalysisResult, Suggestion, SuggestionInteraction, SkillCorrection
+from app.db.session import get_db\nfrom app.models.analysis_model import AnalysisResult, Suggestion, SuggestionInteraction, SkillCorrection
 from app.models.resume_model import (
     Resume,
     ResumeExperience,
@@ -423,42 +422,7 @@ async def delete_resume(
         )
     
     try:
-        # Cascading delete: Remove all child records first (level by level due to dependencies)
-        
-        # First, get all analysis results for this resume
-        analysis_stmt = select(AnalysisResult).where(AnalysisResult.resume_id == resume_id)
-        analysis_results = db.exec(analysis_stmt).all()
-        analysis_ids = [analysis.id for analysis in analysis_results]
-        
-        # Delete suggestion interactions (depends on suggestions)
-        if analysis_ids:
-            # Get all suggestions for these analysis results
-            suggestion_stmt = select(Suggestion).where(Suggestion.analysis_id.in_(analysis_ids))
-            suggestions = db.exec(suggestion_stmt).all()
-            suggestion_ids = [suggestion.id for suggestion in suggestions]
-            
-            # Delete suggestion interactions
-            if suggestion_ids:
-                interaction_stmt = select(SuggestionInteraction).where(SuggestionInteraction.suggestion_id.in_(suggestion_ids))
-                interactions = db.exec(interaction_stmt).all()
-                for interaction in interactions:
-                    db.delete(interaction)
-            
-            # Delete suggestions
-            for suggestion in suggestions:
-                db.delete(suggestion)
-        
-        # Delete analysis results
-        for analysis in analysis_results:
-            db.delete(analysis)
-        
-        # Delete skill corrections (directly linked to resume)
-        skill_correction_stmt = select(SkillCorrection).where(SkillCorrection.resume_id == resume_id)
-        skill_corrections = db.exec(skill_correction_stmt).all()
-        for correction in skill_corrections:
-            db.delete(correction)
-        
-        # Delete resume sections
+        # Cascading delete: Remove all child records first\n        \n        # First, get all analysis results for this resume\n        analysis_stmt = select(AnalysisResult).where(AnalysisResult.resume_id == resume_id)\n        analysis_results = db.exec(analysis_stmt).all()\n        analysis_ids = [analysis.id for analysis in analysis_results]\n        \n        # Delete suggestion interactions (depends on suggestions)\n        if analysis_ids:\n            # Get all suggestions for these analysis results\n            suggestion_stmt = select(Suggestion).where(Suggestion.analysis_id.in_(analysis_ids))\n            suggestions = db.exec(suggestion_stmt).all()\n            suggestion_ids = [suggestion.id for suggestion in suggestions]\n            \n            # Delete suggestion interactions\n            if suggestion_ids:\n                interaction_stmt = select(SuggestionInteraction).where(SuggestionInteraction.suggestion_id.in_(suggestion_ids))\n                interactions = db.exec(interaction_stmt).all()\n                for interaction in interactions:\n                    db.delete(interaction)\n            \n            # Delete suggestions\n            for suggestion in suggestions:\n                db.delete(suggestion)\n        \n        # Delete analysis results\n        for analysis in analysis_results:\n            db.delete(analysis)\n        \n        # Delete skill corrections (directly linked to resume)\n        skill_correction_stmt = select(SkillCorrection).where(SkillCorrection.resume_id == resume_id)\n        skill_corrections = db.exec(skill_correction_stmt).all()\n        for correction in skill_corrections:\n            db.delete(correction)
         # Delete experiences
         experience_stmt = select(ResumeExperience).where(ResumeExperience.resume_id == resume_id)
         experiences = db.exec(experience_stmt).all()
@@ -531,40 +495,34 @@ async def get_resume_parse_status(
     db: Session = Depends(get_db)
 ) -> ResumeParseStatusResponse:
     """
-    Get the parsing status of a specific resume.
+    Retrieve the current parsing status of a resume.
     
-    Returns the current processing status and any error messages
-    for a resume that was uploaded for parsing.
+    This endpoint allows clients to poll the status of a resume parsing job.
     
     Args:
-        resume_id: UUID of the resume to check parsing status for
+        resume_id: UUID of the resume to check
         current_user_id: Authenticated user's ID (from token)
         db: Database session
         
     Returns:
-        ResumeParseStatusResponse with parsing status and metadata
+        ResumeParseStatusResponse with current status, message, and timestamps
         
     Raises:
         404: Resume not found or user doesn't have access
     """
-    # Verify the resume belongs to the user before returning parsing status
-    statement = select(Resume).where(
-        Resume.id == resume_id,
-        Resume.user_id == current_user_id
+    status_result = get_parse_status(
+        resume_id=resume_id,
+        user_id=current_user_id,
+        db=db
     )
-    result = db.exec(statement)
-    resume = result.first()
     
-    if not resume:
+    if not status_result:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Resume not found or access denied"
         )
     
-    # Use the service layer to get parse status
-    status_response = get_parse_status(resume_id=resume_id)
-    
-    return status_response
+    return status_result
 
 
 @router.get(
@@ -579,10 +537,19 @@ async def get_resume_complete_endpoint(
     db: Session = Depends(get_db)
 ) -> ResumeComplete:
     """
-    Get a complete resume with all its sections (experiences, education, skills, etc).
+    Retrieve a resume with all related sections (experiences, education, skills, etc.).
     
-    This endpoint returns the full representation of a resume including all
-    related data from child tables in a single response.
+    This endpoint returns the full parsed resume data including:
+    - Contact information (name, email, phone, etc.)
+    - Professional summary
+    - Work experiences
+    - Education history
+    - Skills
+    - Certifications
+    - Projects
+    
+    Use this endpoint after parsing is complete to display the full resume
+    for user review and editing.
     
     Args:
         resume_id: UUID of the resume to retrieve
@@ -590,40 +557,28 @@ async def get_resume_complete_endpoint(
         db: Database session
         
     Returns:
-        ResumeComplete with all resume data and sections
+        ResumeComplete with all resume sections
         
     Raises:
         404: Resume not found or user doesn't have access
     """
-    # First verify the user has access to this resume
-    statement = select(Resume).where(
-        Resume.id == resume_id,
-        Resume.user_id == current_user_id
+    result = get_resume_complete(
+        resume_id=resume_id,
+        user_id=current_user_id,
+        db=db
     )
-    result = db.exec(statement)
-    resume = result.first()
     
-    if not resume:
+    if not result:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Resume not found or access denied"
         )
     
-    # Use the service layer to get complete resume data
-    complete_resume_data = get_resume_complete(resume_id=resume_id, db=db)
-    
-    if not complete_resume_data:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Resume not found"
-        )
-    
-    # Extract the main resume data and related sections from service response
-    result = complete_resume_data
-    
     # Build the complete response
+    resume = result["resume"]
+    
     return ResumeComplete(
-        # Main resume fields
+        # Base resume fields
         id=resume.id,
         user_id=resume.user_id,
         version_name=resume.version_name,

@@ -92,3 +92,8 @@ export const getUserResumes = async () => {
   const response = await apiClient.get<ResumeRead[]>(`/api/v1/resumes`);
   return response.data;
 }
+
+export const deleteResume = async (resumeId: string) => {
+  const response = await apiClient.delete(`/api/v1/resumes/${resumeId}`);
+  return response.data;
+}

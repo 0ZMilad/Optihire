@@ -1,6 +1,6 @@
 import { create } from 'zustand';
 import { useState, useEffect } from 'react';
-import { getUserResumes } from '../middle-service/resumes';
+import { getUserResumes, deleteResume as deleteResumeAPI } from '../middle-service/resumes';
 import type { ResumeRead } from '../middle-service/types';
 
 // ============================================================================
@@ -54,15 +54,16 @@ export const useSavedResumesStore = create<SavedResumesStore>()((set, get) => ({
 
   deleteResume: async (id: string) => {
     try {
-      // TODO: Add API call for delete when backend endpoint is ready
-      // await deleteResumeAPI(id);
+      // Call the backend API to delete the resume
+      await deleteResumeAPI(id);
       
-      // Optimistically remove from local state
+      // Remove from local state after successful deletion
       set((state) => ({
         resumes: state.resumes.filter(r => r.id !== id)
       }));
-    } catch (error) {
+    } catch (error: any) {
       console.error('Failed to delete resume:', error);
+      throw new Error(error.response?.data?.detail || 'Failed to delete resume');
     }
   },
 

@@ -203,8 +203,13 @@ export default function ResumesPage() {
   };
 
   const handleDelete = async (id: string) => {
-    await deleteResume(id);
-    toast.success("Resume deleted");
+    try {
+      await deleteResume(id);
+      toast.success("Resume deleted successfully");
+    } catch (error: any) {
+      console.error('Delete failed:', error);
+      toast.error(error.message || "Failed to delete resume");
+    }
   };
 
   const handleSaveComplete = () => {
