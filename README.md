@@ -1,10 +1,21 @@
 # Optihire
 
-A web platform that helps job seekers improve their CVs for Applicant Tracking Systems (ATS). This platform provides automated analysis, compatibility scoring, and actionable suggestions to increase your chances of landing an interview.
+![Optihire Dashboard Banner](public/OptihireBanner.png)
+
+Optihire is a web platform that helps job seekers improve their CVs for Applicant Tracking Systems (ATS). This platform provides automated analysis, compatibility scoring, and actionable suggestions to increase your chances of landing an interview.
 
 ---
 
-## Getting Started
+## 📸 Gallery
+
+|              Analysis Dashboard              |                    Resume Builder                     |
+| :------------------------------------------: | :---------------------------------------------------: |
+|  ![ATS Analysis View](public/Dashboard.png)  | ![Resume Builder Interface](public/ResumeBuilder.png) |
+| _Detailed parsing and compatibility scoring_ |     _Real-time resume editing with live preview_      |
+
+---
+
+## 🛠️ Getting Started
 
 Follow these steps to get the development environment running.
 
