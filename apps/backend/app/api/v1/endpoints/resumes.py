@@ -39,6 +39,7 @@ from app.services.resume_service import (
     get_active_resume,
     get_resume_complete,
     create_resume,
+    duplicate_resume,
 )
 from app.services.pdf_service import generate_resume_pdf
 from sqlmodel import select
@@ -452,6 +453,65 @@ async def update_resume(
         )
     
     return resume
+
+
+@router.post(
+    "/{resume_id}/duplicate",
+    response_model=ResumeRead,
+    status_code=status.HTTP_201_CREATED,
+    summary="Duplicate resume with all sections"
+)
+async def duplicate_resume_endpoint(
+    resume_id: UUID,
+    current_user_id: UUID = Depends(get_current_user_id),
+    db: Session = Depends(get_db),
+    new_version_name: str | None = None
+) -> ResumeRead:
+    """
+    Create a complete duplicate of an existing resume.
+    
+    Copies all resume data including experiences, education, skills,
+    projects, and certifications with new UUIDs. The duplicate is
+    automatically marked as non-primary and gets a unique version name.
+    
+    Args:
+        resume_id: UUID of the resume to duplicate
+        current_user_id: Authenticated user's ID (from token)
+        db: Database session
+        new_version_name: Optional custom name for the duplicate
+    
+    Returns:
+        ResumeRead with the new duplicated resume data
+    
+    Raises:
+        404: Original resume not found or user doesn't have access
+        500: Database error during duplication
+    """
+    try:
+        new_resume = duplicate_resume(
+            resume_id=resume_id,
+            user_id=current_user_id,
+            db=db,
+            new_version_name=new_version_name
+        )
+        
+        if not new_resume:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Resume not found or access denied"
+            )
+        
+        log_info(f"Resume duplicated via API: original_id={resume_id}, new_id={new_resume.id}, user_id={current_user_id}")
+        return new_resume
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        log_error(f"API: Failed to duplicate resume {resume_id}: {str(e)}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Failed to duplicate resume"
+        )
 
 
 @router.delete(

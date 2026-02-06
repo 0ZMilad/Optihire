@@ -1474,3 +1474,163 @@ def get_resume_complete(
         "certifications": certifications,
         "projects": projects,
     }
+
+
+def duplicate_resume(
+    resume_id: UUID,
+    user_id: UUID,
+    db: Session,
+    new_version_name: str | None = None
+) -> Resume | None:
+    """
+    Duplicate a resume with all its sections.
+    
+    Creates a complete copy of the resume including all experiences,
+    education, skills, projects, and certifications with new UUIDs.
+    
+    Args:
+        resume_id: ID of the resume to duplicate
+        user_id: ID of the authenticated user
+        db: Database session
+        new_version_name: Optional custom name for the duplicate
+        
+    Returns:
+        New Resume instance if duplication successful, None if original not found
+        
+    Raises:
+        Exception: If database operations fail
+    """
+    # Get the complete resume data
+    complete_data = get_resume_complete(resume_id, user_id, db)
+    if not complete_data:
+        return None
+    
+    original_resume = complete_data["resume"]
+    
+    # Generate unique version name
+    if not new_version_name:
+        base_name = original_resume.version_name
+        # Find existing duplicates to avoid name conflicts
+        existing_stmt = select(Resume).where(
+            Resume.user_id == user_id,
+            Resume.version_name.like(f"{base_name} (Copy%)")
+        )
+        existing_copies = db.exec(existing_stmt).all()
+        copy_number = len(existing_copies) + 1
+        new_version_name = f"{base_name} (Copy {copy_number})"
+    
+    try:
+        # Create the new resume
+        new_resume = Resume(
+            user_id=user_id,
+            version_name=new_version_name,
+            template_id=original_resume.template_id,
+            is_primary=False,  # Duplicates are never primary
+            section_order=original_resume.section_order,
+            file_path=None,  # Don't copy file references
+            file_url=None,
+            full_name=original_resume.full_name,
+            email=original_resume.email,
+            phone=original_resume.phone,
+            location=original_resume.location,
+            linkedin_url=original_resume.linkedin_url,
+            github_url=original_resume.github_url,
+            portfolio_url=original_resume.portfolio_url,
+            professional_summary=original_resume.professional_summary,
+            raw_text=None,  # Don't copy raw parsing data
+            processing_status="Completed",  # Duplicates are immediately completed
+            error_message=None
+        )
+        
+        db.add(new_resume)
+        db.commit()
+        db.refresh(new_resume)
+        
+        # Copy all experiences
+        for exp in complete_data["experiences"]:
+            new_exp = ResumeExperience(
+                resume_id=new_resume.id,
+                company_name=exp.company_name,
+                job_title=exp.job_title,
+                location=exp.location,
+                start_date=exp.start_date,
+                end_date=exp.end_date,
+                is_current=exp.is_current,
+                description=exp.description,
+                achievements=exp.achievements,
+                skills_used=exp.skills_used,
+                display_order=exp.display_order
+            )
+            db.add(new_exp)
+        
+        # Copy all education
+        for edu in complete_data["education"]:
+            new_edu = ResumeEducation(
+                resume_id=new_resume.id,
+                institution_name=edu.institution_name,
+                degree_type=edu.degree_type,
+                field_of_study=edu.field_of_study,
+                location=edu.location,
+                start_date=edu.start_date,
+                end_date=edu.end_date,
+                is_current=edu.is_current,
+                gpa=edu.gpa,
+                achievements=edu.achievements,
+                relevant_coursework=edu.relevant_coursework,
+                display_order=edu.display_order
+            )
+            db.add(new_edu)
+        
+        # Copy all skills
+        for skill in complete_data["skills"]:
+            new_skill = ResumeSkill(
+                resume_id=new_resume.id,
+                skill_name=skill.skill_name,
+                skill_category=skill.skill_category,
+                proficiency_level=skill.proficiency_level,
+                years_of_experience=skill.years_of_experience,
+                is_primary=skill.is_primary,
+                display_order=skill.display_order
+            )
+            db.add(new_skill)
+        
+        # Copy all projects
+        for project in complete_data["projects"]:
+            new_project = ResumeProject(
+                resume_id=new_resume.id,
+                project_name=project.project_name,
+                role=project.role,
+                description=project.description,
+                technologies_used=project.technologies_used,
+                project_url=project.project_url,
+                start_date=project.start_date,
+                end_date=project.end_date,
+                is_current=project.is_current,
+                achievements=project.achievements,
+                display_order=project.display_order
+            )
+            db.add(new_project)
+        
+        # Copy all certifications
+        for cert in complete_data["certifications"]:
+            new_cert = ResumeCertification(
+                resume_id=new_resume.id,
+                certification_name=cert.certification_name,
+                issuing_organization=cert.issuing_organization,
+                issue_date=cert.issue_date,
+                expiry_date=cert.expiry_date,
+                credential_id=cert.credential_id,
+                credential_url=cert.credential_url,
+                display_order=cert.display_order
+            )
+            db.add(new_cert)
+        
+        db.commit()
+        
+        log_info(f"Resume duplicated successfully: original_id={resume_id}, new_id={new_resume.id}, user_id={user_id}")
+        return new_resume
+        
+    except Exception as e:
+        db.rollback()
+        log_error(f"Failed to duplicate resume {resume_id}: {str(e)}")
+        raise

@@ -88,6 +88,13 @@ export const getUserResumes = async () => {
   return response.data;
 }
 
+export const duplicateResume = async (resumeId: string, newVersionName?: string) => {
+  const response = await apiClient.post<ResumeRead>(`/api/v1/resumes/${resumeId}/duplicate`, {
+    new_version_name: newVersionName
+  });
+  return response.data;
+}
+
 export const deleteResume = async (resumeId: string) => {
   const response = await apiClient.delete(`/api/v1/resumes/${resumeId}`);
   return response.data;

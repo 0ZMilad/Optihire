@@ -1,7 +1,7 @@
 import { create } from 'zustand';
 import { useState, useEffect, useRef } from 'react';
-import { getUserResumes, deleteResume as deleteResumeAPI } from '../middle-service/resumes';
-import type { ResumeListItem } from '../middle-service/types';
+import { getUserResumes, deleteResume as deleteResumeAPI, duplicateResume as duplicateResumeAPI } from '../middle-service/resumes';
+import type { ResumeListItem, ResumeRead } from '../middle-service/types';
 
 // ============================================================================
 // Types - Using lightweight ResumeListItem for list views
@@ -80,12 +80,35 @@ export const useSavedResumesStore = create<SavedResumesStore>()((set, get) => ({
 
   duplicateResume: async (id: string) => {
     try {
-      // TODO: Add API call for duplicate when backend endpoint is ready
-      console.log('Duplicate resume:', id);
-      // For now, just refresh to get updated list
-      await get().refreshResumes();
-    } catch (error) {
+      // Call the backend API to duplicate the resume
+      const duplicatedResume = await duplicateResumeAPI(id);
+      
+      // Convert ResumeRead to ResumeListItem format for the store
+      const listItem: ResumeListItem = {
+        id: duplicatedResume.id,
+        user_id: duplicatedResume.user_id,
+        version_name: duplicatedResume.version_name,
+        template_id: duplicatedResume.template_id,
+        is_primary: duplicatedResume.is_primary,
+        full_name: duplicatedResume.full_name,
+        email: duplicatedResume.email,
+        phone: duplicatedResume.phone,
+        location: duplicatedResume.location,
+        professional_summary: duplicatedResume.professional_summary,
+        processing_status: duplicatedResume.processing_status,
+        created_at: duplicatedResume.created_at,
+        updated_at: duplicatedResume.updated_at,
+      };
+      
+      // Add the new resume to local state
+      set((state) => ({
+        resumes: [listItem, ...state.resumes]
+      }));
+      
+      return listItem;
+    } catch (error: any) {
       console.error('Failed to duplicate resume:', error);
+      throw new Error(error.response?.data?.detail || 'Failed to duplicate resume');
     }
   },
 
