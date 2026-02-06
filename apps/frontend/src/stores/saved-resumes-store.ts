@@ -1,6 +1,6 @@
 import { create } from 'zustand';
 import { useState, useEffect, useRef } from 'react';
-import { getUserResumes, deleteResume as deleteResumeAPI, duplicateResume as duplicateResumeAPI } from '../middle-service/resumes';
+import { getUserResumes, deleteResume as deleteResumeAPI, duplicateResume as duplicateResumeAPI, deleteAllResumes as deleteAllResumesAPI } from '../middle-service/resumes';
 import type { ResumeListItem, ResumeRead } from '../middle-service/types';
 
 // ============================================================================
@@ -18,6 +18,7 @@ interface SavedResumesActions {
   fetchResumes: () => Promise<void>;
   refreshResumes: () => Promise<void>;
   deleteResume: (id: string) => Promise<void>;
+  deleteAllResumes: () => Promise<void>;
   duplicateResume: (id: string) => Promise<void>;
   addNewResume: (resume: ResumeListItem) => void;
   getResume: (id: string) => ResumeListItem | undefined;
@@ -75,6 +76,19 @@ export const useSavedResumesStore = create<SavedResumesStore>()((set, get) => ({
     } catch (error: any) {
       console.error('Failed to delete resume:', error);
       throw new Error(error.response?.data?.detail || 'Failed to delete resume');
+    }
+  },
+
+  deleteAllResumes: async () => {
+    try {
+      // Call the backend API to delete all resumes
+      await deleteAllResumesAPI();
+      
+      // Clear local state
+      set({ resumes: [] });
+    } catch (error: any) {
+      console.error('Failed to delete all resumes:', error);
+      throw new Error(error.response?.data?.detail || 'Failed to delete all resumes');
     }
   },
 

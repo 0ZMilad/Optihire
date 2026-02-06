@@ -26,6 +26,39 @@ function transformToResumeCreate(data: ResumeBuilderData, userId: string): Resum
   };
 }
 
+// Transform frontend ResumeBuilderData to backend ResumeUpdate format
+function transformToResumeUpdate(data: ResumeBuilderData): Partial<ResumeRead> {
+  // Helper function to convert empty strings to null
+  const emptyToNull = (value: string | undefined | null): string | null => {
+    return value && value.trim() ? value.trim() : null;
+  };
+
+  return {
+    version_name: data.versionName,
+    template_id: data.templateId || null,
+    is_primary: data.isPrimary,
+    full_name: emptyToNull(data.personal.fullName),
+    email: emptyToNull(data.personal.email),
+    phone: emptyToNull(data.personal.phone),
+    location: emptyToNull(data.personal.location),
+    linkedin_url: emptyToNull(data.personal.linkedinUrl),
+    github_url: emptyToNull(data.personal.githubUrl),
+    portfolio_url: emptyToNull(data.personal.portfolioUrl),
+    professional_summary: emptyToNull(data.summary),
+  };
+}
+
+export const saveResume = async (data: ResumeBuilderData) => {
+  if (data.id) {
+    // Update existing resume
+    const updateData = transformToResumeUpdate(data);
+    return await updateResume(data.id, updateData);
+  } else {
+    // Create new resume
+    return await createResume(data);
+  }
+};
+
 export const createResume = async (data: ResumeBuilderData) => {
   // Get current user from Supabase session
   const { data: { session } } = await supabase.auth.getSession();
@@ -85,6 +118,11 @@ export const updateResume = async (resumeId: string, data: Partial<ResumeRead>) 
 
 export const getUserResumes = async () => {
   const response = await apiClient.get<ResumeListItem[]>(`/api/v1/resumes`);
+  return response.data;
+}
+
+export const deleteAllResumes = async () => {
+  const response = await apiClient.delete(`/api/v1/resumes/all`);
   return response.data;
 }
 

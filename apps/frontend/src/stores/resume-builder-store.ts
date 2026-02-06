@@ -2,7 +2,7 @@ import { create } from 'zustand';
 import { persist, createJSONStorage } from 'zustand/middleware';
 import { useShallow } from 'zustand/react/shallow';
 import { toast } from 'sonner';
-import { createResume } from '../middle-service/resumes';
+import { createResume, saveResume } from '../middle-service/resumes';
 import { useSavedResumesStore } from './saved-resumes-store';
 import type {
   ResumeBuilderData,
@@ -541,24 +541,45 @@ export const useResumeBuilderStore = create<ResumeBuilderStore>()(
         set({ saveStatus: 'saving' });
 
         try {
-          const createdResume = await createResume(state.data);
+          const savedResume = await saveResume(state.data);
           
-          // Update the local data with the created resume ID
+          // Update the local data with the resume ID (for new resumes) or keep existing ID
           set((prevState) => ({
             data: {
               ...prevState.data,
-              id: createdResume.id,
+              id: savedResume.id,
             },
             isDirty: false,
             saveStatus: 'saved',
             lastSaved: new Date().toISOString(),
           }));
 
-          // Add the newly created resume to the saved resumes store
-          const savedResumesStore = useSavedResumesStore.getState();
-          savedResumesStore.addNewResume(createdResume);
-
-          toast.success(`Resume "${state.data.versionName}" saved successfully!`);
+          // Handle different actions based on whether this was create or update
+          if (!state.data.id) {
+            // This was a new resume creation - add to saved resumes store
+            const savedResumesStore = useSavedResumesStore.getState();
+            savedResumesStore.addNewResume({
+              id: savedResume.id,
+              user_id: savedResume.user_id,
+              version_name: savedResume.version_name,
+              template_id: savedResume.template_id,
+              is_primary: savedResume.is_primary,
+              full_name: savedResume.full_name,
+              email: savedResume.email,
+              phone: savedResume.phone,
+              location: savedResume.location,
+              professional_summary: savedResume.professional_summary,
+              processing_status: savedResume.processing_status,
+              created_at: savedResume.created_at,
+              updated_at: savedResume.updated_at,
+            });
+            toast.success(`Resume "${state.data.versionName}" created successfully!`);
+          } else {
+            // This was an update - refresh the saved resumes list to reflect changes
+            const savedResumesStore = useSavedResumesStore.getState();
+            savedResumesStore.refreshResumes();
+            toast.success(`Resume "${state.data.versionName}" updated successfully!`);
+          }
           
           // Clear the draft since it's now saved to backend
           localStorage.removeItem(STORAGE_KEYS.DRAFT);

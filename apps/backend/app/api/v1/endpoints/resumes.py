@@ -332,6 +332,99 @@ async def download_resume_pdf(
     )
 
 
+@router.delete(
+    "/all",
+    status_code=status.HTTP_204_NO_CONTENT,
+    summary="Delete all resumes for current user (TESTING ONLY)"
+)
+async def delete_all_resumes(
+    current_user_id: UUID = Depends(get_current_user_id),
+    db: Session = Depends(get_db)
+):
+    """
+    Delete ALL resumes for the authenticated user (TESTING ONLY).
+    
+    This is a destructive operation that permanently removes all resumes
+    and their associated data (experiences, education, skills, etc.) 
+    for the current user. Use with caution!
+    
+    Args:
+        current_user_id: Authenticated user's ID (from token)
+        db: Database session
+        
+    Raises:
+        500: Database error during deletion
+    """
+    try:
+        # Get all resume IDs for the user
+        resume_stmt = select(Resume.id).where(
+            Resume.user_id == current_user_id,
+            Resume.deleted_at.is_(None)
+        )
+        resume_ids = [row for row in db.exec(resume_stmt).all()]
+        
+        if not resume_ids:
+            log_info(f"No resumes to delete for user: {current_user_id}")
+            return
+        
+        # Use bulk delete for better performance
+        from sqlmodel import delete as sql_delete
+        
+        # Delete analysis chain first (interactions → suggestions → analysis results)
+        analysis_stmt = select(AnalysisResult.id).where(AnalysisResult.resume_id.in_(resume_ids))
+        analysis_ids = [row for row in db.exec(analysis_stmt).all()]
+        
+        if analysis_ids:
+            suggestion_stmt = select(Suggestion.id).where(Suggestion.analysis_id.in_(analysis_ids))
+            suggestion_ids = [row for row in db.exec(suggestion_stmt).all()]
+            
+            if suggestion_ids:
+                db.exec(sql_delete(SuggestionInteraction).where(SuggestionInteraction.suggestion_id.in_(suggestion_ids)))
+            
+            db.exec(sql_delete(Suggestion).where(Suggestion.analysis_id.in_(analysis_ids)))
+            db.exec(sql_delete(AnalysisResult).where(AnalysisResult.resume_id.in_(resume_ids)))
+        
+        # Delete all resume child records in bulk
+        db.exec(sql_delete(SkillCorrection).where(SkillCorrection.resume_id.in_(resume_ids)))
+        db.exec(sql_delete(ResumeExperience).where(ResumeExperience.resume_id.in_(resume_ids)))
+        db.exec(sql_delete(ResumeEducation).where(ResumeEducation.resume_id.in_(resume_ids)))
+        db.exec(sql_delete(ResumeSkill).where(ResumeSkill.resume_id.in_(resume_ids)))
+        db.exec(sql_delete(ResumeCertification).where(ResumeCertification.resume_id.in_(resume_ids)))
+        db.exec(sql_delete(ResumeProject).where(ResumeProject.resume_id.in_(resume_ids)))
+        db.exec(sql_delete(ResumeCustomSection).where(ResumeCustomSection.resume_id.in_(resume_ids)))
+        
+        # Get file paths for cleanup before deleting resumes
+        file_stmt = select(Resume.file_path).where(
+            Resume.user_id == current_user_id,
+            Resume.file_path.is_not(None)
+        )
+        file_paths = [row for row in db.exec(file_stmt).all()]
+        
+        # Delete all resumes
+        db.exec(sql_delete(Resume).where(Resume.user_id == current_user_id))
+        
+        db.commit()
+        
+        # Clean up files after successful DB commit
+        deleted_files = 0
+        for file_path in file_paths:
+            try:
+                delete_file(file_path)
+                deleted_files += 1
+            except Exception as file_error:
+                log_warning(f"Failed to delete file {file_path}: {str(file_error)}")
+        
+        log_info(f"Deleted all resumes for user {current_user_id}: {len(resume_ids)} resumes, {deleted_files} files")
+        
+    except Exception as e:
+        db.rollback()
+        log_error(f"Failed to delete all resumes for user {current_user_id}: {str(e)}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Failed to delete all resumes"
+        )
+
+
 # IMPORTANT: /active must be defined BEFORE /{resume_id} so FastAPI doesn't
 # treat "active" as a UUID path parameter.
 @router.get(

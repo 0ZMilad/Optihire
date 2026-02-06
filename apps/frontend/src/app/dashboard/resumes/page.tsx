@@ -32,6 +32,7 @@ import {
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
+  AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import { EnhancedResumeBuilderUI } from "@/components/resume";
 import { useSavedResumesStore, useSavedResumes, type SavedResume } from "@/stores/saved-resumes-store";
@@ -161,9 +162,11 @@ function ResumeCard({
 export default function ResumesPage() {
   const [showBuilder, setShowBuilder] = useState(false);
   const [editingResumeId, setEditingResumeId] = useState<string | null>(null);
+  const [showDeleteAllDialog, setShowDeleteAllDialog] = useState(false);
   
   const { resumes, isLoading } = useSavedResumes();
   const deleteResume = useSavedResumesStore((state) => state.deleteResume);
+  const deleteAllResumes = useSavedResumesStore((state) => state.deleteAllResumes);
   const duplicateResume = useSavedResumesStore((state) => state.duplicateResume);
   const loadFromData = useResumeBuilderStore((state) => state.loadFromData);
 
@@ -287,6 +290,17 @@ export default function ResumesPage() {
     }
   };
 
+  const handleDeleteAll = async () => {
+    try {
+      await deleteAllResumes();
+      toast.success("All resumes deleted successfully");
+      setShowDeleteAllDialog(false);
+    } catch (error: any) {
+      console.error('Delete all failed:', error);
+      toast.error(error.message || "Failed to delete all resumes");
+    }
+  };
+
   const handleSaveComplete = () => {
     // Force refresh resume list from backend to reflect the new save
     useSavedResumesStore.getState().refreshResumes();
@@ -320,12 +334,39 @@ export default function ResumesPage() {
                     {isLoading && " • Syncing..."}
                   </p>
                 </div>
-                {resumes.length > 0 && (
-                  <Button onClick={handleCreateNew}>
-                    <Plus className="mr-2 size-4" />
-                    Create Resume
-                  </Button>
-                )}
+                <div className="flex gap-2">
+                  {/* Testing: Delete All Button */}
+                  {resumes.length > 0 && (
+                    <AlertDialog open={showDeleteAllDialog} onOpenChange={setShowDeleteAllDialog}>
+                      <AlertDialogTrigger asChild>
+                        <Button variant="destructive" size="sm">
+                          Delete All (Testing)
+                        </Button>
+                      </AlertDialogTrigger>
+                      <AlertDialogContent>
+                        <AlertDialogHeader>
+                          <AlertDialogTitle>Delete All Resumes?</AlertDialogTitle>
+                          <AlertDialogDescription>
+                            This action cannot be undone. This will permanently delete all {resumes.length} resume(s) 
+                            and all associated data (experiences, education, skills, projects, certifications).
+                          </AlertDialogDescription>
+                        </AlertDialogHeader>
+                        <AlertDialogFooter>
+                          <AlertDialogCancel>Cancel</AlertDialogCancel>
+                          <AlertDialogAction onClick={handleDeleteAll} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+                            Delete All
+                          </AlertDialogAction>
+                        </AlertDialogFooter>
+                      </AlertDialogContent>
+                    </AlertDialog>
+                  )}
+                  {resumes.length > 0 && (
+                    <Button onClick={handleCreateNew}>
+                      <Plus className="mr-2 size-4" />
+                      Create Resume
+                    </Button>
+                  )}
+                </div>
               </div>
 
               {/* Resumes Grid */}
