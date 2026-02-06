@@ -97,3 +97,33 @@ export const deleteResume = async (resumeId: string) => {
   const response = await apiClient.delete(`/api/v1/resumes/${resumeId}`);
   return response.data;
 }
+
+/**
+ * Download a resume as a generated PDF file.
+ * Triggers a browser file-save dialog.
+ */
+export const downloadResumePdf = async (resumeId: string, filename?: string) => {
+  const response = await apiClient.get(`/api/v1/resumes/${resumeId}/download`, {
+    responseType: "blob",
+  });
+
+  // Extract filename from Content-Disposition header if not provided
+  if (!filename) {
+    const disposition = response.headers["content-disposition"] as string | undefined;
+    const match = disposition?.match(/filename="?(.+?)"?$/);
+    filename = match?.[1] ?? "resume.pdf";
+  }
+
+  // Create a temporary link to trigger the browser download
+  const blob = new Blob([response.data], { type: "application/pdf" });
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement("a");
+  link.href = url;
+  link.download = filename;
+  document.body.appendChild(link);
+  link.click();
+
+  // Cleanup
+  document.body.removeChild(link);
+  URL.revokeObjectURL(url);
+}

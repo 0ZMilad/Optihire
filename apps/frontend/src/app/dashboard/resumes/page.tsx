@@ -13,7 +13,8 @@ import {
   Copy, 
   Trash2,
   Calendar,
-  User
+  User,
+  Download
 } from "lucide-react";
 import {
   DropdownMenu,
@@ -35,17 +36,20 @@ import {
 import { EnhancedResumeBuilderUI } from "@/components/resume";
 import { useSavedResumesStore, useSavedResumes, type SavedResume } from "@/stores/saved-resumes-store";
 import { useResumeBuilderStore } from "@/stores/resume-builder-store";
+import { downloadResumePdf } from "@/middle-service/resumes";
 import { toast } from "sonner";
 
 function ResumeCard({ 
   resume, 
   onEdit, 
-  onDuplicate, 
+  onDuplicate,
+  onDownload, 
   onDelete 
 }: { 
   resume: SavedResume;
   onEdit: (id: string) => void;
   onDuplicate: (id: string) => void;
+  onDownload: (id: string) => void;
   onDelete: (id: string) => void;
 }) {
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
@@ -85,6 +89,10 @@ function ResumeCard({
                 <DropdownMenuItem onClick={() => onDuplicate(resume.id)}>
                   <Copy className="mr-2 size-4" />
                   Duplicate
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => onDownload(resume.id)}>
+                  <Download className="mr-2 size-4" />
+                  Download PDF
                 </DropdownMenuItem>
                 <DropdownMenuSeparator />
                 <DropdownMenuItem 
@@ -202,6 +210,16 @@ export default function ResumesPage() {
     toast.success("Resume duplicated successfully!");
   };
 
+  const handleDownload = async (id: string) => {
+    try {
+      await downloadResumePdf(id);
+      toast.success("Resume downloaded successfully!");
+    } catch (error: any) {
+      console.error('Download failed:', error);
+      toast.error(error.message || "Failed to download resume");
+    }
+  };
+
   const handleDelete = async (id: string) => {
     try {
       await deleteResume(id);
@@ -270,6 +288,7 @@ export default function ResumesPage() {
                       resume={resume}
                       onEdit={handleEdit}
                       onDuplicate={handleDuplicate}
+                      onDownload={handleDownload}
                       onDelete={handleDelete}
                     />
                   ))}

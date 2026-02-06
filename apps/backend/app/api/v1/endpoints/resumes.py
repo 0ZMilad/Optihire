@@ -1,5 +1,6 @@
+import re
 import uuid
-from fastapi import APIRouter, Depends, File, UploadFile, HTTPException, status, BackgroundTasks
+from fastapi import APIRouter, Depends, File, UploadFile, HTTPException, status, BackgroundTasks, Response
 from sqlmodel import Session
 from uuid import UUID
 from typing import List
@@ -38,6 +39,7 @@ from app.services.resume_service import (
     get_resume_complete,
     create_resume,
 )
+from app.services.pdf_service import generate_resume_pdf
 from sqlmodel import select
 
 router = APIRouter()
@@ -241,6 +243,80 @@ async def upload_resume(
         "processing_status": "Pending",
         "message": "Resume uploaded successfully. Processing in background."
     }
+
+
+@router.get(
+    "/{resume_id}/download",
+    status_code=status.HTTP_200_OK,
+    summary="Download resume as PDF",
+    responses={
+        200: {
+            "content": {"application/pdf": {}},
+            "description": "Generated PDF file of the resume",
+        }
+    },
+)
+async def download_resume_pdf(
+    resume_id: UUID,
+    current_user_id: UUID = Depends(get_current_user_id),
+    db: Session = Depends(get_db),
+) -> Response:
+    """
+    Generate and download a resume as a PDF document.
+
+    Fetches all structured resume data (personal info, experience,
+    education, skills, certifications, projects) and renders it into
+    a professionally formatted PDF.
+
+    Args:
+        resume_id: UUID of the resume to download
+        current_user_id: Authenticated user's ID (from token)
+        db: Database session
+
+    Returns:
+        PDF file as an attachment with Content-Type: application/pdf
+
+    Raises:
+        404: Resume not found or user doesn't have access
+        500: PDF generation failed
+    """
+    # Fetch complete resume data (includes ownership check)
+    resume_data = get_resume_complete(
+        resume_id=resume_id,
+        user_id=current_user_id,
+        db=db,
+    )
+
+    if not resume_data:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Resume not found or access denied",
+        )
+
+    try:
+        pdf_bytes = generate_resume_pdf(resume_data)
+    except Exception as e:
+        log_error(f"PDF generation failed for resume {resume_id}: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Failed to generate PDF",
+        )
+
+    # Build a safe filename from the resume's version_name
+    resume_obj = resume_data["resume"]
+    raw_name = getattr(resume_obj, "version_name", "") or "resume"
+    safe_name = re.sub(r'[^\w\s-]', '', raw_name).strip().replace(" ", "_") or "resume"
+    filename = f"resume_{safe_name}.pdf"
+
+    log_info(f"Serving PDF download for resume {resume_id} as {filename}")
+
+    return Response(
+        content=pdf_bytes,
+        media_type="application/pdf",
+        headers={
+            "Content-Disposition": f'attachment; filename="{filename}"',
+        },
+    )
 
 
 @router.get(
