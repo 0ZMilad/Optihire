@@ -56,17 +56,10 @@ export default function AuditPage() {
           job_description: jobDescription,
         });
 
-        // Build context for the header
-        const snippet =
-          jobDescription.length > 50
-            ? jobDescription.slice(0, 50) + "…"
-            : jobDescription;
-
         setResult(auditResult);
         setContext({
           resume,
-          jobTitle: "", // Could be extracted from the JD in a future iteration
-          jobSnippet: snippet,
+          jobDescription,
         });
         setViewState("results");
       } catch (err) {

@@ -33,8 +33,7 @@ export interface AuditResult {
 
 export interface AuditContext {
   resume: ResumeListItem;
-  jobTitle: string;
-  jobSnippet: string;
+  jobDescription: string;
 }
 
 export async function runAudit(data: AuditRequest): Promise<AuditResult> {

@@ -1,6 +1,7 @@
 "use client";
 
-import { Search, BarChart3, LayoutList, ArrowLeft } from "lucide-react";
+import { Search, BarChart3, LayoutList, ArrowLeft, FileText, ChevronDown, ChevronUp } from "lucide-react";
+import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { ScoreRing } from "./score-ring";
 import { SubScoreCard } from "./sub-score-card";
@@ -14,11 +15,21 @@ interface AuditResultsViewProps {
   onRunAnother: () => void;
 }
 
+function extractFirstLine(text: string): string {
+  const firstLine = text.split(/\n/).find((l) => l.trim().length > 0) ?? "";
+  return firstLine.length > 80 ? firstLine.slice(0, 80) + "…" : firstLine;
+}
+
 export function AuditResultsView({
   result,
   context,
   onRunAnother,
 }: AuditResultsViewProps) {
+  const [jdExpanded, setJdExpanded] = useState(false);
+  const jdFirstLine = extractFirstLine(context.jobDescription);
+  const jdPreview = context.jobDescription.slice(0, 300);
+  const jdIsTruncated = context.jobDescription.length > 300;
+
   const checklistItems = [
     {
       label: "Contact Information Present",
@@ -69,30 +80,58 @@ export function AuditResultsView({
 
   return (
     <div className="space-y-8">
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-        <div className="space-y-1">
+      <div className="flex flex-col gap-2">
+        <Button
+          variant="ghost"
+          size="sm"
+          className="gap-1.5 -ml-2 w-fit text-muted-foreground"
+          onClick={onRunAnother}
+        >
+          <ArrowLeft className="size-3.5" />
+          New Audit
+        </Button>
+        <h1 className="text-2xl font-bold tracking-tight">
+          ATS Compatibility Report
+        </h1>
+      </div>
+
+      {/* Compared-against context card */}
+      <div className="rounded-xl border bg-muted/30 p-4 space-y-3">
+        <div className="flex items-start justify-between gap-4">
+          <div className="space-y-1 min-w-0">
+            <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
+              Comparing
+            </p>
+            <div className="flex items-center gap-2 flex-wrap">
+              <span className="inline-flex items-center gap-1.5 text-sm font-semibold">
+                <FileText className="size-3.5 text-muted-foreground shrink-0" />
+                {context.resume.version_name}
+              </span>
+              <span className="text-muted-foreground text-sm">against</span>
+              <span className="text-sm font-semibold truncate max-w-sm">
+                {jdFirstLine || "Pasted Job Description"}
+              </span>
+            </div>
+          </div>
           <Button
             variant="ghost"
             size="sm"
-            className="gap-1.5 -ml-2 mb-1 text-muted-foreground"
-            onClick={onRunAnother}
+            className="h-7 gap-1 text-xs shrink-0 text-muted-foreground"
+            onClick={() => setJdExpanded((v) => !v)}
           >
-            <ArrowLeft className="size-3.5" />
-            New Audit
+            {jdExpanded ? (
+              <><ChevronUp className="size-3" />Hide</>  
+            ) : (
+              <><ChevronDown className="size-3" />View JD</>
+            )}
           </Button>
-          <h1 className="text-2xl font-bold tracking-tight">
-            ATS Compatibility Report
-          </h1>
-          <p className="text-muted-foreground text-sm max-w-xl">
-            <span className="font-medium text-foreground">
-              {context.resume.version_name}
-            </span>{" "}
-            vs.{" "}
-            <span className="font-medium text-foreground">
-              {context.jobTitle || context.jobSnippet}
-            </span>
-          </p>
         </div>
+
+        {jdExpanded && (
+          <div className="rounded-lg border bg-background p-3 text-xs text-muted-foreground whitespace-pre-wrap leading-relaxed max-h-48 overflow-y-auto">
+            {jdIsTruncated && !jdExpanded ? jdPreview + "…" : context.jobDescription}
+          </div>
+        )}
       </div>
 
       <div className="grid gap-6 md:grid-cols-[auto_1fr]">
