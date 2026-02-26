@@ -7,7 +7,6 @@ import { authService } from "@/middle-service/supabase";
 import {
   LayoutDashboard,
   FileText,
-  Briefcase,
   FolderOpen,
   Settings,
   BadgeCheck,
@@ -16,6 +15,7 @@ import {
   LogOut,
   Sparkles,
   ChevronsUpDown,
+  ClipboardCheck,
 } from "lucide-react";
 import {
   Sidebar,
@@ -44,7 +44,7 @@ import { useAuth } from "@/components/auth-provider";
 const navItems = [
   { title: "Dashboard", url: "/dashboard", icon: LayoutDashboard },
   { title: "Resumes", url: "/dashboard/resumes", icon: FileText },
-  { title: "Applications", url: "/dashboard/applications", icon: Briefcase },
+  { title: "ATS Audit", url: "/dashboard/audit", icon: ClipboardCheck },
   { title: "Jobs", url: "/dashboard/jobs", icon: FolderOpen },
   { title: "Settings", url: "/dashboard/settings", icon: Settings },
 ];
