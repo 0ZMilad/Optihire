@@ -12,7 +12,7 @@ import {
 } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import { FileText, Loader2, ClipboardPaste } from "lucide-react";
-import { cn } from "@/lib/utils";
+import { cn, sanitizeText } from "@/lib/utils";
 import type { ResumeListItem } from "@/middle-service/types";
 
 const MIN_WORDS = 50;
@@ -168,7 +168,7 @@ export function AuditInputView({
         size="lg"
         className="w-full"
         disabled={!isValid || loading}
-        onClick={() => onSubmit(selectedResumeId, jobDescription)}
+        onClick={() => onSubmit(selectedResumeId, sanitizeText(jobDescription))}
       >
         {loading ? (
           <>
