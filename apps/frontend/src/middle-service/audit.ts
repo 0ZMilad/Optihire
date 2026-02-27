@@ -38,7 +38,7 @@ export interface AuditContext {
 
 export async function runAudit(data: AuditRequest): Promise<AuditResult> {
   const response = await apiClient.post<AuditResult>(
-    "/api/v1/analysis/audit",
+    "/api/v1/analyses/audit",
     data,
   );
   return response.data;
@@ -46,7 +46,7 @@ export async function runAudit(data: AuditRequest): Promise<AuditResult> {
 
 export async function getAuditResult(id: string): Promise<AuditResult> {
   const response = await apiClient.get<AuditResult>(
-    `/api/v1/analysis/${id}`,
+    `/api/v1/analyses/${id}`,
   );
   return response.data;
 }

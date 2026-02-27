@@ -10,6 +10,17 @@ from pydantic import BaseModel, Field
 
 from app.schemas.common_schema import ImpactLevel, SuggestionState
 
+# ===== AUDIT REQUEST =====
+
+
+class AuditRequest(BaseModel):
+    """Inbound payload for triggering a resume audit against a job description."""
+
+    resume_id: UUID
+    job_description: str = Field(..., min_length=1, description="Full text of the job description to analyse against.")
+    job_title: str | None = Field(default=None, max_length=200, description="Optional job title for context.")
+
+
 # ===== JOB DESCRIPTIONS =====
 
 
