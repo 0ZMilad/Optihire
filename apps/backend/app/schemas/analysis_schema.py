@@ -81,7 +81,7 @@ class AnalysisResultCreate(BaseModel):
     suggestions_payload: dict | None = None
     skills_version: str | None = Field(None, max_length=20)
     keywords_rules_version: str | None = Field(None, max_length=20)
-    analysis_version: str = Field(default="1.0", max_length=20)
+    analysis_version: str = Field(default="3.0", max_length=20)
 
 
 class AnalysisResultRead(BaseModel):
