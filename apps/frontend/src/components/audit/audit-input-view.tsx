@@ -39,10 +39,10 @@ export function AuditInputView({
   }, [jobDescription]);
 
   const charCount = jobDescription.length;
-  const isValid = wordCount >= MIN_WORDS && charCount <= MAX_CHARS && selectedResumeId !== "";
-  const progressPercent = Math.min((wordCount / MIN_WORDS) * 100, 100);
-
   const selectedResume = resumes.find((r) => r.id === selectedResumeId);
+  const isResumeReady = !selectedResume || selectedResume.processing_status === "Completed";
+  const isValid = wordCount >= MIN_WORDS && charCount <= MAX_CHARS && selectedResumeId !== "" && isResumeReady;
+  const progressPercent = Math.min((wordCount / MIN_WORDS) * 100, 100);
 
   const handlePaste = useCallback(async () => {
     try {
@@ -75,6 +75,19 @@ export function AuditInputView({
                   {r.full_name && (
                     <span className="text-muted-foreground text-xs">— {r.full_name}</span>
                   )}
+                  {r.processing_status !== "Completed" && (
+                    <Badge
+                      variant="outline"
+                      className={cn(
+                        "ml-auto text-[10px] px-1 py-0 h-4",
+                        r.processing_status === "Failed"
+                          ? "border-red-400 text-red-600"
+                          : "border-amber-400 text-amber-600"
+                      )}
+                    >
+                      {r.processing_status}
+                    </Badge>
+                  )}
                 </div>
               </SelectItem>
             ))}
@@ -87,6 +100,19 @@ export function AuditInputView({
           <FileText className="size-3" />
           {selectedResume.version_name}
         </Badge>
+      )}
+
+      {selectedResume && selectedResume.processing_status !== "Completed" && (
+        <p className={cn(
+          "text-sm",
+          selectedResume.processing_status === "Failed"
+            ? "text-red-600"
+            : "text-amber-600"
+        )}>
+          {selectedResume.processing_status === "Failed"
+            ? "This resume failed to process. Please re-upload it before running an audit."
+            : `This resume is still being processed (${selectedResume.processing_status.toLowerCase()}). Please wait until parsing is complete before running an audit.`}
+        </p>
       )}
 
       <div className="space-y-2">

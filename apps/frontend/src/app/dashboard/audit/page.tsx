@@ -13,6 +13,7 @@ import type { ResumeListItem } from "@/middle-service/types";
 import type { AuditResult, AuditContext } from "@/middle-service/audit";
 import { toast } from "sonner";
 import { logger } from "@/lib/logger";
+import axios from "axios";
 
 type ViewState = "input" | "loading" | "results";
 
@@ -47,6 +48,13 @@ export default function AuditPage() {
       const resume = resumes.find((r) => r.id === resumeId);
       if (!resume) return;
 
+      if (resume.processing_status !== "Completed") {
+        toast.error(
+          "This resume hasn't finished processing yet. Please wait until parsing is complete before running an audit."
+        );
+        return;
+      }
+
       setAuditLoading(true);
       setViewState("loading");
 
@@ -63,10 +71,44 @@ export default function AuditPage() {
         });
         setViewState("results");
       } catch (err) {
-        logger.error("Audit failed", {
-          error: err instanceof Error ? err.message : "Unknown error",
+        let userMessage = "Analysis failed. Please try again.";
+        let logError = "Unknown error";
+        let logStatus: string | undefined;
+
+        if (axios.isAxiosError(err)) {
+          // Ignore request cancellations (e.g. React StrictMode double-invoke)
+          if (axios.isCancel(err)) {
+            setViewState("input");
+            return;
+          }
+          logStatus = String(err.response?.status ?? err.code ?? "") || undefined;
+          const raw = err.response?.data?.detail;
+          const detail =
+            typeof raw === "string" && raw
+              ? raw
+              : Array.isArray(raw) && raw.length
+                ? (raw as Array<{ msg?: string }>)
+                    .map((d) => d?.msg || JSON.stringify(d))
+                    .join("; ")
+                : "";
+          if (detail) userMessage = detail;
+          // Use || (not ??) so empty strings are skipped
+          logError = detail || err.message || err.code || `HTTP ${err.response?.status}` || "Axios error";
+        } else if (err instanceof Error) {
+          logError = err.message || err.name || "Error";
+        } else if (typeof err === "string") {
+          logError = err || "Unknown error";
+        } else {
+          logError = JSON.stringify(err) || "Unknown error";
+        }
+
+        // Embed error in message so it's always visible in the console
+        // even if the context object renders as {}
+        logger.error(`Audit failed: ${logError}`, {
+          error: logError,
+          ...(logStatus ? { status: logStatus } : {}),
         });
-        toast.error("Analysis failed. Please try again.");
+        toast.error(userMessage);
         setViewState("input");
       } finally {
         setAuditLoading(false);

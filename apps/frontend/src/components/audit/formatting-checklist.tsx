@@ -23,27 +23,25 @@ export function FormattingChecklist({ items }: FormattingChecklistProps) {
             key={item.label}
             className={cn(
               "flex items-start gap-3 rounded-lg px-3 py-2.5 text-sm transition-colors",
-              item.passed
-                ? "bg-emerald-50/60 dark:bg-emerald-950/20"
-                : "bg-red-50/60 dark:bg-red-950/20"
+              "bg-muted/30"
             )}
           >
             {item.passed ? (
-              <CheckCircle2 className="size-4 mt-0.5 shrink-0 text-emerald-600" />
+              <CheckCircle2 className="size-4 mt-0.5 shrink-0 text-emerald-700/70" />
             ) : (
-              <XCircle className="size-4 mt-0.5 shrink-0 text-red-500" />
+              <XCircle className="size-4 mt-0.5 shrink-0 text-red-700/70" />
             )}
             <div className="flex flex-col">
               <span
                 className={cn(
                   "font-medium",
-                  item.passed ? "text-emerald-800 dark:text-emerald-300" : "text-red-700 dark:text-red-300"
+                  "text-foreground"
                 )}
               >
                 {item.label}
               </span>
               {!item.passed && item.fixHint && (
-                <span className="text-xs text-red-500/80 mt-0.5">
+                <span className="text-xs text-muted-foreground mt-0.5">
                   {item.fixHint}
                 </span>
               )}
