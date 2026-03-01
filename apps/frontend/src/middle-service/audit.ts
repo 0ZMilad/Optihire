@@ -7,6 +7,60 @@ export interface AuditRequest {
   job_title?: string;
 }
 
+export interface KeywordImportance {
+  keyword: string;
+  frequency: number;
+  importance: "critical" | "high" | "medium" | "low";
+  category: "hard_skill" | "soft_skill" | "tool" | "certification";
+  found: boolean;
+}
+
+export interface CategorisedKeywords {
+  hard_skill: { matched: string[]; missing: string[] };
+  soft_skill: { matched: string[]; missing: string[] };
+  tool: { matched: string[]; missing: string[] };
+  certification: { matched: string[]; missing: string[] };
+}
+
+export interface ImpactAnalysis {
+  score: number;
+  quantified_count: number;
+  total_bullets: number;
+  strong_examples: string[];
+  weak_examples: string[];
+  tips: string[];
+}
+
+export interface ResumeMetrics {
+  word_count: number;
+  ideal_range: [number, number];
+  length_verdict: "too_short" | "short" | "good" | "slightly_long" | "too_long";
+  pronoun_count: number;
+  section_count: number;
+  bullet_count: number;
+  avg_bullet_words: number;
+}
+
+export interface PriorityAction {
+  priority: "critical" | "high" | "medium" | "low";
+  action: string;
+  section: string;
+}
+
+export interface RepetitionFlag {
+  word: string;
+  count: number;
+}
+
+export interface SuggestionsPayload {
+  categorized_keywords?: CategorisedKeywords;
+  keyword_importance?: KeywordImportance[];
+  impact_analysis?: ImpactAnalysis;
+  resume_metrics?: ResumeMetrics;
+  priority_actions?: PriorityAction[];
+  repetition_flags?: RepetitionFlag[];
+}
+
 export interface AuditResult {
   id: string;
   resume_id: string;
@@ -27,7 +81,7 @@ export interface AuditResult {
   has_bullet_points: boolean;
   has_action_verbs: boolean;
   is_scannable: boolean;
-  suggestions_payload: Record<string, unknown> | null;
+  suggestions_payload: SuggestionsPayload | null;
   analyzed_at: string;
 }
 
