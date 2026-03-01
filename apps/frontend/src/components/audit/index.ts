@@ -4,3 +4,7 @@ export { ScoreRing } from "./score-ring";
 export { SubScoreCard } from "./sub-score-card";
 export { KeywordPanel } from "./keyword-panel";
 export { FormattingChecklist } from "./formatting-checklist";
+export { PriorityActions } from "./priority-actions";
+export { ImpactAnalysisPanel } from "./impact-analysis-panel";
+export { CategorisedKeywordsPanel } from "./categorised-keywords-panel";
+export { ResumeMetricsPanel } from "./resume-metrics-panel";
