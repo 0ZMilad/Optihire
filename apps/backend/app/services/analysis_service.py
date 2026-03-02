@@ -1416,3 +1416,25 @@ def get_audit_result(
         )
 
     return AnalysisResultRead.model_validate(result)
+
+
+def get_latest_audit_result(
+    *,
+    user_id: UUID,
+    db: Session,
+) -> AnalysisResultRead | None:
+    """Return the most recent analysis result across all of the user's resumes.
+
+    Returns ``None`` when the user has not yet run any audits.
+    """
+    stmt = (
+        select(AnalysisResult)
+        .join(Resume, Resume.id == AnalysisResult.resume_id)
+        .where(Resume.user_id == user_id)
+        .order_by(AnalysisResult.analyzed_at.desc())
+        .limit(1)
+    )
+    result = db.exec(stmt).first()
+    if result is None:
+        return None
+    return AnalysisResultRead.model_validate(result)

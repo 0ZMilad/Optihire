@@ -1,6 +1,7 @@
 """
 Analysis API endpoints.
 
+GET  /api/v1/analyses/latest — return the most recent audit result for the authenticated user
 POST /api/v1/analyses/audit  — run a heuristic ATS audit of a resume against a job description
 GET  /api/v1/analyses/{id}   — retrieve a previously computed audit result by ID
 """
@@ -13,9 +14,23 @@ from sqlmodel import Session
 from app.core.dependencies import get_current_user_id
 from app.db.session import get_db
 from app.schemas.analysis_schema import AuditRequest, AnalysisResultRead
-from app.services.analysis_service import run_audit, get_audit_result
+from app.services.analysis_service import run_audit, get_audit_result, get_latest_audit_result
 
 router = APIRouter()
+
+
+@router.get(
+    "/latest",
+    response_model=AnalysisResultRead | None,
+    status_code=status.HTTP_200_OK,
+    summary="Get latest audit result",
+    description="Return the most recent ATS audit result for the authenticated user, or null if none exist.",
+)
+async def get_latest_audit_result_endpoint(
+    current_user_id: UUID = Depends(get_current_user_id),
+    db: Session = Depends(get_db),
+) -> AnalysisResultRead | None:
+    return get_latest_audit_result(user_id=current_user_id, db=db)
 
 
 @router.post(
