@@ -1,12 +1,13 @@
 "use client";
 
-import { useState, useRef, useEffect } from "react";
+import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
 import QuickStatsGrid from "./QuickStatsGrid";
 import ResumeUpload from "./ResumeUpload";
 import QuickActions from "./QuickActions";
 import DashboardWidgets from "./DashboardWidgets";
+import ATSScoreWidget from "./ATSScoreWidget";
 
 interface DashboardUIProps {
   className?: string;
@@ -31,6 +32,8 @@ export default function DashboardUI({
   onReviewClick,
   statusMessage 
 }: DashboardUIProps) {
+  const [atsExpanded, setAtsExpanded] = useState(false);
+
   return (
     <div className={`mx-auto max-w-7xl space-y-8 px-4 ${className || ""}`}>
       {/* Header */}
@@ -45,7 +48,17 @@ export default function DashboardUI({
       </div>
 
       {/* Quick Stats */}
-      <QuickStatsGrid className="mt-8" />
+      <div className="mt-8 space-y-4">
+        <QuickStatsGrid
+          atsExpanded={atsExpanded}
+          onToggleATS={() => setAtsExpanded((v) => !v)}
+        />
+        {atsExpanded && (
+          <div className="animate-in fade-in slide-in-from-top-2 duration-200">
+            <ATSScoreWidget />
+          </div>
+        )}
+      </div>
 
       {/* Resume Upload */}
       <ResumeUpload 

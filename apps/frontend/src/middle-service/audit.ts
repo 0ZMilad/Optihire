@@ -104,3 +104,10 @@ export async function getAuditResult(id: string): Promise<AuditResult> {
   );
   return response.data;
 }
+
+export async function getLatestAuditResult(): Promise<AuditResult | null> {
+  const response = await apiClient.get<AuditResult | null>(
+    "/api/v1/analyses/latest",
+  );
+  return response.data ?? null;
+}

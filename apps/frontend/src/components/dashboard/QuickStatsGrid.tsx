@@ -1,10 +1,12 @@
-import { BarChart3, CheckCircle2, Briefcase, TrendingUp, ArrowUpRight } from "lucide-react";
+import { BarChart3, CheckCircle2, Briefcase, TrendingUp, ArrowUpRight, ChevronDown } from "lucide-react";
 
 interface QuickStatsGridProps {
   className?: string;
+  atsExpanded?: boolean;
+  onToggleATS?: () => void;
 }
 
-export default function QuickStatsGrid({ className }: QuickStatsGridProps) {
+export default function QuickStatsGrid({ className, atsExpanded = false, onToggleATS }: QuickStatsGridProps) {
   return (
     <section className={`grid gap-6 sm:grid-cols-2 lg:grid-cols-4 ${className || ""}`}>
       <div className="rounded-xl border p-6 hover:bg-muted/40 transition-colors">
@@ -55,10 +57,30 @@ export default function QuickStatsGrid({ className }: QuickStatsGridProps) {
         </div>
       </div>
 
-      <div className="rounded-xl border p-4 hover:bg-muted/40 transition-colors">
+      <div
+        className={`rounded-xl border p-4 transition-colors ${
+          atsExpanded ? "bg-muted/40" : "hover:bg-muted/40"
+        }`}
+      >
         <div className="flex items-center justify-between">
           <span className="text-sm text-muted-foreground">Avg. resume score</span>
-          <TrendingUp className="size-4 text-muted-foreground" aria-hidden />
+          <div className="flex items-center gap-1.5">
+            <TrendingUp className="size-4 text-muted-foreground" aria-hidden />
+            {onToggleATS && (
+              <button
+                onClick={onToggleATS}
+                aria-label={atsExpanded ? "Hide ATS score details" : "Show ATS score details"}
+                aria-expanded={atsExpanded}
+                className="rounded-md p-0.5 text-muted-foreground hover:bg-muted hover:text-foreground transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+              >
+                <ChevronDown
+                  className={`size-4 transition-transform duration-200 ${
+                    atsExpanded ? "rotate-180" : ""
+                  }`}
+                />
+              </button>
+            )}
+          </div>
         </div>
         <div className="mt-2 flex items-baseline gap-2">
           <span className="text-2xl font-semibold">78%</span>
