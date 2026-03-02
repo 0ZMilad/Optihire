@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useCallback, memo } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -16,7 +16,7 @@ interface EnhancedExperienceFormProps {
   className?: string;
 }
 
-function ExperienceCard({ 
+const ExperienceCard = memo(function ExperienceCard({ 
   experience, 
   isExpanded,
   onToggle,
@@ -25,7 +25,7 @@ function ExperienceCard({
 }: {
   experience: WorkExperience;
   isExpanded: boolean;
-  onToggle: () => void;
+  onToggle: (id: string) => void;
   onUpdate: (id: string, updates: Partial<WorkExperience>) => void;
   onRemove: (id: string) => void;
 }) {
@@ -63,7 +63,7 @@ function ExperienceCard({
           <Button
             variant="ghost"
             size="sm"
-            onClick={onToggle}
+            onClick={() => onToggle(experience.id)}
             className="shrink-0"
           >
             {isExpanded ? (
@@ -202,7 +202,7 @@ function ExperienceCard({
       </CardContent>
     </Card>
   );
-}
+});
 
 export default function EnhancedExperienceForm({ className }: EnhancedExperienceFormProps) {
   const experiences = useExperiences();
@@ -213,16 +213,16 @@ export default function EnhancedExperienceForm({ className }: EnhancedExperience
   // Track which cards are expanded (new items auto-expand)
   const [expandedIds, setExpandedIds] = useState<Set<string>>(new Set());
 
-  const handleAddExperience = () => {
+  const handleAddExperience = useCallback(() => {
     addExperience();
     // Get the new experience ID (it's the last one added)
     const newId = useResumeBuilderStore.getState().data.experiences.at(-1)?.id;
     if (newId) {
       setExpandedIds(prev => new Set([...prev, newId]));
     }
-  };
+  }, [addExperience]);
 
-  const toggleExpand = (id: string) => {
+  const toggleExpand = useCallback((id: string) => {
     setExpandedIds(prev => {
       const next = new Set(prev);
       if (next.has(id)) {
@@ -232,7 +232,7 @@ export default function EnhancedExperienceForm({ className }: EnhancedExperience
       }
       return next;
     });
-  };
+  }, []);
 
   return (
     <div className={cn("space-y-4", className)}>
@@ -268,7 +268,7 @@ export default function EnhancedExperienceForm({ className }: EnhancedExperience
                 key={experience.id}
                 experience={experience}
                 isExpanded={expandedIds.has(experience.id)}
-                onToggle={() => toggleExpand(experience.id)}
+                onToggle={toggleExpand}
                 onUpdate={updateExperience}
                 onRemove={removeExperience}
               />

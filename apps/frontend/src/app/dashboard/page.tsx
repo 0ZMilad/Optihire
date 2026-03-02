@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import {
   Dialog,
   DialogContent,
@@ -8,11 +8,17 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import dynamic from "next/dynamic";
 import { DashboardHeader } from "@/components/dashboard-header";
 import { Main } from "@/components/main";
 import { DashboardLayout } from "@/components/dashboard-layout";
-import { ResumeReviewForm } from "@/components/resume-review-form";
 import { DashboardUI } from "@/components/dashboard";
+
+// Lazy-load 1000+ line review form — only fetched when the dialog opens
+const ResumeReviewForm = dynamic(
+  () => import("@/components/resume-review-form").then((m) => m.ResumeReviewForm),
+  { ssr: false }
+);
 import { useResumeUpload } from "@/hooks/use-resume-upload";
 import { updateResume } from "@/middle-service/resumes";
 import { ResumeComplete } from "@/middle-service/types";
@@ -48,7 +54,7 @@ export default function DashboardPage() {
     }
   }, [appState, isReviewOpen]);
 
-  const handleSaveResume = async (editedData: Partial<ResumeComplete>) => {
+  const handleSaveResume = useCallback(async (editedData: Partial<ResumeComplete>) => {
     if (!parsedResumeData) return;
 
     try {
@@ -59,15 +65,17 @@ export default function DashboardPage() {
       logger.error("Failed to save resume", { error: err instanceof Error ? err.message : "Unknown error" });
       toast.error(ERROR_MESSAGES.SAVE_FAILED);
     }
-  };
+  }, [parsedResumeData, resetUpload]);
 
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
       setFileName(file.name);
       handleUpload(file);
     }
-  };
+  }, [handleUpload]);
+
+  const handleUploadClick = useCallback(() => inputRef.current?.click(), []);
 
   return (
     <DashboardLayout>
@@ -80,7 +88,7 @@ export default function DashboardPage() {
           inputRef={inputRef}
           error={error}
           onFileChange={handleFileChange}
-          onUploadClick={() => inputRef.current?.click()}
+          onUploadClick={handleUploadClick}
           onReviewClick={() => setIsReviewOpen(true)}
           statusMessage={statusData?.message}
         />

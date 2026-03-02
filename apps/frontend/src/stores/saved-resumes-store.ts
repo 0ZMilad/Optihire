@@ -1,5 +1,6 @@
 import { create } from 'zustand';
 import { useState, useEffect, useRef } from 'react';
+import { useShallow } from 'zustand/react/shallow';
 import { getUserResumes, deleteResume as deleteResumeAPI, duplicateResume as duplicateResumeAPI, deleteAllResumes as deleteAllResumesAPI } from '../middle-service/resumes';
 import type { ResumeListItem, ResumeRead } from '../middle-service/types';
 
@@ -142,7 +143,16 @@ export const useSavedResumesStore = create<SavedResumesStore>()((set, get) => ({
 // ============================================================================
 
 export const useSavedResumes = () => {
-  const { resumes, isLoading, error, fetchResumes } = useSavedResumesStore();
+  // Use useShallow to only re-render when these specific fields change,
+  // not on any store mutation (e.g. optimistic list updates)
+  const { resumes, isLoading, error, fetchResumes } = useSavedResumesStore(
+    useShallow((state) => ({
+      resumes: state.resumes,
+      isLoading: state.isLoading,
+      error: state.error,
+      fetchResumes: state.fetchResumes,
+    }))
+  );
   const [hydrated, setHydrated] = useState(false);
   const fetchedRef = useRef(false);
   

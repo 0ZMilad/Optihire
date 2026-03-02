@@ -1,5 +1,6 @@
 import { useEffect, useRef, useCallback } from 'react';
 import { useResumeBuilderStore, useSaveStatus } from '../stores/resume-builder-store';
+import { useShallow } from 'zustand/react/shallow';
 
 // ============================================================================
 // useAutoSave Hook
@@ -174,8 +175,48 @@ export function useResumeBuilder(options: UseResumeBuilderOptions = {}) {
     autoLoadDraft = true,
   } = options;
 
-  // Get store state and actions
-  const store = useResumeBuilderStore();
+  // Get store state and actions — use useShallow to pick only what's needed
+  // instead of subscribing to the entire store (which causes re-renders on ANY change)
+  const store = useResumeBuilderStore(
+    useShallow((state) => ({
+      data: state.data,
+      autoSaveEnabled: state.autoSaveEnabled,
+      activeSection: state.activeSection,
+      updatePersonalInfo: state.updatePersonalInfo,
+      setPersonalInfo: state.setPersonalInfo,
+      updateSummary: state.updateSummary,
+      addExperience: state.addExperience,
+      updateExperience: state.updateExperience,
+      removeExperience: state.removeExperience,
+      reorderExperiences: state.reorderExperiences,
+      addEducation: state.addEducation,
+      updateEducation: state.updateEducation,
+      removeEducation: state.removeEducation,
+      reorderEducation: state.reorderEducation,
+      addSkill: state.addSkill,
+      updateSkill: state.updateSkill,
+      removeSkill: state.removeSkill,
+      reorderSkills: state.reorderSkills,
+      addProject: state.addProject,
+      updateProject: state.updateProject,
+      removeProject: state.removeProject,
+      reorderProjects: state.reorderProjects,
+      addCertification: state.addCertification,
+      updateCertification: state.updateCertification,
+      removeCertification: state.removeCertification,
+      reorderCertifications: state.reorderCertifications,
+      reorderSections: state.reorderSections,
+      setTemplate: state.setTemplate,
+      setVersionName: state.setVersionName,
+      setIsPrimary: state.setIsPrimary,
+      saveDraft: state.saveDraft,
+      clearDraft: state.clearDraft,
+      setAutoSaveEnabled: state.setAutoSaveEnabled,
+      setActiveSection: state.setActiveSection,
+      loadFromData: state.loadFromData,
+      reset: state.reset,
+    }))
+  );
   const { isDirty, saveStatus, lastSaved } = useSaveStatus();
   
   // Setup auto-save

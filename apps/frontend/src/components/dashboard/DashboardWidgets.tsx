@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo, useCallback, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { Timer, StickyNote, Target, Activity, Play, Pause, RotateCcw } from "lucide-react";
 
@@ -23,7 +23,7 @@ export default function DashboardWidgets({ className }: DashboardWidgetsProps) {
     return () => clearInterval(id);
   }, [running]);
 
-  // Notes persistence
+  // Notes persistence — load on mount
   useEffect(() => {
     const saved = localStorage.getItem("dash_notes");
     if (saved) setNotes(saved);
@@ -31,16 +31,30 @@ export default function DashboardWidgets({ className }: DashboardWidgetsProps) {
     if (goal) setWeeklyGoal(Number(goal));
   }, []);
 
+  // Debounced notes persistence — avoids localStorage write on every keystroke
+  const notesTimerRef = useRef<NodeJS.Timeout | null>(null);
   useEffect(() => {
-    localStorage.setItem("dash_notes", notes);
+    if (notesTimerRef.current) clearTimeout(notesTimerRef.current);
+    notesTimerRef.current = setTimeout(() => {
+      localStorage.setItem("dash_notes", notes);
+    }, 500);
+    return () => { if (notesTimerRef.current) clearTimeout(notesTimerRef.current); };
   }, [notes]);
 
   useEffect(() => {
     localStorage.setItem("weekly_goal", String(weeklyGoal));
   }, [weeklyGoal]);
 
-  const mm = String(Math.floor(seconds / 60)).padStart(2, "0");
-  const ss = String(seconds % 60).padStart(2, "0");
+  // Memoize timer formatting to avoid recalculation on unrelated state changes
+  const mm = useMemo(() => String(Math.floor(seconds / 60)).padStart(2, "0"), [seconds]);
+  const ss = useMemo(() => String(seconds % 60).padStart(2, "0"), [seconds]);
+
+  // Stable callback refs to prevent child re-renders
+  const toggleRunning = useCallback(() => setRunning((v) => !v), []);
+  const resetTimer = useCallback(() => { setRunning(false); setSeconds(25 * 60); }, []);
+  const handleNotesChange = useCallback((e: React.ChangeEvent<HTMLTextAreaElement>) => setNotes(e.target.value), []);
+  const handleGoalChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => setWeeklyGoal(Number(e.target.value)), []);
+  const toggleActivity = useCallback(() => setShowActivity((v) => !v), []);
 
   return (
     <section className={`grid gap-6 sm:grid-cols-2 lg:grid-cols-4 ${className || ""}`} aria-label="Interactive widgets">
@@ -57,11 +71,11 @@ export default function DashboardWidgets({ className }: DashboardWidgetsProps) {
           {mm}:{ss}
         </div>
         <div className="mt-3 flex items-center gap-2">
-          <Button size="sm" variant="secondary" onClick={() => setRunning((v) => !v)} aria-pressed={running}>
+          <Button size="sm" variant="secondary" onClick={toggleRunning} aria-pressed={running}>
             {running ? <Pause className="mr-2 size-4" /> : <Play className="mr-2 size-4" />}
             {running ? "Pause" : "Start"}
           </Button>
-          <Button size="sm" variant="ghost" onClick={() => { setRunning(false); setSeconds(25 * 60); }}>
+          <Button size="sm" variant="ghost" onClick={resetTimer}>
             <RotateCcw className="mr-2 size-4" /> Reset
           </Button>
         </div>
@@ -75,7 +89,7 @@ export default function DashboardWidgets({ className }: DashboardWidgetsProps) {
         </div>
         <textarea
           value={notes}
-          onChange={(e) => setNotes(e.target.value)}
+          onChange={handleNotesChange}
           placeholder="Interview prep, follow-ups, ideas…"
           className="mt-3 w-full min-h-24 rounded-md border bg-background p-2 text-sm outline-none focus:ring-2 focus:ring-ring"
           aria-label="Quick notes"
@@ -95,7 +109,7 @@ export default function DashboardWidgets({ className }: DashboardWidgetsProps) {
             min={1}
             max={40}
             value={weeklyGoal}
-            onChange={(e) => setWeeklyGoal(Number(e.target.value))}
+            onChange={handleGoalChange}
             className="w-full accent-foreground"
             aria-label="Applications per week goal"
           />
@@ -113,7 +127,7 @@ export default function DashboardWidgets({ className }: DashboardWidgetsProps) {
             <Activity className="size-4 text-muted-foreground" aria-hidden />
             <span className="text-sm text-muted-foreground">Recent activity</span>
           </div>
-          <Button size="sm" variant="ghost" onClick={() => setShowActivity((v) => !v)} aria-expanded={showActivity}>
+          <Button size="sm" variant="ghost" onClick={toggleActivity} aria-expanded={showActivity}>
             {showActivity ? "Hide" : "Show"}
           </Button>
         </div>

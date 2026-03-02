@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useCallback } from "react";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
 import QuickStatsGrid from "./QuickStatsGrid";
@@ -34,6 +34,8 @@ export default function DashboardUI({
 }: DashboardUIProps) {
   const [atsExpanded, setAtsExpanded] = useState(false);
 
+  const handleToggleATS = useCallback(() => setAtsExpanded((v) => !v), []);
+
   return (
     <div className={`mx-auto max-w-7xl space-y-8 px-4 ${className || ""}`}>
       {/* Header */}
@@ -51,7 +53,7 @@ export default function DashboardUI({
       <div className="mt-8 space-y-4">
         <QuickStatsGrid
           atsExpanded={atsExpanded}
-          onToggleATS={() => setAtsExpanded((v) => !v)}
+          onToggleATS={handleToggleATS}
         />
         {atsExpanded && (
           <div className="animate-in fade-in slide-in-from-top-2 duration-200">

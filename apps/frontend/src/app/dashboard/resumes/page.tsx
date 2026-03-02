@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useCallback, memo } from "react";
 import { Main } from "@/components/main";
 import { DashboardLayout } from "@/components/dashboard-layout";
 import { Button } from "@/components/ui/button";
@@ -34,13 +34,20 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
-import { EnhancedResumeBuilderUI } from "@/components/resume";
+import dynamic from "next/dynamic";
+
+// Lazy-load the heavy resume builder — only fetched when the user enters build mode
+const EnhancedResumeBuilderUI = dynamic(
+  () => import("@/components/resume/EnhancedResumeBuilderUI"),
+  { ssr: false }
+);
+
 import { useSavedResumesStore, useSavedResumes, type SavedResume } from "@/stores/saved-resumes-store";
 import { useResumeBuilderStore } from "@/stores/resume-builder-store";
 import { downloadResumePdf, getResumeCompleteData } from "@/middle-service/resumes";
 import { toast } from "sonner";
 
-function ResumeCard({ 
+const ResumeCard = memo(function ResumeCard({ 
   resume, 
   onEdit, 
   onDuplicate,
@@ -157,7 +164,7 @@ function ResumeCard({
       </AlertDialog>
     </>
   );
-}
+});
 
 export default function ResumesPage() {
   const [showBuilder, setShowBuilder] = useState(false);
@@ -170,12 +177,12 @@ export default function ResumesPage() {
   const duplicateResume = useSavedResumesStore((state) => state.duplicateResume);
   const loadFromData = useResumeBuilderStore((state) => state.loadFromData);
 
-  const handleCreateNew = () => {
+  const handleCreateNew = useCallback(() => {
     setEditingResumeId(null);
     setShowBuilder(true);
-  };
+  }, []);
 
-  const handleEdit = async (id: string) => {
+  const handleEdit = useCallback(async (id: string) => {
     try {
       // Fetch full resume with all sections from the API
       const complete = await getResumeCompleteData(id);
@@ -263,14 +270,14 @@ export default function ResumesPage() {
       console.error('Failed to load resume for editing:', error);
       toast.error('Failed to load resume data. Please try again.');
     }
-  };
+  }, [loadFromData]);
 
-  const handleDuplicate = async (id: string) => {
+  const handleDuplicate = useCallback(async (id: string) => {
     await duplicateResume(id);
     toast.success("Resume duplicated successfully!");
-  };
+  }, [duplicateResume]);
 
-  const handleDownload = async (id: string) => {
+  const handleDownload = useCallback(async (id: string) => {
     try {
       await downloadResumePdf(id);
       toast.success("Resume downloaded successfully!");
@@ -278,9 +285,9 @@ export default function ResumesPage() {
       console.error('Download failed:', error);
       toast.error(error.message || "Failed to download resume");
     }
-  };
+  }, []);
 
-  const handleDelete = async (id: string) => {
+  const handleDelete = useCallback(async (id: string) => {
     try {
       await deleteResume(id);
       toast.success("Resume deleted successfully");
@@ -288,9 +295,9 @@ export default function ResumesPage() {
       console.error('Delete failed:', error);
       toast.error(error.message || "Failed to delete resume");
     }
-  };
+  }, [deleteResume]);
 
-  const handleDeleteAll = async () => {
+  const handleDeleteAll = useCallback(async () => {
     try {
       await deleteAllResumes();
       toast.success("All resumes deleted successfully");
@@ -299,19 +306,19 @@ export default function ResumesPage() {
       console.error('Delete all failed:', error);
       toast.error(error.message || "Failed to delete all resumes");
     }
-  };
+  }, [deleteAllResumes]);
 
-  const handleSaveComplete = () => {
+  const handleSaveComplete = useCallback(() => {
     // Force refresh resume list from backend to reflect the new save
     useSavedResumesStore.getState().refreshResumes();
     setShowBuilder(false);
     setEditingResumeId(null);
-  };
+  }, []);
 
-  const handleBack = () => {
+  const handleBack = useCallback(() => {
     setShowBuilder(false);
     setEditingResumeId(null);
-  };
+  }, []);
 
   return (
     <DashboardLayout>

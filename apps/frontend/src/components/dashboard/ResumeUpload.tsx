@@ -1,5 +1,6 @@
 "use client";
 
+import { memo } from "react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Upload, Loader2, CheckCircle } from "lucide-react";
@@ -16,7 +17,7 @@ interface ResumeUploadProps {
   statusMessage?: string;
 }
 
-export default function ResumeUpload({ 
+export default memo(function ResumeUpload({ 
   className, 
   appState, 
   fileName, 
@@ -87,4 +88,4 @@ export default function ResumeUpload({
       </div>
     </section>
   );
-}
+});

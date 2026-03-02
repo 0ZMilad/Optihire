@@ -1,10 +1,11 @@
+import { memo } from "react";
 import Link from "next/link";
 
 interface QuickActionsProps {
   className?: string;
 }
 
-export default function QuickActions({ className }: QuickActionsProps) {
+export default memo(function QuickActions({ className }: QuickActionsProps) {
   return (
     <section className={`grid gap-6 sm:grid-cols-3 ${className || ""}`}>
       <Link
@@ -33,4 +34,4 @@ export default function QuickActions({ className }: QuickActionsProps) {
       </Link>
     </section>
   );
-}
+});

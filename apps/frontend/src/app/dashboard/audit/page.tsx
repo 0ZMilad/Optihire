@@ -1,16 +1,22 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useCallback } from "react";
 import { DashboardLayout } from "@/components/dashboard-layout";
 import { DashboardHeader } from "@/components/dashboard-header";
 import { Main } from "@/components/main";
 import { AuditInputView } from "@/components/audit/audit-input-view";
-import { AuditResultsView } from "@/components/audit/audit-results-view";
+import dynamic from "next/dynamic";
+
+// Lazy-load the heavy results view — only fetched after audit completes
+const AuditResultsView = dynamic(
+  () => import("@/components/audit/audit-results-view").then((m) => m.AuditResultsView),
+  { ssr: false }
+);
+
 import { Skeleton } from "@/components/ui/skeleton";
-import { getUserResumes } from "@/middle-service/resumes";
 import { runAudit } from "@/middle-service/audit";
-import type { ResumeListItem } from "@/middle-service/types";
 import type { AuditResult, AuditContext } from "@/middle-service/audit";
+import { useSavedResumes } from "@/stores/saved-resumes-store";
 import { toast } from "sonner";
 import { logger } from "@/lib/logger";
 import axios from "axios";
@@ -19,29 +25,11 @@ type ViewState = "input" | "loading" | "results";
 
 export default function AuditPage() {
   const [viewState, setViewState] = useState<ViewState>("input");
-  const [resumes, setResumes] = useState<ResumeListItem[]>([]);
-  const [resumesLoading, setResumesLoading] = useState(true);
+  // Use the cached store instead of a fresh API call — avoids duplicate fetch
+  const { resumes, isLoading: resumesLoading } = useSavedResumes();
   const [auditLoading, setAuditLoading] = useState(false);
   const [result, setResult] = useState<AuditResult | null>(null);
   const [context, setContext] = useState<AuditContext | null>(null);
-
-  // Fetch user's resumes on mount
-  useEffect(() => {
-    async function fetchResumes() {
-      try {
-        const data = await getUserResumes();
-        setResumes(data);
-      } catch (err) {
-        logger.error("Failed to load resumes", {
-          error: err instanceof Error ? err.message : "Unknown error",
-        });
-        toast.error("Failed to load your resumes. Please try again.");
-      } finally {
-        setResumesLoading(false);
-      }
-    }
-    fetchResumes();
-  }, []);
 
   const handleSubmit = useCallback(
     async (resumeId: string, jobDescription: string) => {

@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import Link from "next/link";
 import { Gauge, ArrowRight, RefreshCw } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -70,7 +70,7 @@ export default function ATSScoreWidget({ className }: ATSScoreWidgetProps) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(false);
 
-  const fetchLatest = async () => {
+  const fetchLatest = useCallback(async () => {
     setLoading(true);
     setError(false);
     try {
@@ -84,11 +84,11 @@ export default function ATSScoreWidget({ className }: ATSScoreWidgetProps) {
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
 
   useEffect(() => {
     fetchLatest();
-  }, []);
+  }, [fetchLatest]);
 
   return (
     <div className={`rounded-xl border p-6 ${className ?? ""}`}>

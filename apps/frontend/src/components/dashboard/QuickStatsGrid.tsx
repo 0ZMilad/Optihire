@@ -1,3 +1,4 @@
+import { memo } from "react";
 import { BarChart3, CheckCircle2, Briefcase, TrendingUp, ArrowUpRight, ChevronDown } from "lucide-react";
 
 interface QuickStatsGridProps {
@@ -6,7 +7,7 @@ interface QuickStatsGridProps {
   onToggleATS?: () => void;
 }
 
-export default function QuickStatsGrid({ className, atsExpanded = false, onToggleATS }: QuickStatsGridProps) {
+export default memo(function QuickStatsGrid({ className, atsExpanded = false, onToggleATS }: QuickStatsGridProps) {
   return (
     <section className={`grid gap-6 sm:grid-cols-2 lg:grid-cols-4 ${className || ""}`}>
       <div className="rounded-xl border p-6 hover:bg-muted/40 transition-colors">
@@ -94,4 +95,4 @@ export default function QuickStatsGrid({ className, atsExpanded = false, onToggl
       </div>
     </section>
   );
-}
+});
