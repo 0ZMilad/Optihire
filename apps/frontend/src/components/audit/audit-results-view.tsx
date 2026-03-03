@@ -12,6 +12,7 @@ import {
   ListChecks,
   ShieldCheck,
   ActivitySquare,
+  Sparkles,
 } from "lucide-react";
 import { useState } from "react";
 import { cn } from "@/lib/utils";
@@ -25,6 +26,7 @@ import { PriorityActions } from "./priority-actions";
 import { ImpactAnalysisPanel } from "./impact-analysis-panel";
 import { CategorisedKeywordsPanel } from "./categorised-keywords-panel";
 import { ResumeMetricsPanel } from "./resume-metrics-panel";
+import { AIEnhancementPanel } from "./ai-enhancement-panel";
 import type { AuditResult, AuditContext } from "@/middle-service/audit";
 
 interface AuditResultsViewProps {
@@ -58,7 +60,7 @@ function SectionHeader({
   );
 }
 
-type TabId = "overview" | "actions" | "skills" | "impact" | "metrics" | "checklist";
+type TabId = "overview" | "actions" | "skills" | "impact" | "metrics" | "checklist" | "coach";
 
 export function AuditResultsView({
   result,
@@ -69,6 +71,9 @@ export function AuditResultsView({
   const [activeTab, setActiveTab] = useState<TabId>("overview");
 
   const jdFirstLine = extractFirstLine(context.jobDescription);
+
+  // AI enhancement payload (opt-in career coach)
+  const aiEnhancement = result.ai_enhancement ?? null;
 
   // v2 enriched data from suggestions_payload
   const payload = result.suggestions_payload;
@@ -169,6 +174,12 @@ export function AuditResultsView({
       alert: checklistPassCount < checklistItems.length
         ? String(checklistItems.length - checklistPassCount)
         : undefined,
+    },
+    {
+      id: "coach",
+      label: "AI Coach",
+      icon: <Sparkles className="size-3.5" />,
+      show: !!aiEnhancement,
     },
   ] as { id: TabId; label: string; icon: React.ReactNode; show: boolean; alert?: string }[]).filter((t) => t.show);
 
@@ -421,6 +432,25 @@ export function AuditResultsView({
               }
             />
             <FormattingChecklist items={checklistItems} />
+          </div>
+        )}
+
+        {/* AI Coach */}
+        {activeTab === "coach" && aiEnhancement && (
+          <div className="space-y-5">
+            <SectionHeader
+              icon={<Sparkles className="size-4" />}
+              title="AI Career Coach"
+              badge={
+                <Badge
+                  variant="outline"
+                  className="text-xs ml-auto border-violet-200 text-violet-600 dark:border-violet-800 dark:text-violet-400"
+                >
+                  Powered by Gemini
+                </Badge>
+              }
+            />
+            <AIEnhancementPanel payload={aiEnhancement} />
           </div>
         )}
       </div>

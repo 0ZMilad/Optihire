@@ -21,7 +21,7 @@ class Settings(BaseSettings):
     LLM_PROVIDER: str = "gemini/gemini-2.5-flash"
     LITELLM_API_KEY: str = ""
     LITELLM_TEMPERATURE: float = 0.3
-    LITELLM_MAX_TOKENS: int = 2000
+    LITELLM_MAX_TOKENS: int = 4000
     MAX_AI_CALLS_PER_DAY: int = 10
 
     # Application settings

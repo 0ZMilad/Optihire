@@ -19,6 +19,7 @@ from typing import Any
 from uuid import UUID
 
 import litellm
+from json_repair import repair_json
 from pydantic import ValidationError
 from sqlmodel import Session, func, select
 
@@ -40,6 +41,36 @@ _URL_RE = re.compile(r"https?://\S+", re.IGNORECASE)
 
 # Maximum characters of anonymized resume text sent to the LLM
 _MAX_RESUME_CHARS = 6000
+
+# Matches an optional ```json ... ``` wrapper that some models emit
+_CODE_FENCE_RE = re.compile(r"```(?:json)?\s*(.*?)\s*```", re.DOTALL)
+
+
+def _extract_json(content: str) -> Any:
+    """Best-effort JSON extraction + repair from a (possibly fenced) LLM response.
+
+    Strategy:
+      1. Strip ```json ... ``` markdown fences if present.
+      2. Try strict json.loads on the cleaned string.
+      3. Use json_repair to fix common LLM JSON errors (missing commas,
+         unescaped characters, truncated strings, trailing commas, etc.).
+    """
+    # 1. Strip code fences
+    fence_match = _CODE_FENCE_RE.search(content)
+    cleaned = fence_match.group(1) if fence_match else content.strip()
+
+    # 2. Fast path — strict parse
+    try:
+        return json.loads(cleaned)
+    except json.JSONDecodeError:
+        pass
+
+    # 3. json_repair handles missing commas, bad escapes, truncation, etc.
+    repaired = repair_json(cleaned, return_objects=True)
+    if isinstance(repaired, dict):
+        return repaired
+
+    raise json.JSONDecodeError("No valid JSON found in LLM response", content, 0)
 
 
 # ---------------------------------------------------------------------------
@@ -113,6 +144,7 @@ Rules:
 - The role_fit_summary should be honest but constructive.
 - Do NOT invent experience the candidate does not have.
 - Do NOT include any personally identifiable information in your response.
+- Return ONLY the raw JSON object. Do NOT wrap it in markdown code fences or add any text outside the JSON.
 """
 
 
@@ -259,7 +291,6 @@ def enhance_analysis(
             messages=messages,
             temperature=settings.LITELLM_TEMPERATURE,
             max_tokens=settings.LITELLM_MAX_TOKENS,
-            response_format={"type": "json_object"},
             timeout=30,
         )
 
@@ -269,7 +300,7 @@ def enhance_analysis(
             logger.warning("LLM returned empty content")
             return None
 
-        parsed = json.loads(content)
+        parsed = _extract_json(content)
 
         # 5. Validate against Pydantic schema
         payload = AIEnhancementPayload.model_validate(parsed)

@@ -36,3 +36,4 @@ fpdf2>=2.7.0
 
 # AI/LLM Integration
 litellm>=1.30.0
+json-repair>=0.30.0

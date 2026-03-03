@@ -61,6 +61,24 @@ export interface SuggestionsPayload {
   repetition_flags?: RepetitionFlag[];
 }
 
+export interface BulletRewrite {
+  original: string;
+  rewritten: string;
+  rationale: string;
+}
+
+export interface KeywordContextTip {
+  keyword: string;
+  suggested_section: string;
+  example_usage: string;
+}
+
+export interface AIEnhancementPayload {
+  bullet_rewrites: BulletRewrite[];
+  keyword_context_tips: KeywordContextTip[];
+  role_fit_summary: string;
+}
+
 export interface AuditResult {
   id: string;
   resume_id: string;
@@ -82,6 +100,7 @@ export interface AuditResult {
   has_action_verbs: boolean;
   is_scannable: boolean;
   suggestions_payload: SuggestionsPayload | null;
+  ai_enhancement: AIEnhancementPayload | null;
   analyzed_at: string;
 }
 
@@ -90,11 +109,11 @@ export interface AuditContext {
   jobDescription: string;
 }
 
-export async function runAudit(data: AuditRequest): Promise<AuditResult> {
-  const response = await apiClient.post<AuditResult>(
-    "/api/v1/analyses/audit",
-    data,
-  );
+export async function runAudit(data: AuditRequest, aiEnhance = true): Promise<AuditResult> {
+  const url = aiEnhance
+    ? "/api/v1/analyses/audit?ai_enhance=true"
+    : "/api/v1/analyses/audit";
+  const response = await apiClient.post<AuditResult>(url, data);
   return response.data;
 }
 
