@@ -1469,3 +1469,23 @@ def get_latest_audit_result(
     if result is None:
         return None
     return AnalysisResultRead.model_validate(result)
+
+
+def list_audit_results(
+    *,
+    user_id: UUID,
+    db: Session,
+    skip: int = 0,
+    limit: int = 20,
+) -> list[AnalysisResultRead]:
+    """Return a paginated list of audit results for the authenticated user, newest first."""
+    stmt = (
+        select(AnalysisResult)
+        .join(Resume, Resume.id == AnalysisResult.resume_id)
+        .where(Resume.user_id == user_id)
+        .order_by(AnalysisResult.analyzed_at.desc())
+        .offset(skip)
+        .limit(limit)
+    )
+    rows = db.exec(stmt).all()
+    return [AnalysisResultRead.model_validate(r) for r in rows]

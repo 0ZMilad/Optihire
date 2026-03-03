@@ -14,9 +14,25 @@ from sqlmodel import Session
 from app.core.dependencies import get_current_user_id
 from app.db.session import get_db
 from app.schemas.analysis_schema import AuditRequest, AnalysisResultRead
-from app.services.analysis_service import run_audit, get_audit_result, get_latest_audit_result
+from app.services.analysis_service import run_audit, get_audit_result, get_latest_audit_result, list_audit_results
 
 router = APIRouter()
+
+
+@router.get(
+    "",
+    response_model=list[AnalysisResultRead],
+    status_code=status.HTTP_200_OK,
+    summary="List audit results",
+    description="Return a paginated list of ATS audit results for the authenticated user, newest first.",
+)
+async def list_audit_results_endpoint(
+    skip: int = Query(0, ge=0, description="Number of results to skip."),
+    limit: int = Query(20, ge=1, le=100, description="Maximum number of results to return."),
+    current_user_id: UUID = Depends(get_current_user_id),
+    db: Session = Depends(get_db),
+) -> list[AnalysisResultRead]:
+    return list_audit_results(user_id=current_user_id, db=db, skip=skip, limit=limit)
 
 
 @router.get(

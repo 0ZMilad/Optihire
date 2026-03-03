@@ -130,3 +130,10 @@ export async function getLatestAuditResult(): Promise<AuditResult | null> {
   );
   return response.data ?? null;
 }
+
+export async function listAuditResults(skip = 0, limit = 20): Promise<AuditResult[]> {
+  const response = await apiClient.get<AuditResult[]>(
+    `/api/v1/analyses?skip=${skip}&limit=${limit}`,
+  );
+  return response.data;
+}
