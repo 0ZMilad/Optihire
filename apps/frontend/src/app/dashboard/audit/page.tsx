@@ -5,6 +5,7 @@ import { DashboardLayout } from "@/components/dashboard-layout";
 import { DashboardHeader } from "@/components/dashboard-header";
 import { Main } from "@/components/main";
 import { AuditInputView } from "@/components/audit/audit-input-view";
+import { AuditHistorySidebar } from "@/components/audit/audit-history-sidebar";
 import dynamic from "next/dynamic";
 
 // Lazy-load the heavy results view — only fetched after audit completes
@@ -14,9 +15,10 @@ const AuditResultsView = dynamic(
 );
 
 import { Skeleton } from "@/components/ui/skeleton";
-import { runAudit } from "@/middle-service/audit";
+import { runAudit, getAuditResult } from "@/middle-service/audit";
 import type { AuditResult, AuditContext } from "@/middle-service/audit";
 import { useSavedResumes } from "@/stores/saved-resumes-store";
+import { useAuditHistory } from "@/stores/audit-history-store";
 import { toast } from "sonner";
 import { logger } from "@/lib/logger";
 import axios from "axios";
@@ -27,9 +29,11 @@ export default function AuditPage() {
   const [viewState, setViewState] = useState<ViewState>("input");
   // Use the cached store instead of a fresh API call — avoids duplicate fetch
   const { resumes, isLoading: resumesLoading } = useSavedResumes();
+  const { history, isLoading: historyLoading, prependResult } = useAuditHistory();
   const [auditLoading, setAuditLoading] = useState(false);
   const [result, setResult] = useState<AuditResult | null>(null);
   const [context, setContext] = useState<AuditContext | null>(null);
+  const [isSidebarOpen, setIsSidebarOpen] = useState(true);
 
   const handleSubmit = useCallback(
     async (resumeId: string, jobDescription: string) => {
@@ -57,6 +61,7 @@ export default function AuditPage() {
           resume,
           jobDescription,
         });
+        prependResult(auditResult);
         setViewState("results");
       } catch (err) {
         let userMessage = "Analysis failed. Please try again.";
@@ -111,53 +116,86 @@ export default function AuditPage() {
     setViewState("input");
   }, []);
 
+  const handleSelectHistory = useCallback(
+    async (selected: AuditResult) => {
+      const resume = resumes.find((r) => r.id === selected.resume_id);
+      if (!resume) {
+        toast.error("Could not find the resume associated with this audit.");
+        return;
+      }
+      try {
+        const full = await getAuditResult(selected.id);
+        setResult(full);
+        setContext({ resume, jobDescription: "" });
+        setViewState("results");
+      } catch {
+        toast.error("Failed to load audit result.");
+      }
+    },
+    [resumes],
+  );
+
   return (
     <DashboardLayout>
       <DashboardHeader>
         <h2 className="text-lg font-semibold">ATS Audit</h2>
       </DashboardHeader>
 
-      <Main>
-        {resumesLoading && (
-          <div className="mx-auto w-full max-w-[800px] space-y-6">
-            <Skeleton className="h-8 w-64" />
-            <Skeleton className="h-5 w-96" />
-            <Skeleton className="h-10 w-full" />
-            <Skeleton className="h-[280px] w-full" />
-            <Skeleton className="h-10 w-full" />
-          </div>
-        )}
-
-        {!resumesLoading && viewState === "input" && (
-          <AuditInputView
-            resumes={resumes}
-            loading={auditLoading}
-            onSubmit={handleSubmit}
-          />
-        )}
-
-        {viewState === "loading" && (
-          <div className="mx-auto w-full max-w-[800px] flex flex-col items-center justify-center gap-6 py-20">
-            <div className="relative flex items-center justify-center">
-              <div className="absolute h-24 w-24 rounded-full border-4 border-muted animate-ping opacity-20" />
-              <div className="h-20 w-20 rounded-full border-4 border-t-primary border-muted animate-spin" />
+      <Main className="flex min-h-0 overflow-hidden p-0 max-w-none mx-0">
+        {/* ── Main scrollable content area ── */}
+        <div className="flex-1 overflow-y-auto p-4 md:p-6">
+          {resumesLoading && (
+            <div className="mx-auto w-full max-w-[800px] space-y-6">
+              <Skeleton className="h-8 w-64" />
+              <Skeleton className="h-5 w-96" />
+              <Skeleton className="h-10 w-full" />
+              <Skeleton className="h-[280px] w-full" />
+              <Skeleton className="h-10 w-full" />
             </div>
-            <div className="text-center space-y-1">
-              <p className="font-semibold">Running ATS Audit…</p>
-              <p className="text-sm text-muted-foreground">
-                Comparing your resume against the job description.
-              </p>
-            </div>
-          </div>
-        )}
+          )}
 
-        {viewState === "results" && result && context && (
-          <AuditResultsView
-            result={result}
-            context={context}
-            onRunAnother={handleRunAnother}
-          />
-        )}
+          {!resumesLoading && viewState === "input" && (
+            <AuditInputView
+              resumes={resumes}
+              loading={auditLoading}
+              onSubmit={handleSubmit}
+            />
+          )}
+
+          {viewState === "loading" && (
+            <div className="mx-auto w-full max-w-[800px] flex flex-col items-center justify-center gap-6 py-20">
+              <div className="relative flex items-center justify-center">
+                <div className="absolute h-24 w-24 rounded-full border-4 border-muted animate-ping opacity-20" />
+                <div className="h-20 w-20 rounded-full border-4 border-t-primary border-muted animate-spin" />
+              </div>
+              <div className="text-center space-y-1">
+                <p className="font-semibold">Running ATS Audit…</p>
+                <p className="text-sm text-muted-foreground">
+                  Comparing your resume against the job description.
+                </p>
+              </div>
+            </div>
+          )}
+
+          {viewState === "results" && result && context && (
+            <AuditResultsView
+              result={result}
+              context={context}
+              onRunAnother={handleRunAnother}
+            />
+          )}
+        </div>
+
+        {/* ── History sidebar ── */}
+        <AuditHistorySidebar
+          history={history}
+          isLoading={historyLoading}
+          resumes={resumes}
+          activeResultId={result?.id}
+          isOpen={isSidebarOpen}
+          onToggle={() => setIsSidebarOpen((o) => !o)}
+          onSelect={handleSelectHistory}
+        />
       </Main>
     </DashboardLayout>
   );
