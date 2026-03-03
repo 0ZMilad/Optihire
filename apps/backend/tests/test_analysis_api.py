@@ -103,6 +103,7 @@ def _sample_result(result_id: UUID, resume_id: UUID) -> AnalysisResultRead:
         has_action_verbs=True,
         is_scannable=True,
         suggestions_payload=None,
+        ai_enhancement=None,
         skills_version=None,
         keywords_rules_version=None,
         analysis_version="1.0",
@@ -220,3 +221,121 @@ class TestGetAnalysisById:
             headers=_auth(user_id),
         )
         assert response.status_code == status.HTTP_422_UNPROCESSABLE_ENTITY
+
+
+class TestAuditEndpointAIEnhance:
+    """Tests for POST /api/v1/analyses/audit with ?ai_enhance query param."""
+
+    def test_audit_with_ai_enhance_false_returns_null_enhancement(self, client: TestClient):
+        """Default (no ai_enhance param) returns ai_enhancement=null."""
+        user_id = str(uuid4())
+        result_id = uuid4()
+        resume_id = uuid4()
+        sample = _sample_result(result_id, resume_id)
+
+        with patch(
+            "app.api.v1.endpoints.analysis.run_audit",
+            return_value=sample,
+        ):
+            response = client.post(
+                "/api/v1/analyses/audit",
+                headers=_auth(user_id),
+                json={
+                    "resume_id": str(resume_id),
+                    "job_description": "Looking for a Python developer.",
+                },
+            )
+
+        assert response.status_code == status.HTTP_200_OK
+        body = response.json()
+        assert body["ai_enhancement"] is None
+
+    def test_audit_with_ai_enhance_true_returns_enhancement(self, client: TestClient):
+        """When ai_enhance=true and LLM succeeds, ai_enhancement is populated."""
+        user_id = str(uuid4())
+        result_id = uuid4()
+        resume_id = uuid4()
+
+        ai_payload = {
+            "bullet_rewrites": [
+                {
+                    "original": "Built APIs",
+                    "rewritten": "Architected RESTful APIs on K8s",
+                    "rationale": "Adds K8s keyword.",
+                }
+            ],
+            "keyword_context_tips": [],
+            "role_fit_summary": "Good fit with minor gaps.",
+        }
+        sample = _sample_result(result_id, resume_id)
+        sample.ai_enhancement = ai_payload
+
+        with patch(
+            "app.api.v1.endpoints.analysis.run_audit",
+            return_value=sample,
+        ):
+            response = client.post(
+                "/api/v1/analyses/audit?ai_enhance=true",
+                headers=_auth(user_id),
+                json={
+                    "resume_id": str(resume_id),
+                    "job_description": "Looking for a K8s expert.",
+                },
+            )
+
+        assert response.status_code == status.HTTP_200_OK
+        body = response.json()
+        assert body["ai_enhancement"] is not None
+        assert body["ai_enhancement"]["role_fit_summary"] == "Good fit with minor gaps."
+        assert len(body["ai_enhancement"]["bullet_rewrites"]) == 1
+
+    def test_audit_ai_enhance_fallback_on_failure(self, client: TestClient):
+        """LLM failure still returns 200 OK with ai_enhancement=null."""
+        user_id = str(uuid4())
+        result_id = uuid4()
+        resume_id = uuid4()
+        sample = _sample_result(result_id, resume_id)  # ai_enhancement=None
+
+        with patch(
+            "app.api.v1.endpoints.analysis.run_audit",
+            return_value=sample,
+        ):
+            response = client.post(
+                "/api/v1/analyses/audit?ai_enhance=true",
+                headers=_auth(user_id),
+                json={
+                    "resume_id": str(resume_id),
+                    "job_description": "Looking for someone.",
+                },
+            )
+
+        assert response.status_code == status.HTTP_200_OK
+        body = response.json()
+        # In fallback, ai_enhancement is None (service returned None)
+        assert body["ai_enhancement"] is None
+        # Heuristic scores are still present
+        assert body["overall_score"] == 82
+
+    def test_audit_passes_ai_enhance_to_service(self, client: TestClient):
+        """Endpoint passes ai_enhance=True through to the service layer."""
+        user_id = str(uuid4())
+        result_id = uuid4()
+        resume_id = uuid4()
+        sample = _sample_result(result_id, resume_id)
+
+        with patch(
+            "app.api.v1.endpoints.analysis.run_audit",
+            return_value=sample,
+        ) as mock_service:
+            client.post(
+                "/api/v1/analyses/audit?ai_enhance=true",
+                headers=_auth(user_id),
+                json={
+                    "resume_id": str(resume_id),
+                    "job_description": "Need a dev.",
+                },
+            )
+
+        mock_service.assert_called_once()
+        call_kwargs = mock_service.call_args.kwargs
+        assert call_kwargs["ai_enhance"] is True

@@ -10,6 +10,34 @@ from pydantic import BaseModel, Field
 
 from app.schemas.common_schema import ImpactLevel, SuggestionState
 
+
+# ===== AI ENHANCEMENT =====
+
+
+class BulletRewrite(BaseModel):
+    """A before/after rewrite suggestion for a weak resume bullet."""
+
+    original: str = Field(..., description="The original bullet text from the resume.")
+    rewritten: str = Field(..., description="The improved bullet using JD context.")
+    rationale: str = Field(..., description="Why the rewrite is stronger.")
+
+
+class KeywordContextTip(BaseModel):
+    """Guidance on where and how to naturally insert a missing keyword."""
+
+    keyword: str = Field(..., description="The missing keyword to incorporate.")
+    suggested_section: str = Field(..., description="Resume section to place it in (e.g. Experience, Skills).")
+    example_usage: str = Field(..., description="Example sentence or bullet showing natural usage.")
+
+
+class AIEnhancementPayload(BaseModel):
+    """Structured output from the LLM career-coach layer."""
+
+    bullet_rewrites: list[BulletRewrite] = Field(default_factory=list)
+    keyword_context_tips: list[KeywordContextTip] = Field(default_factory=list)
+    role_fit_summary: str = Field(..., description="A 2-3 sentence qualitative analysis of candidate fit.")
+
+
 # ===== AUDIT REQUEST =====
 
 
@@ -79,6 +107,7 @@ class AnalysisResultCreate(BaseModel):
     has_action_verbs: bool = False
     is_scannable: bool = False
     suggestions_payload: dict | None = None
+    ai_enhancement: dict | None = None
     skills_version: str | None = Field(None, max_length=20)
     keywords_rules_version: str | None = Field(None, max_length=20)
     analysis_version: str = Field(default="3.0", max_length=20)
@@ -109,6 +138,7 @@ class AnalysisResultRead(BaseModel):
     has_action_verbs: bool
     is_scannable: bool
     suggestions_payload: dict | None
+    ai_enhancement: AIEnhancementPayload | None = None
     skills_version: str | None
     keywords_rules_version: str | None
     analysis_version: str

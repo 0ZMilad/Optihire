@@ -8,7 +8,7 @@ GET  /api/v1/analyses/{id}   — retrieve a previously computed audit result by 
 
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, status
+from fastapi import APIRouter, Depends, Query, status
 from sqlmodel import Session
 
 from app.core.dependencies import get_current_user_id
@@ -46,6 +46,10 @@ async def get_latest_audit_result_endpoint(
 )
 async def run_audit_endpoint(
     payload: AuditRequest,
+    ai_enhance: bool = Query(
+        False,
+        description="Set to true to enable opt-in LLM-powered career-coach feedback.",
+    ),
     current_user_id: UUID = Depends(get_current_user_id),
     db: Session = Depends(get_db),
 ) -> AnalysisResultRead:
@@ -55,6 +59,7 @@ async def run_audit_endpoint(
         job_description_text=payload.job_description,
         job_title=payload.job_title,
         db=db,
+        ai_enhance=ai_enhance,
     )
 
 

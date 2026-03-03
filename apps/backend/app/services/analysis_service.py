@@ -28,6 +28,7 @@ from sqlmodel import Session, select
 from app.models.analysis_model import AnalysisResult, JobDescription
 from app.models.resume_model import Resume
 from app.schemas.analysis_schema import AnalysisResultRead
+from app.services.ai_analysis_service import enhance_analysis
 
 # ---------------------------------------------------------------------------
 # Constants
@@ -1280,6 +1281,7 @@ def run_audit(
     job_description_text: str,
     job_title: str | None,
     db: Session,
+    ai_enhance: bool = False,
 ) -> AnalysisResultRead:
     """
     Run heuristic ATS analysis of the given resume against the job description.
@@ -1322,6 +1324,20 @@ def run_audit(
     ).first()
 
     if cached is not None:
+        # If AI enhancement requested but not yet computed, backfill
+        if ai_enhance and cached.ai_enhancement is None:
+            enhancement = enhance_analysis(
+                user_id=user_id,
+                resume=resume,
+                job_description_text=job_description_text,
+                heuristic_result=cached,
+                db=db,
+            )
+            if enhancement is not None:
+                cached.ai_enhancement = enhancement
+                db.add(cached)
+                db.commit()
+                db.refresh(cached)
         return AnalysisResultRead.model_validate(cached)
 
     # 4. Upsert JobDescription --------------------------------------------------
@@ -1390,6 +1406,21 @@ def run_audit(
     db.add(result)
     db.commit()
     db.refresh(result)
+
+    # --- Optional AI enhancement (post-heuristic) ---
+    if ai_enhance:
+        enhancement = enhance_analysis(
+            user_id=user_id,
+            resume=resume,
+            job_description_text=job_description_text,
+            heuristic_result=result,
+            db=db,
+        )
+        if enhancement is not None:
+            result.ai_enhancement = enhancement
+            db.add(result)
+            db.commit()
+            db.refresh(result)
 
     return AnalysisResultRead.model_validate(result)
 
