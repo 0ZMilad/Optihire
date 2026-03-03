@@ -114,6 +114,7 @@ class AnalysisResult(SQLModel, table=True):
     has_action_verbs: bool = Field(default=False)
     is_scannable: bool = Field(default=False)
     suggestions_payload: dict | None = Field(default=None, sa_column=Column(JSONB))
+    ai_enhancement: dict | None = Field(default=None, sa_column=Column(JSONB))
     skills_version: str | None = Field(default=None, max_length=20)
     keywords_rules_version: str | None = Field(default=None, max_length=20)
     analysis_version: str = Field(default="1.0", max_length=20, nullable=False)

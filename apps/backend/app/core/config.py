@@ -16,6 +16,14 @@ class Settings(BaseSettings):
      # JWT Configuration for Supabase Auth
     JWT_AUDIENCE: str = "authenticated"  # Supabase default audience
 
+    # AI Enhancement
+    AI_ENHANCE_ENABLED: bool = False
+    LLM_PROVIDER: str = "gemini/gemini-2.5-flash"
+    LITELLM_API_KEY: str = ""
+    LITELLM_TEMPERATURE: float = 0.3
+    LITELLM_MAX_TOKENS: int = 2000
+    MAX_AI_CALLS_PER_DAY: int = 10
+
     # Application settings
     PROJECT_NAME: str = "Optihire API"
     API_V1_STR: str = "/api/v1"
