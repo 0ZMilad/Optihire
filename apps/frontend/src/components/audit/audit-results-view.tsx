@@ -19,13 +19,11 @@ import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { ScoreRing } from "./score-ring";
-import { SubScoreCard } from "./sub-score-card";
 import { KeywordPanel } from "./keyword-panel";
 import { FormattingChecklist } from "./formatting-checklist";
 import { PriorityActions } from "./priority-actions";
-import { ImpactAnalysisPanel } from "./impact-analysis-panel";
 import { CategorisedKeywordsPanel } from "./categorised-keywords-panel";
-import { ResumeMetricsPanel } from "./resume-metrics-panel";
+import { ResumeHealthPanel } from "./resume-health-panel";
 import { AIEnhancementPanel } from "./ai-enhancement-panel";
 import type { AuditResult, AuditContext } from "@/middle-service/audit";
 
@@ -60,7 +58,7 @@ function SectionHeader({
   );
 }
 
-type TabId = "overview" | "actions" | "skills" | "impact" | "metrics" | "checklist" | "coach";
+type TabId = "overview" | "actions" | "skills" | "health" | "coach";
 
 export function AuditResultsView({
   result,
@@ -155,25 +153,10 @@ export function AuditResultsView({
       show: true,
     },
     {
-      id: "impact",
-      label: "Impact",
-      icon: <Zap className="size-3.5" />,
-      show: !!impactAnalysis,
-    },
-    {
-      id: "metrics",
-      label: "Metrics",
+      id: "health",
+      label: "Resume Health",
       icon: <ActivitySquare className="size-3.5" />,
-      show: !!resumeMetrics,
-    },
-    {
-      id: "checklist",
-      label: "ATS Checks",
-      icon: <ShieldCheck className="size-3.5" />,
-      show: true,
-      alert: checklistPassCount < checklistItems.length
-        ? String(checklistItems.length - checklistPassCount)
-        : undefined,
+      show: !!impactAnalysis || !!resumeMetrics,
     },
     {
       id: "coach",
@@ -307,21 +290,25 @@ export function AuditResultsView({
         {/* Overview */}
         {activeTab === "overview" && (
           <div className="space-y-6">
+            {/* ATS Checklist — folded in from old ATS Checks tab */}
             <SectionHeader
-              icon={<BarChart3 className="size-4" />}
-              title="Score Breakdown"
+              icon={<ShieldCheck className="size-4" />}
+              title="ATS Best Practices"
+              badge={
+                <Badge
+                  variant="outline"
+                  className={cn(
+                    "text-xs ml-auto",
+                    checklistPassCount === checklistItems.length
+                      ? "border-emerald-800/60 text-emerald-700"
+                      : "border-amber-800/60 text-amber-700",
+                  )}
+                >
+                  {checklistPassCount}/{checklistItems.length} passed
+                </Badge>
+              }
             />
-            <div className={cn(
-              "grid gap-4",
-              impactAnalysis ? "sm:grid-cols-2 lg:grid-cols-4" : "sm:grid-cols-3",
-            )}>
-              <SubScoreCard label="Keyword Match" score={result.keyword_score} icon={<Search className="size-4" />} />
-              <SubScoreCard label="Formatting" score={result.formatting_score} icon={<BarChart3 className="size-4" />} />
-              <SubScoreCard label="Section Score" score={result.section_score} icon={<LayoutList className="size-4" />} />
-              {impactAnalysis && (
-                <SubScoreCard label="Impact Score" score={impactAnalysis!.score} icon={<Zap className="size-4" />} />
-              )}
-            </div>
+            <FormattingChecklist items={checklistItems} />
 
             {/* Quick nav cards */}
             <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 pt-2">
@@ -389,49 +376,18 @@ export function AuditResultsView({
           </div>
         )}
 
-        {/* Impact */}
-        {activeTab === "impact" && impactAnalysis && (
-          <div className="space-y-5">
-            <SectionHeader
-              icon={<Zap className="size-4" />}
-              title="Impact & Achievements"
-            />
-            <ImpactAnalysisPanel impact={impactAnalysis!} />
-          </div>
-        )}
-
-        {/* Metrics */}
-        {activeTab === "metrics" && resumeMetrics && (
+        {/* Resume Health (merged Impact + Metrics) */}
+        {activeTab === "health" && (impactAnalysis || resumeMetrics) && (
           <div className="space-y-5">
             <SectionHeader
               icon={<ActivitySquare className="size-4" />}
-              title="Resume Metrics"
+              title="Resume Health"
             />
-            <ResumeMetricsPanel metrics={resumeMetrics!} repetition={repetitionFlags} />
-          </div>
-        )}
-
-        {/* ATS Checks */}
-        {activeTab === "checklist" && (
-          <div className="space-y-5">
-            <SectionHeader
-              icon={<ShieldCheck className="size-4" />}
-              title="ATS Best Practices"
-              badge={
-                <Badge
-                  variant="outline"
-                  className={cn(
-                    "text-xs ml-auto",
-                    checklistPassCount === checklistItems.length
-                      ? "border-emerald-800/60 text-emerald-700"
-                      : "border-amber-800/60 text-amber-700",
-                  )}
-                >
-                  {checklistPassCount}/{checklistItems.length} passed
-                </Badge>
-              }
+            <ResumeHealthPanel
+              impact={impactAnalysis}
+              metrics={resumeMetrics}
+              repetition={repetitionFlags}
             />
-            <FormattingChecklist items={checklistItems} />
           </div>
         )}
 
