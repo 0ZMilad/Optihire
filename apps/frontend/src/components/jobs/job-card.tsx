@@ -1,27 +1,32 @@
 "use client";
 
-import { useState } from "react";
+import { memo, useCallback, useMemo, useState } from "react";
 import {
   MapPin,
   DollarSign,
   ExternalLink,
-  Bookmark,
-  BookmarkCheck,
   Building2,
   Clock,
+  Minus,
+  CheckCircle2,
+  Trophy,
+  XCircle,
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { cn } from "@/lib/utils";
-import type { JobMatch } from "@/lib/mock-jobs";
+import { toast } from "sonner";
+import { updateApplicationStatus } from "@/middle-service/jobs";
+import type { JobMatch, ApplicationStatus } from "@/lib/mock-jobs";
 
-// ─── Helpers ────────────────────────────────────────────────────────────────
-
-function scoreColor(score: number) {
-  if (score >= 80) return "text-emerald-700";
-  if (score >= 50) return "text-amber-700";
-  return "text-red-700";
-}
+// ─── Score helpers ───────────────────────────────────────────────────────────
 
 function scoreBarColor(score: number) {
   if (score >= 80) return "bg-emerald-600";
@@ -43,6 +48,8 @@ function formatSalary(min: number | null, max: number | null, currency: string):
   if (min) return `From ${fmt(min)} ${currency}`;
   return `Up to ${fmt(max!)} ${currency}`;
 }
+
+// ─── Label maps ─────────────────────────────────────────────────────────────
 
 const REMOTE_TYPE_LABELS: Record<string, string> = {
   remote: "Remote",
@@ -67,34 +74,108 @@ const EXP_LEVEL_LABELS: Record<string, string> = {
 
 const SKILLS_VISIBLE = 5;
 
-// ─── Component ──────────────────────────────────────────────────────────────
+// ─── Application status config ───────────────────────────────────────────────
+// Each entry has a distinct icon (no ambiguous double-dot), color-coded trigger,
+// and icon color. "offer" uses purple to stand out from the green match score.
+
+type StatusEntry = {
+  label: string;
+  triggerClass: string;
+  Icon: React.ElementType;
+  iconClass: string;
+};
+
+const STATUS_CONFIG: Record<ApplicationStatus, StatusEntry> = {
+  not_applied: {
+    label: "Not Applied",
+    triggerClass: "text-muted-foreground border-muted-foreground/30 bg-muted/30 hover:bg-muted/50",
+    Icon: Minus,
+    iconClass: "text-muted-foreground",
+  },
+  applied: {
+    label: "Applied",
+    triggerClass: "text-blue-700 border-blue-200 bg-blue-50 hover:bg-blue-100",
+    Icon: CheckCircle2,
+    iconClass: "text-blue-500",
+  },
+  interviewing: {
+    label: "Interviewing",
+    triggerClass: "text-amber-700 border-amber-200 bg-amber-50 hover:bg-amber-100",
+    Icon: Clock,
+    iconClass: "text-amber-500",
+  },
+  offer: {
+    label: "Offer Received",
+    triggerClass: "text-purple-700 border-purple-200 bg-purple-50 hover:bg-purple-100",
+    Icon: Trophy,
+    iconClass: "text-purple-500",
+  },
+  rejected: {
+    label: "Rejected",
+    triggerClass: "text-red-700 border-red-200 bg-red-50 hover:bg-red-100",
+    Icon: XCircle,
+    iconClass: "text-red-500",
+  },
+};
+
+// Hoisted outside component — STATUS_CONFIG is static so this never changes
+const STATUS_ENTRIES = Object.entries(STATUS_CONFIG) as [ApplicationStatus, StatusEntry][];
+
+// ─── Component ───────────────────────────────────────────────────────────────
 
 interface JobCardProps {
   match: JobMatch;
 }
 
-export function JobCard({ match }: JobCardProps) {
-  const [saved, setSaved] = useState(match.is_saved);
+function JobCardInner({ match }: JobCardProps) {
+  const [status, setStatus] = useState<ApplicationStatus>(match.application_status);
   const { job_listing: job } = match;
 
-  const visibleMatched = match.matched_skills.slice(0, SKILLS_VISIBLE);
-  const extraMatched = match.matched_skills.length - SKILLS_VISIBLE;
-  const visibleMissing = match.missing_skills.slice(0, SKILLS_VISIBLE);
-  const extraMissing = match.missing_skills.length - SKILLS_VISIBLE;
+  const { visibleMatched, extraMatched, visibleMissing, extraMissing } = useMemo(() => ({
+    visibleMatched: match.matched_skills.slice(0, SKILLS_VISIBLE),
+    extraMatched: Math.max(0, match.matched_skills.length - SKILLS_VISIBLE),
+    visibleMissing: match.missing_skills.slice(0, SKILLS_VISIBLE),
+    extraMissing: Math.max(0, match.missing_skills.length - SKILLS_VISIBLE),
+  }), [match.matched_skills, match.missing_skills]);
 
-  const postedLabel = job.posted_date
-    ? new Date(job.posted_date).toLocaleDateString("en-US", {
-        month: "short",
-        day: "numeric",
-      })
-    : null;
+  const postedLabel = useMemo(
+    () =>
+      job.posted_date
+        ? new Date(job.posted_date).toLocaleDateString("en-US", {
+            month: "short",
+            day: "numeric",
+          })
+        : null,
+    [job.posted_date]
+  );
+
+  const handleStatusChange = useCallback(
+    async (next: ApplicationStatus) => {
+      const prev = status;
+      setStatus(next);
+      try {
+        await updateApplicationStatus(match.id, next);
+        if (next !== "not_applied") {
+          toast.success(`Status: ${STATUS_CONFIG[next].label}`, {
+            description: `${job.job_title} at ${job.company_name}`,
+          });
+        }
+      } catch {
+        setStatus(prev);
+        toast.error("Failed to update application status. Please try again.");
+      }
+    },
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [match.id, status, job.job_title, job.company_name]
+  );
+
+  const statusCfg = STATUS_CONFIG[status];
 
   return (
     <div className="rounded-xl border bg-card p-6 flex flex-col gap-4 hover:shadow-md transition-shadow">
-      {/* ── Top row: company + score badge ─────────────────────────────── */}
+      {/* ── Top row: company + score badge ──────────────────────────────── */}
       <div className="flex items-start justify-between gap-3">
         <div className="flex items-start gap-3 min-w-0">
-          {/* Company icon */}
           <div className="flex items-center justify-center size-10 rounded-lg bg-muted text-muted-foreground shrink-0">
             <Building2 className="size-5" />
           </div>
@@ -106,7 +187,7 @@ export function JobCard({ match }: JobCardProps) {
           </div>
         </div>
 
-        {/* Match score badge */}
+        {/* Single source of truth for the score number */}
         <span
           className={cn(
             "shrink-0 text-xs font-semibold px-2.5 py-1 rounded-lg border",
@@ -154,14 +235,9 @@ export function JobCard({ match }: JobCardProps) {
         <span>{formatSalary(job.salary_min, job.salary_max, job.salary_currency)}</span>
       </div>
 
-      {/* ── Match score bar ─────────────────────────────────────────────── */}
+      {/* ── Match strength bar (score % removed — badge above is the source) */}
       <div className="space-y-1">
-        <div className="flex items-center justify-between text-xs">
-          <span className="text-muted-foreground">Match strength</span>
-          <span className={cn("font-semibold", scoreColor(match.match_score))}>
-            {match.match_score}%
-          </span>
-        </div>
+        <span className="text-xs text-muted-foreground">Match strength</span>
         <div className="h-1.5 rounded-full bg-muted overflow-hidden">
           <div
             className={cn("h-full rounded-full transition-all", scoreBarColor(match.match_score))}
@@ -173,7 +249,6 @@ export function JobCard({ match }: JobCardProps) {
       {/* ── Skills ──────────────────────────────────────────────────────── */}
       {(match.matched_skills.length > 0 || match.missing_skills.length > 0) && (
         <div className="space-y-2">
-          {/* Matched */}
           {match.matched_skills.length > 0 && (
             <div className="flex flex-wrap gap-1">
               {visibleMatched.map((skill) => (
@@ -191,8 +266,6 @@ export function JobCard({ match }: JobCardProps) {
               )}
             </div>
           )}
-
-          {/* Missing */}
           {match.missing_skills.length > 0 && (
             <div className="flex flex-wrap gap-1">
               {visibleMissing.map((skill) => (
@@ -215,32 +288,46 @@ export function JobCard({ match }: JobCardProps) {
 
       {/* ── Footer ──────────────────────────────────────────────────────── */}
       <div className="flex items-center gap-2 pt-1 mt-auto">
-        {job.external_url ? (
-          <Button variant="outline" size="sm" asChild className="flex-1">
+        <Select
+          value={status}
+          onValueChange={(v) => handleStatusChange(v as ApplicationStatus)}
+        >
+          <SelectTrigger
+            className={cn(
+              "h-9 text-xs font-medium border rounded-lg px-3 flex-1",
+              statusCfg.triggerClass
+            )}
+          >
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            {STATUS_ENTRIES.map(
+              ([value, cfg]) => {
+                const ItemIcon = cfg.Icon;
+                return (
+                  <SelectItem key={value} value={value} textValue={cfg.label} className="text-xs">
+                    <div className="flex items-center gap-2">
+                      <ItemIcon className={cn("size-3.5 shrink-0", cfg.iconClass)} />
+                      {cfg.label}
+                    </div>
+                  </SelectItem>
+                );
+              }
+            )}
+          </SelectContent>
+        </Select>
+
+        {job.external_url && (
+          <Button variant="outline" size="sm" asChild className="shrink-0">
             <a href={job.external_url} target="_blank" rel="noopener noreferrer">
               <ExternalLink className="size-3.5 mr-1.5" />
-              Apply Now
+              View Posting
             </a>
           </Button>
-        ) : (
-          <Button variant="outline" size="sm" disabled className="flex-1">
-            No link available
-          </Button>
         )}
-        <Button
-          variant="ghost"
-          size="icon"
-          className={cn("size-9 shrink-0", saved && "text-primary")}
-          onClick={() => setSaved((v) => !v)}
-          aria-label={saved ? "Unsave job" : "Save job"}
-        >
-          {saved ? (
-            <BookmarkCheck className="size-4" />
-          ) : (
-            <Bookmark className="size-4" />
-          )}
-        </Button>
       </div>
     </div>
   );
 }
+
+export const JobCard = memo(JobCardInner);

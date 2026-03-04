@@ -16,6 +16,13 @@ export interface JobListing {
   extracted_keywords: string[];
 }
 
+export type ApplicationStatus =
+  | "not_applied"
+  | "applied"
+  | "interviewing"
+  | "offer"
+  | "rejected";
+
 export interface JobMatch {
   id: string;
   resume_id: string;
@@ -28,6 +35,7 @@ export interface JobMatch {
   missing_skills: string[];
   is_saved: boolean;
   is_hidden: boolean;
+  application_status: ApplicationStatus;
   job_listing: JobListing;
 }
 
@@ -44,6 +52,7 @@ export const MOCK_JOB_MATCHES: JobMatch[] = [
     missing_skills: ["GraphQL", "AWS"],
     is_saved: true,
     is_hidden: false,
+    application_status: "applied",
     job_listing: {
       id: "jl-001",
       job_title: "Senior Frontend Engineer",
@@ -74,6 +83,7 @@ export const MOCK_JOB_MATCHES: JobMatch[] = [
     missing_skills: ["Vue.js", "Docker"],
     is_saved: false,
     is_hidden: false,
+    application_status: "not_applied",
     job_listing: {
       id: "jl-002",
       job_title: "Full Stack Developer",
@@ -104,6 +114,7 @@ export const MOCK_JOB_MATCHES: JobMatch[] = [
     missing_skills: ["Kubernetes", "Redis", "Celery"],
     is_saved: false,
     is_hidden: false,
+    application_status: "interviewing",
     job_listing: {
       id: "jl-003",
       job_title: "Backend Engineer",
@@ -134,6 +145,7 @@ export const MOCK_JOB_MATCHES: JobMatch[] = [
     missing_skills: ["React Native", "Swift", "Kotlin"],
     is_saved: false,
     is_hidden: false,
+    application_status: "not_applied",
     job_listing: {
       id: "jl-004",
       job_title: "Software Engineer, Mobile & Web",
@@ -164,6 +176,7 @@ export const MOCK_JOB_MATCHES: JobMatch[] = [
     missing_skills: ["Java", "Microservices", "Kafka", "Spring Boot"],
     is_saved: false,
     is_hidden: false,
+    application_status: "not_applied",
     job_listing: {
       id: "jl-005",
       job_title: "Platform Engineer",
@@ -194,6 +207,7 @@ export const MOCK_JOB_MATCHES: JobMatch[] = [
     missing_skills: ["Svelte", "SolidJS", "WebAssembly", "Rust"],
     is_saved: false,
     is_hidden: false,
+    application_status: "rejected",
     job_listing: {
       id: "jl-006",
       job_title: "Frontend Infrastructure Engineer",
@@ -224,6 +238,7 @@ export const MOCK_JOB_MATCHES: JobMatch[] = [
     missing_skills: ["PyTorch", "MLflow"],
     is_saved: false,
     is_hidden: false,
+    application_status: "offer",
     job_listing: {
       id: "jl-007",
       job_title: "Machine Learning Engineer",
@@ -254,6 +269,7 @@ export const MOCK_JOB_MATCHES: JobMatch[] = [
     missing_skills: ["Go", "gRPC", "Terraform"],
     is_saved: true,
     is_hidden: false,
+    application_status: "not_applied",
     job_listing: {
       id: "jl-008",
       job_title: "Software Engineer — Developer Tools",

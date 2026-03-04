@@ -1,18 +1,11 @@
 import type { Metadata } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
+// Use the local geist npm package instead of next/font/google to avoid
+// network requests to fonts.googleapis.com (works fully offline/dev).
+import { GeistSans } from "geist/font/sans";
+import { GeistMono } from "geist/font/mono";
 import "./globals.css";
 import { AuthProvider } from "@/components/auth-provider";
 import { Toaster } from "sonner";
-
-const geistSans = Geist({
-  variable: "--font-geist-sans",
-  subsets: ["latin"],
-});
-
-const geistMono = Geist_Mono({
-  variable: "--font-geist-mono",
-  subsets: ["latin"],
-});
 
 export const metadata: Metadata = {
   title: "Optihire",
@@ -31,7 +24,7 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body
-        className={`${geistSans.variable} ${geistMono.variable} antialiased bg-[radial-gradient(#e5e5e5_1px,transparent_1px)] [background-size:40px_40px]`}
+        className={`${GeistSans.variable} ${GeistMono.variable} antialiased bg-[radial-gradient(#e5e5e5_1px,transparent_1px)] [background-size:40px_40px]`}
       >
         <AuthProvider>{children}</AuthProvider>
         <Toaster richColors position="bottom-right" />
