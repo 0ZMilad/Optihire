@@ -1,7 +1,8 @@
 "use client";
 
+import { useState } from "react";
 import { cn } from "@/lib/utils";
-import { ChevronLeft, ChevronRight, Clock, FileText } from "lucide-react";
+import { ChevronLeft, ChevronRight, Clock, FileText, Trash2 } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
 import type { AuditResult } from "@/middle-service/audit";
@@ -39,6 +40,7 @@ interface AuditHistorySidebarProps {
   isOpen: boolean;
   onToggle: () => void;
   onSelect: (result: AuditResult) => void;
+  onDelete: (id: string) => Promise<void>;
 }
 
 // ────────────────────────────────────────────────────────────
@@ -53,8 +55,20 @@ export function AuditHistorySidebar({
   isOpen,
   onToggle,
   onSelect,
+  onDelete,
 }: AuditHistorySidebarProps) {
   const resumeMap = new Map(resumes.map((r) => [r.id, r.version_name || r.full_name || "Unnamed Resume"]));
+  const [deletingId, setDeletingId] = useState<string | null>(null);
+
+  async function handleDelete(e: React.MouseEvent, id: string) {
+    e.stopPropagation();
+    setDeletingId(id);
+    try {
+      await onDelete(id);
+    } finally {
+      setDeletingId(null);
+    }
+  }
 
   return (
     <aside
@@ -145,51 +159,68 @@ export function AuditHistorySidebar({
                 history.map((item) => {
                   const { ring, badge } = getScoreTier(item.overall_score);
                   const isActive = item.id === activeResultId;
+                  const isDeleting = deletingId === item.id;
                   const resumeName = resumeMap.get(item.resume_id) ?? "Unknown Resume";
 
                   return (
-                    <button
+                    <div
                       key={item.id}
-                      onClick={() => onSelect(item)}
                       className={cn(
-                        "w-full text-left rounded-lg border p-3 transition-all hover:bg-muted/60 focus:outline-none focus-visible:ring-2 focus-visible:ring-ring",
+                        "group relative rounded-lg border transition-all",
                         isActive
                           ? "border-primary/60 bg-primary/5"
-                          : "border-border bg-transparent",
+                          : "border-border bg-transparent hover:bg-muted/60",
+                        isDeleting && "opacity-50 pointer-events-none",
                       )}
                     >
-                      {/* Resume name */}
-                      <p
-                        className="text-xs font-medium truncate text-foreground"
-                        title={resumeName}
+                      {/* Clickable content area */}
+                      <button
+                        onClick={() => onSelect(item)}
+                        className="w-full text-left p-3 pr-8 focus:outline-none focus-visible:ring-2 focus-visible:ring-ring rounded-lg"
                       >
-                        {resumeName}
-                      </p>
-
-                      {/* Date + time */}
-                      <p className="text-[11px] text-muted-foreground mt-0.5">
-                        {formatDate(item.analyzed_at)} · {formatTime(item.analyzed_at)}
-                      </p>
-
-                      {/* Score + sub-scores */}
-                      <div className="flex flex-wrap gap-1.5 mt-2">
-                        <span
-                          className={cn(
-                            "inline-flex items-center rounded-full border px-2 py-0.5 text-[11px] font-bold",
-                            badge,
-                            ring,
-                          )}
+                        {/* Resume name */}
+                        <p
+                          className="text-xs font-medium truncate text-foreground"
+                          title={resumeName}
                         >
-                          {item.overall_score}
-                        </span>
-                        <span className="inline-flex items-center rounded-full border border-border px-2 py-0.5 text-[10px] text-muted-foreground">
-                          KW {item.keyword_score}
-                        </span>
-                        <span className="inline-flex items-center rounded-full border border-border px-2 py-0.5 text-[10px] text-muted-foreground">
-                          FMT {item.formatting_score}
-                        </span>
-                      </div>
-                    </button>
+                          {resumeName}
+                        </p>
+
+                        {/* Date + time */}
+                        <p className="text-[11px] text-muted-foreground mt-0.5">
+                          {formatDate(item.analyzed_at)} · {formatTime(item.analyzed_at)}
+                        </p>
+
+                        {/* Score + sub-scores */}
+                        <div className="flex flex-wrap gap-1.5 mt-2">
+                          <span
+                            className={cn(
+                              "inline-flex items-center rounded-full border px-2 py-0.5 text-[11px] font-bold",
+                              badge,
+                              ring,
+                            )}
+                          >
+                            {item.overall_score}
+                          </span>
+                          <span className="inline-flex items-center rounded-full border border-border px-2 py-0.5 text-[10px] text-muted-foreground">
+                            KW {item.keyword_score}
+                          </span>
+                          <span className="inline-flex items-center rounded-full border border-border px-2 py-0.5 text-[10px] text-muted-foreground">
+                            FMT {item.formatting_score}
+                          </span>
+                        </div>
+                      </button>
+
+                      {/* Delete button — shown on hover */}
+                      <button
+                        onClick={(e) => handleDelete(e, item.id)}
+                        disabled={isDeleting}
+                        aria-label="Delete audit result"
+                        className="absolute top-2 right-2 p-1 rounded opacity-0 group-hover:opacity-100 transition-opacity text-muted-foreground hover:text-destructive hover:bg-destructive/10 focus:outline-none focus-visible:opacity-100"
+                      >
+                        <Trash2 className="h-3.5 w-3.5" />
+                      </button>
+                    </div>
                   );
                 })}
             </div>

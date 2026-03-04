@@ -14,7 +14,7 @@ from sqlmodel import Session
 from app.core.dependencies import get_current_user_id
 from app.db.session import get_db
 from app.schemas.analysis_schema import AuditRequest, AnalysisResultRead
-from app.services.analysis_service import run_audit, get_audit_result, get_latest_audit_result, list_audit_results
+from app.services.analysis_service import run_audit, get_audit_result, get_latest_audit_result, list_audit_results, delete_audit_result
 
 router = APIRouter()
 
@@ -92,6 +92,24 @@ async def get_audit_result_endpoint(
     db: Session = Depends(get_db),
 ) -> AnalysisResultRead:
     return get_audit_result(
+        result_id=result_id,
+        user_id=current_user_id,
+        db=db,
+    )
+
+
+@router.delete(
+    "/{result_id}",
+    status_code=status.HTTP_204_NO_CONTENT,
+    summary="Delete audit result",
+    description="Permanently delete an ATS audit result by its ID.",
+)
+async def delete_audit_result_endpoint(
+    result_id: UUID,
+    current_user_id: UUID = Depends(get_current_user_id),
+    db: Session = Depends(get_db),
+) -> None:
+    delete_audit_result(
         result_id=result_id,
         user_id=current_user_id,
         db=db,

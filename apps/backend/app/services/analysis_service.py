@@ -1449,6 +1449,31 @@ def get_audit_result(
     return AnalysisResultRead.model_validate(result)
 
 
+def delete_audit_result(
+    *,
+    result_id: UUID,
+    user_id: UUID,
+    db: Session,
+) -> None:
+    """Delete an audit result if it belongs to the authenticated user."""
+    result = db.get(AnalysisResult, result_id)
+    if result is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Analysis result not found.",
+        )
+
+    resume = db.get(Resume, result.resume_id)
+    if resume is None or resume.user_id != user_id:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Access denied.",
+        )
+
+    db.delete(result)
+    db.commit()
+
+
 def get_latest_audit_result(
     *,
     user_id: UUID,

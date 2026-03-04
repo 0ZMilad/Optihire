@@ -17,6 +17,7 @@ interface AuditHistoryState {
 interface AuditHistoryActions {
   fetchHistory: () => Promise<void>;
   prependResult: (result: AuditResult) => void;
+  removeResult: (id: string) => void;
 }
 
 type AuditHistoryStore = AuditHistoryState & AuditHistoryActions;
@@ -55,6 +56,12 @@ export const useAuditHistoryStore = create<AuditHistoryStore>()((set, get) => ({
       history: [result, ...state.history.filter((r) => r.id !== result.id)],
     }));
   },
+
+  removeResult: (id: string) => {
+    set((state) => ({
+      history: state.history.filter((r) => r.id !== id),
+    }));
+  },
 }));
 
 // ============================================================================
@@ -62,11 +69,11 @@ export const useAuditHistoryStore = create<AuditHistoryStore>()((set, get) => ({
 // ============================================================================
 
 export function useAuditHistory() {
-  const { history, isLoading, error, fetchHistory, prependResult } = useAuditHistoryStore();
+  const { history, isLoading, error, fetchHistory, prependResult, removeResult } = useAuditHistoryStore();
 
   useEffect(() => {
     void fetchHistory();
   }, [fetchHistory]);
 
-  return { history, isLoading, error, prependResult };
+  return { history, isLoading, error, prependResult, removeResult };
 }

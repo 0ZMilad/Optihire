@@ -137,3 +137,7 @@ export async function listAuditResults(skip = 0, limit = 20): Promise<AuditResul
   );
   return response.data;
 }
+
+export async function deleteAuditResult(id: string): Promise<void> {
+  await apiClient.delete(`/api/v1/analyses/${id}`);
+}

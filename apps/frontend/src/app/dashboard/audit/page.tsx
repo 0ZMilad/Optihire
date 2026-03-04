@@ -15,7 +15,7 @@ const AuditResultsView = dynamic(
 );
 
 import { Skeleton } from "@/components/ui/skeleton";
-import { runAudit, getAuditResult } from "@/middle-service/audit";
+import { runAudit, getAuditResult, deleteAuditResult } from "@/middle-service/audit";
 import type { AuditResult, AuditContext } from "@/middle-service/audit";
 import { useSavedResumes } from "@/stores/saved-resumes-store";
 import { useAuditHistory } from "@/stores/audit-history-store";
@@ -29,7 +29,7 @@ export default function AuditPage() {
   const [viewState, setViewState] = useState<ViewState>("input");
   // Use the cached store instead of a fresh API call — avoids duplicate fetch
   const { resumes, isLoading: resumesLoading } = useSavedResumes();
-  const { history, isLoading: historyLoading, prependResult } = useAuditHistory();
+  const { history, isLoading: historyLoading, prependResult, removeResult } = useAuditHistory();
   const [auditLoading, setAuditLoading] = useState(false);
   const [result, setResult] = useState<AuditResult | null>(null);
   const [context, setContext] = useState<AuditContext | null>(null);
@@ -135,6 +135,24 @@ export default function AuditPage() {
     [resumes],
   );
 
+  const handleDeleteHistory = useCallback(
+    async (id: string) => {
+      try {
+        await deleteAuditResult(id);
+        removeResult(id);
+        // If the deleted result is currently displayed, go back to input
+        if (result?.id === id) {
+          setResult(null);
+          setContext(null);
+          setViewState("input");
+        }
+      } catch {
+        toast.error("Failed to delete audit result.");
+      }
+    },
+    [result, removeResult],
+  );
+
   return (
     <DashboardLayout>
       <DashboardHeader>
@@ -195,6 +213,7 @@ export default function AuditPage() {
           isOpen={isSidebarOpen}
           onToggle={() => setIsSidebarOpen((o) => !o)}
           onSelect={handleSelectHistory}
+          onDelete={handleDeleteHistory}
         />
       </Main>
     </DashboardLayout>
