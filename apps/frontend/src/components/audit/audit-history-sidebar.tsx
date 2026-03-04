@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { cn } from "@/lib/utils";
 import { ChevronLeft, ChevronRight, Clock, FileText, Trash2 } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -57,7 +57,10 @@ export function AuditHistorySidebar({
   onSelect,
   onDelete,
 }: AuditHistorySidebarProps) {
-  const resumeMap = new Map(resumes.map((r) => [r.id, r.version_name || r.full_name || "Unnamed Resume"]));
+  const resumeMap = useMemo(
+    () => new Map(resumes.map((r) => [r.id, r.version_name || r.full_name || "Unnamed Resume"])),
+    [resumes],
+  );
   const [deletingId, setDeletingId] = useState<string | null>(null);
 
   async function handleDelete(e: React.MouseEvent, id: string) {

@@ -39,7 +39,7 @@ export function AuditInputView({
   }, [jobDescription]);
 
   const charCount = jobDescription.length;
-  const selectedResume = resumes.find((r) => r.id === selectedResumeId);
+  const selectedResume = useMemo(() => resumes.find((r) => r.id === selectedResumeId), [resumes, selectedResumeId]);
   const isResumeReady = !selectedResume || selectedResume.processing_status === "Completed";
   const isValid = wordCount >= MIN_WORDS && charCount <= MAX_CHARS && selectedResumeId !== "" && isResumeReady;
   const progressPercent = Math.min((wordCount / MIN_WORDS) * 100, 100);

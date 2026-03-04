@@ -14,7 +14,7 @@ import {
   ActivitySquare,
   Sparkles,
 } from "lucide-react";
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -68,7 +68,7 @@ export function AuditResultsView({
   const [jdExpanded, setJdExpanded] = useState(false);
   const [activeTab, setActiveTab] = useState<TabId>("overview");
 
-  const jdFirstLine = extractFirstLine(context.jobDescription);
+  const jdFirstLine = useMemo(() => extractFirstLine(context.jobDescription), [context.jobDescription]);
 
   // AI enhancement payload (opt-in career coach)
   const aiEnhancement = result.ai_enhancement ?? null;
@@ -81,90 +81,32 @@ export function AuditResultsView({
   const priorityActions = payload?.priority_actions ?? [];
   const repetitionFlags = payload?.repetition_flags ?? [];
 
-  const checklistItems = [
-    {
-      label: "Contact Information Present",
-      passed: result.has_contact_info,
-      fixHint: "Add your email, phone, and location to the header.",
-    },
-    {
-      label: "Professional Summary",
-      passed: result.has_summary,
-      fixHint: "Add a 2-3 sentence summary at the top of your resume.",
-    },
-    {
-      label: "Experience Section",
-      passed: result.has_experience,
-      fixHint: "Include a Work Experience section with your roles.",
-    },
-    {
-      label: "Education Section",
-      passed: result.has_education,
-      fixHint: "Add your education credentials.",
-    },
-    {
-      label: "Skills Section",
-      passed: result.has_skills,
-      fixHint: "List your key technical and soft skills.",
-    },
-    {
-      label: "Consistent Formatting",
-      passed: result.has_consistent_formatting,
-      fixHint: "Keep most lines under 100 characters — long lines can confuse ATS parsers.",
-    },
-    {
-      label: "Bullet Points Used",
-      passed: result.has_bullet_points,
-      fixHint: "Use bullet points to list achievements and responsibilities.",
-    },
-    {
-      label: "Action Verbs Detected",
-      passed: result.has_action_verbs,
-      fixHint: 'Start bullet points with action verbs like "Led", "Built", "Improved".',
-    },
-    {
-      label: "ATS-Scannable Format",
-      passed: result.is_scannable,
-      fixHint: "Use bullet points and keep lines under 100 characters for reliable ATS scanning.",
-    },
-  ];
+  const checklistItems = useMemo(() => [
+    { label: "Contact Information Present", passed: result.has_contact_info, fixHint: "Add your email, phone, and location to the header." },
+    { label: "Professional Summary", passed: result.has_summary, fixHint: "Add a 2-3 sentence summary at the top of your resume." },
+    { label: "Experience Section", passed: result.has_experience, fixHint: "Include a Work Experience section with your roles." },
+    { label: "Education Section", passed: result.has_education, fixHint: "Add your education credentials." },
+    { label: "Skills Section", passed: result.has_skills, fixHint: "List your key technical and soft skills." },
+    { label: "Consistent Formatting", passed: result.has_consistent_formatting, fixHint: "Keep most lines under 100 characters — long lines can confuse ATS parsers." },
+    { label: "Bullet Points Used", passed: result.has_bullet_points, fixHint: "Use bullet points to list achievements and responsibilities." },
+    { label: "Action Verbs Detected", passed: result.has_action_verbs, fixHint: 'Start bullet points with action verbs like "Led", "Built", "Improved".' },
+    { label: "ATS-Scannable Format", passed: result.is_scannable, fixHint: "Use bullet points and keep lines under 100 characters for reliable ATS scanning." },
+  ], [
+    result.has_contact_info, result.has_summary, result.has_experience, result.has_education,
+    result.has_skills, result.has_consistent_formatting, result.has_bullet_points,
+    result.has_action_verbs, result.is_scannable,
+  ]);
 
-  const checklistPassCount = checklistItems.filter((i) => i.passed).length;
-  const criticalCount = priorityActions.filter((a) => a.priority === "critical").length;
+  const checklistPassCount = useMemo(() => checklistItems.filter((i) => i.passed).length, [checklistItems]);
+  const criticalCount = useMemo(() => priorityActions.filter((a) => a.priority === "critical").length, [priorityActions]);
 
-  const tabs: { id: TabId; label: string; icon: React.ReactNode; show: boolean; alert?: string }[] = ([
-    {
-      id: "overview",
-      label: "Overview",
-      icon: <BarChart3 className="size-3.5" />,
-      show: true,
-    },
-    {
-      id: "actions",
-      label: "Action Plan",
-      icon: <ListChecks className="size-3.5" />,
-      show: priorityActions.length > 0,
-      alert: criticalCount > 0 ? String(criticalCount) : undefined,
-    },
-    {
-      id: "skills",
-      label: "Skills Gap",
-      icon: <Search className="size-3.5" />,
-      show: true,
-    },
-    {
-      id: "health",
-      label: "Resume Health",
-      icon: <ActivitySquare className="size-3.5" />,
-      show: !!impactAnalysis || !!resumeMetrics,
-    },
-    {
-      id: "coach",
-      label: "AI Coach",
-      icon: <Sparkles className="size-3.5" />,
-      show: !!aiEnhancement,
-    },
-  ] as { id: TabId; label: string; icon: React.ReactNode; show: boolean; alert?: string }[]).filter((t) => t.show);
+  const tabs = useMemo<{ id: TabId; label: string; icon: React.ReactNode; show: boolean; alert?: string }[]>(() => [
+    { id: "overview", label: "Overview", icon: <BarChart3 className="size-3.5" />, show: true },
+    { id: "actions", label: "Action Plan", icon: <ListChecks className="size-3.5" />, show: priorityActions.length > 0, alert: criticalCount > 0 ? String(criticalCount) : undefined },
+    { id: "skills", label: "Skills Gap", icon: <Search className="size-3.5" />, show: true },
+    { id: "health", label: "Resume Health", icon: <ActivitySquare className="size-3.5" />, show: !!impactAnalysis || !!resumeMetrics },
+    { id: "coach", label: "AI Coach", icon: <Sparkles className="size-3.5" />, show: !!aiEnhancement },
+  ].filter((t) => t.show), [priorityActions.length, criticalCount, impactAnalysis, resumeMetrics, aiEnhancement]);
 
   return (
     <div className="space-y-5">
@@ -309,29 +251,6 @@ export function AuditResultsView({
               }
             />
             <FormattingChecklist items={checklistItems} />
-
-            {/* Quick nav cards */}
-            <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 pt-2">
-              {tabs
-                .filter((t) => t.id !== "overview")
-                .map((tab) => (
-                  <button
-                    key={tab.id}
-                    onClick={() => setActiveTab(tab.id)}
-                    className="flex items-center gap-3 rounded-xl border bg-card p-4 text-left hover:bg-muted/40 transition-colors group"
-                  >
-                    <span className="flex items-center justify-center size-8 rounded-lg bg-muted text-muted-foreground group-hover:bg-background shrink-0">
-                      {tab.icon}
-                    </span>
-                    <div className="min-w-0">
-                      <p className="text-sm font-medium">{tab.label}</p>
-                      {tab.alert && (
-                        <p className="text-xs text-red-700/80">{tab.alert} issue{Number(tab.alert) !== 1 ? "s" : ""}</p>
-                      )}
-                    </div>
-                  </button>
-                ))}
-            </div>
           </div>
         )}
 
@@ -366,7 +285,7 @@ export function AuditResultsView({
               }
             />
             {categorisedKeywords ? (
-              <CategorisedKeywordsPanel categories={categorisedKeywords!} />
+              <CategorisedKeywordsPanel categories={categorisedKeywords} />
             ) : (
               <KeywordPanel
                 matched={result.matched_keywords}
