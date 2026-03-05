@@ -121,9 +121,8 @@ async def submit_frontend_log(
         # Also log in backend logger for critical issues
         if level in ["ERROR", "CRITICAL"]:
             log_error(
-                f"Frontend Error from {log_data.source}",
+                f"Frontend Error from {log_data.source}: {log_data.message}",
                 logger_name="backend",
-                message=log_data.message,
                 user_id=log_data.user_id,
                 context=log_data.context,
             )

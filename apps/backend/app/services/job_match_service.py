@@ -34,6 +34,7 @@ from sqlmodel import Session, select
 
 from app.data.curated_jobs import CURATED_JOBS
 from app.models.analysis_model import AnalysisResult
+from app.models.job_model import UserJobApplication
 from app.models.resume_model import (
     Resume,
     ResumeExperience,
@@ -235,11 +236,23 @@ def get_job_matches(
     # E: Compute candidate's total years of experience.
     actual_years = _compute_years_of_experience(experience_rows)
 
-    # F: Score each active curated job.
+    # F: Load stored application state for all curated jobs in one query
+    #    to avoid N+1 selects inside the scoring loop.
+    app_records = db.exec(
+        select(UserJobApplication).where(
+            UserJobApplication.user_id == user_id,
+            UserJobApplication.resume_id == resume_id,
+        )
+    ).all()
+    app_by_job: dict[str, UserJobApplication] = {r.job_listing_id: r for r in app_records}
+
+    # G: Score each active curated job.
     results: list[JobMatchResponse] = []
     for job in CURATED_JOBS:
         if not job.get("is_active", True):
             continue
+
+        app_record = app_by_job.get(job["id"])
 
         keywords: list[str] = job.get("extracted_keywords", [])
         matched, missing, skill_score = _match_keywords(keywords, resume_skills)
@@ -259,6 +272,7 @@ def get_job_matches(
                 experience_match_score=exp_score,
                 matched_skills=matched,
                 missing_skills=missing,
+                application_status=app_record.application_status if app_record else "not_applied",
                 job_listing=CuratedJobListing(**job),
             )
         )
