@@ -42,11 +42,12 @@ function scoreBgColor(score: number) {
 
 function formatSalary(min: number | null, max: number | null, currency: string): string {
   if (!min && !max) return "Not disclosed";
-  const fmt = (n: number) =>
-    n >= 1000 ? `${currency === "USD" ? "$" : ""}${Math.round(n / 1000)}k` : `${n}`;
-  if (min && max) return `${fmt(min)} – ${fmt(max)} ${currency}`;
-  if (min) return `From ${fmt(min)} ${currency}`;
-  return `Up to ${fmt(max!)} ${currency}`;
+  const symbols: Record<string, string> = { USD: "$", GBP: "\u00a3", EUR: "\u20ac" };
+  const sym = symbols[currency] ?? currency + "\u00a0";
+  const fmt = (n: number) => `${sym}${n >= 1000 ? `${Math.round(n / 1000)}k` : n}`;
+  if (min && max) return `${fmt(min)} \u2013 ${fmt(max)}`;
+  if (min) return `From ${fmt(min)}`;
+  return `Up to ${fmt(max!)}`;
 }
 
 // ─── Label maps ─────────────────────────────────────────────────────────────

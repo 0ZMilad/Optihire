@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useMemo } from "react";
+import { useDebounce } from "@/hooks/use-debounce";
 import {
   Sparkles,
   Search,
@@ -145,6 +146,8 @@ export function RecommendedJobsView() {
   const [error, setError] = useState<string | null>(null);
   const [fetchCounter, setFetchCounter] = useState(0);
   const [filters, setFilters] = useState<Filters>(DEFAULT_FILTERS);
+  // Debounce the search string so the filter memo doesn't run on every keystroke.
+  const debouncedSearch = useDebounce(filters.search, 200);
 
   // Fetch (or re-fetch on retry)
   useEffect(() => {
@@ -182,9 +185,10 @@ export function RecommendedJobsView() {
 
   const retry = () => setFetchCounter((n) => n + 1);
 
-  // Client-side filtering
+  // Client-side filtering — search uses the debounced value to avoid
+  // running the filter on every keystroke.
   const filteredJobs = useMemo(() => {
-    const q = filters.search.trim().toLowerCase();
+    const q = debouncedSearch.trim().toLowerCase();
     return jobs.filter((m) => {
       const { job_listing: j } = m;
       if (q && !j.job_title.toLowerCase().includes(q) && !j.company_name.toLowerCase().includes(q))
@@ -195,9 +199,9 @@ export function RecommendedJobsView() {
         return false;
       return true;
     });
-  }, [jobs, filters]);
+  }, [jobs, debouncedSearch, filters.remoteType, filters.jobType, filters.minScore]);
 
-  const activeFilters = hasActiveFilters(filters);
+  const activeFilters = hasActiveFilters({ ...filters, search: debouncedSearch });
 
   const setFilter = <K extends keyof Filters>(key: K, value: Filters[K]) =>
     setFilters((prev) => ({ ...prev, [key]: value }));

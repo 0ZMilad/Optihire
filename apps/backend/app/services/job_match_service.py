@@ -102,16 +102,26 @@ def _collect_resume_skills(
     #    with noise.
     if resume.raw_text:
         text_lower = resume.raw_text.lower()
-        # Check multi-word terms first (e.g. "machine learning").
+        # Tokenise once so single-word lookups are O(1) instead of O(len(text)).
+        text_tokens = frozenset(_TOKEN_RE.findall(text_lower))
         for term in _ALL_KNOWN_SKILLS:
-            if len(term) > 1 and term in text_lower:
-                canonical.add(_canonicalise(term))
+            if len(term) <= 1:
+                continue
+            if " " in term:
+                # Multi-word term: substring search is unavoidable.
+                if term in text_lower:
+                    canonical.add(_canonicalise(term))
+            else:
+                # Single-word: O(1) set membership.
+                if term in text_tokens:
+                    canonical.add(_canonicalise(term))
 
     return canonical
 
 
 # Experience-level → approximate target-years midpoint.
 _LEVEL_YEARS: dict[str | None, float] = {
+    "graduate": 0.5,
     "entry": 1.0,
     "junior": 2.0,
     "mid": 4.0,
@@ -175,6 +185,17 @@ def _match_keywords(
     score = round(len(matched) / total * 100) if total else 0
     return matched, missing, score
 
+
+# ---------------------------------------------------------------------------
+# Pre-canonicalised job data — built once at import time so every API request
+# avoids repeating synonym lookups across all curated job keywords.
+# ---------------------------------------------------------------------------
+
+_ACTIVE_JOBS: list[tuple[dict, list[str]]] = [
+    (job, [_canonicalise(kw) for kw in job.get("extracted_keywords", [])])
+    for job in CURATED_JOBS
+    if job.get("is_active", True)
+]
 
 # ---------------------------------------------------------------------------
 # Public API
@@ -246,16 +267,16 @@ def get_job_matches(
     ).all()
     app_by_job: dict[str, UserJobApplication] = {r.job_listing_id: r for r in app_records}
 
-    # G: Score each active curated job.
+    # G: Score each active curated job using pre-canonicalised keyword data
+    #    to avoid re-running synonym lookups on every request.
     results: list[JobMatchResponse] = []
-    for job in CURATED_JOBS:
-        if not job.get("is_active", True):
-            continue
-
+    for job, canon_keywords in _ACTIVE_JOBS:
         app_record = app_by_job.get(job["id"])
 
-        keywords: list[str] = job.get("extracted_keywords", [])
-        matched, missing, skill_score = _match_keywords(keywords, resume_skills)
+        display_keywords: list[str] = job.get("extracted_keywords", [])
+        matched = [d for d, c in zip(display_keywords, canon_keywords) if c in resume_skills]
+        missing = [d for d, c in zip(display_keywords, canon_keywords) if c not in resume_skills]
+        skill_score = round(len(matched) / len(display_keywords) * 100) if display_keywords else 0
 
         exp_score = _experience_match_score(actual_years, job.get("experience_level"))
 
