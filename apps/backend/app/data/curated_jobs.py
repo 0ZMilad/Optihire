@@ -1,0 +1,216 @@
+"""
+Static curated job listings used by the job-matches endpoint.
+
+These are hand-picked, representative job postings used for MVP.  The
+extracted_keywords list for each job is the sole driver of match scoring —
+any keyword present in the user's parsed ResumeSkill rows counts as matched.
+
+To update/extend the catalogue: add or edit dicts in CURATED_JOBS.  No DB
+migration is required; changes take effect on the next deploy.
+"""
+
+from typing import Any
+
+CURATED_JOBS: list[dict[str, Any]] = [
+    {
+        "id": "jl-001",
+        "job_title": "Senior Frontend Engineer",
+        "company_name": "Stripe",
+        "location": "San Francisco, CA",
+        "remote_type": "hybrid",
+        "salary_min": 160000,
+        "salary_max": 220000,
+        "salary_currency": "USD",
+        "description": (
+            "Build the next generation of payment interfaces used by millions "
+            "of businesses worldwide."
+        ),
+        "job_type": "full_time",
+        "experience_level": "senior",
+        "posted_date": "2026-02-28",
+        "external_url": "https://stripe.com/jobs",
+        "is_active": True,
+        "extracted_keywords": [
+            "TypeScript",
+            "React",
+            "Next.js",
+            "Node.js",
+            "GraphQL",
+            "AWS",
+            "PostgreSQL",
+        ],
+    },
+    {
+        "id": "jl-002",
+        "job_title": "Full Stack Developer",
+        "company_name": "Linear",
+        "location": None,
+        "remote_type": "remote",
+        "salary_min": 130000,
+        "salary_max": 180000,
+        "salary_currency": "USD",
+        "description": "Help us build the best project management tool for software teams.",
+        "job_type": "full_time",
+        "experience_level": "mid",
+        "posted_date": "2026-03-01",
+        "external_url": "https://linear.app/jobs",
+        "is_active": True,
+        "extracted_keywords": [
+            "React",
+            "TypeScript",
+            "Tailwind CSS",
+            "Node.js",
+            "Vue.js",
+            "Docker",
+        ],
+    },
+    {
+        "id": "jl-003",
+        "job_title": "Backend Engineer",
+        "company_name": "Vercel",
+        "location": "New York, NY",
+        "remote_type": "hybrid",
+        "salary_min": 140000,
+        "salary_max": 190000,
+        "salary_currency": "USD",
+        "description": "Scale our serverless infrastructure and developer platform.",
+        "job_type": "full_time",
+        "experience_level": "senior",
+        "posted_date": "2026-02-25",
+        "external_url": "https://vercel.com/careers",
+        "is_active": True,
+        "extracted_keywords": [
+            "Python",
+            "FastAPI",
+            "Kubernetes",
+            "Redis",
+            "Docker",
+            "PostgreSQL",
+        ],
+    },
+    {
+        "id": "jl-004",
+        "job_title": "Software Engineer, Mobile & Web",
+        "company_name": "Notion",
+        "location": "San Francisco, CA",
+        "remote_type": "onsite",
+        "salary_min": 120000,
+        "salary_max": 165000,
+        "salary_currency": "USD",
+        "description": "Shape how people and teams organize their work and knowledge.",
+        "job_type": "full_time",
+        "experience_level": "mid",
+        "posted_date": "2026-02-20",
+        "external_url": "https://notion.so/careers",
+        "is_active": True,
+        "extracted_keywords": [
+            "React",
+            "React Native",
+            "Swift",
+            "Kotlin",
+            "JavaScript",
+        ],
+    },
+    {
+        "id": "jl-005",
+        "job_title": "Platform Engineer",
+        "company_name": "Shopify",
+        "location": None,
+        "remote_type": "remote",
+        "salary_min": 110000,
+        "salary_max": 155000,
+        "salary_currency": "USD",
+        "description": (
+            "Build and maintain the platform powering commerce for millions of merchants."
+        ),
+        "job_type": "full_time",
+        "experience_level": "mid",
+        "posted_date": "2026-03-02",
+        "external_url": "https://shopify.com/careers",
+        "is_active": True,
+        "extracted_keywords": [
+            "Java",
+            "TypeScript",
+            "Kafka",
+            "Microservices",
+            "Spring Boot",
+        ],
+    },
+    {
+        "id": "jl-006",
+        "job_title": "Frontend Infrastructure Engineer",
+        "company_name": "Figma",
+        "location": "San Francisco, CA",
+        "remote_type": "hybrid",
+        "salary_min": 150000,
+        "salary_max": 210000,
+        "salary_currency": "USD",
+        "description": (
+            "Work on the runtime, compiler, and rendering engine that powers "
+            "Figma's design canvas."
+        ),
+        "job_type": "full_time",
+        "experience_level": "lead",
+        "posted_date": "2026-02-18",
+        "external_url": "https://figma.com/careers",
+        "is_active": True,
+        "extracted_keywords": [
+            "Svelte",
+            "SolidJS",
+            "WebAssembly",
+            "Rust",
+            "React",
+            "TypeScript",
+        ],
+    },
+    {
+        "id": "jl-007",
+        "job_title": "Machine Learning Engineer",
+        "company_name": "Anthropic",
+        "location": None,
+        "remote_type": "remote",
+        "salary_min": 180000,
+        "salary_max": 280000,
+        "salary_currency": "USD",
+        "description": (
+            "Advance AI safety research and build systems that are reliable, "
+            "interpretable, and steerable."
+        ),
+        "job_type": "full_time",
+        "experience_level": "senior",
+        "posted_date": "2026-03-03",
+        "external_url": "https://anthropic.com/careers",
+        "is_active": True,
+        "extracted_keywords": [
+            "Python",
+            "PyTorch",
+            "MLflow",
+            "Machine Learning",
+            "SQL",
+        ],
+    },
+    {
+        "id": "jl-008",
+        "job_title": "Software Engineer — Developer Tools",
+        "company_name": "GitHub",
+        "location": None,
+        "remote_type": "remote",
+        "salary_min": 135000,
+        "salary_max": 185000,
+        "salary_currency": "USD",
+        "description": "Build tools that help developers ship better software, faster.",
+        "job_type": "full_time",
+        "experience_level": "mid",
+        "posted_date": "2026-02-22",
+        "external_url": "https://github.com/about/careers",
+        "is_active": True,
+        "extracted_keywords": [
+            "Go",
+            "TypeScript",
+            "gRPC",
+            "Docker",
+            "Terraform",
+            "PostgreSQL",
+        ],
+    },
+]

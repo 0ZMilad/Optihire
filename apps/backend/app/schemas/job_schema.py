@@ -143,3 +143,49 @@ class UserJobFeedbackRead(BaseModel):
     created_at: datetime
 
     model_config = {"from_attributes": True}
+
+
+# ===== CURATED JOB RECOMMENDATIONS (client-side ready) =====
+
+
+class CuratedJobListing(BaseModel):
+    """A static curated job listing — no DB row, sourced from in-memory data."""
+
+    id: str
+    job_title: str
+    company_name: str
+    location: str | None
+    remote_type: str | None
+    salary_min: int | None
+    salary_max: int | None
+    salary_currency: str
+    description: str | None
+    job_type: str | None
+    experience_level: str | None
+    posted_date: date | None
+    external_url: str | None
+    is_active: bool
+    extracted_keywords: list[str]
+
+
+class JobMatchResponse(BaseModel):
+    """
+    Single item returned by GET /api/v1/resumes/{resume_id}/job-matches.
+    Match scores and skill lists are computed server-side; UI state fields
+    (is_saved, is_hidden, application_status) default to their initial values
+    and are managed client-side.
+    """
+
+    id: str
+    resume_id: UUID
+    job_listing_id: str
+    match_score: int = Field(..., ge=0, le=100)
+    matched_skills: list[str]
+    missing_skills: list[str]
+    is_saved: bool = False
+    is_hidden: bool = False
+    application_status: str = "not_applied"
+    skill_match_score: int | None = None
+    experience_match_score: int | None = None
+    location_match_score: int | None = None
+    job_listing: CuratedJobListing

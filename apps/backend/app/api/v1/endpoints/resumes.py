@@ -42,6 +42,8 @@ from app.services.resume_service import (
     duplicate_resume,
 )
 from app.services.pdf_service import generate_resume_pdf
+from app.services.job_match_service import get_job_matches
+from app.schemas.job_schema import JobMatchResponse
 from sqlmodel import select
 
 router = APIRouter()
@@ -453,6 +455,34 @@ async def get_active_resume_endpoint(
         )
     
     return resume
+
+
+# IMPORTANT: /{resume_id}/job-matches must be defined BEFORE /{resume_id} so
+# FastAPI routes the literal suffix correctly before the catch-all.
+@router.get(
+    "/{resume_id}/job-matches",
+    response_model=list[JobMatchResponse],
+    status_code=status.HTTP_200_OK,
+    summary="Get curated job matches for a resume"
+)
+async def get_job_matches_endpoint(
+    resume_id: UUID,
+    current_user_id: UUID = Depends(get_current_user_id),
+    db: Session = Depends(get_db),
+) -> list[JobMatchResponse]:
+    """
+    Return all active curated jobs cross-referenced against the resume's
+    parsed skills, each enriched with match_score, matched_skills, and
+    missing_skills.  The frontend handles text search, filtering, and
+    pagination client-side.
+
+    Raises 404 if the resume does not exist or has not been analyzed yet.
+    """
+    return get_job_matches(
+        resume_id=resume_id,
+        user_id=current_user_id,
+        db=db,
+    )
 
 
 @router.get(
