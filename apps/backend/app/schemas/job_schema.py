@@ -5,7 +5,7 @@ Schemas for job listings, matching, and feedback.
 from datetime import date, datetime
 from uuid import UUID
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, field_validator
 
 from app.schemas.common_schema import ExperienceLevel, FeedbackType, JobType, RemoteType
 
@@ -171,9 +171,8 @@ class CuratedJobListing(BaseModel):
 class JobMatchResponse(BaseModel):
     """
     Single item returned by GET /api/v1/resumes/{resume_id}/job-matches.
-    Match scores and skill lists are computed server-side; UI state fields
-    (is_saved, is_hidden, application_status) default to their initial values
-    and are managed client-side.
+    Match scores and skill lists are computed server-side; application_status
+    is hydrated from the user_job_applications table.
     """
 
     id: str
@@ -182,10 +181,34 @@ class JobMatchResponse(BaseModel):
     match_score: int = Field(..., ge=0, le=100)
     matched_skills: list[str]
     missing_skills: list[str]
-    is_saved: bool = False
-    is_hidden: bool = False
     application_status: str = "not_applied"
     skill_match_score: int | None = None
     experience_match_score: int | None = None
     location_match_score: int | None = None
     job_listing: CuratedJobListing
+
+
+# ===== JOB APPLICATION STATE (PATCH requests) =====
+
+_ALLOWED_STATUSES = frozenset(
+    {"not_applied", "applied", "interviewing", "offer", "rejected"}
+)
+
+
+class JobStatusUpdate(BaseModel):
+    """Request body for PATCH .../status."""
+
+    status: str = Field(
+        ...,
+        description="One of: not_applied, applied, interviewing, offer, rejected",
+    )
+
+    @field_validator("status")
+    @classmethod
+    def validate_status(cls, v: str) -> str:
+        if v not in _ALLOWED_STATUSES:
+            raise ValueError(f"status must be one of {sorted(_ALLOWED_STATUSES)}")
+        return v
+
+
+

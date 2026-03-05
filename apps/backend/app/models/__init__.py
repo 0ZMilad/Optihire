@@ -29,6 +29,9 @@ from app.models.resume_model import (
 )
 from app.models.user_model import User, UserOnboardingProgress
 
+# Job application tracking models
+from app.models.job_model import UserJobApplication
+
 __all__ = [
     # User
     "User",
