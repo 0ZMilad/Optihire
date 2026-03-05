@@ -5,7 +5,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from sqlalchemy.exc import IntegrityError
 
-from app.api.v1.endpoints import system_api, user_api, resumes, analysis
+from app.api.v1.endpoints import system_api, user_api, resumes, analysis, jobs
 from app.core.config import settings
 from app.core.logging_config import backend_logger, log_info, log_error
 from app.middleware.auth import JWTMiddleware
@@ -96,6 +96,9 @@ app.include_router(
 )
 app.include_router(
     analysis.router, prefix=f"{settings.API_V1_STR}/analyses", tags=["analyses"]
+)
+app.include_router(
+    jobs.router, prefix=f"{settings.API_V1_STR}/jobs", tags=["jobs"]
 )
 
 

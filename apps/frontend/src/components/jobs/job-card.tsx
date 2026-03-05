@@ -3,7 +3,7 @@
 import { memo, useCallback, useMemo, useState } from "react";
 import {
   MapPin,
-  DollarSign,
+  PoundSterling,
   ExternalLink,
   Building2,
   Clock,
@@ -70,6 +70,7 @@ const EXP_LEVEL_LABELS: Record<string, string> = {
   mid: "Mid-level",
   senior: "Senior",
   lead: "Lead",
+  graduate: "Graduate",
 };
 
 const SKILLS_VISIBLE = 5;
@@ -231,7 +232,7 @@ function JobCardInner({ match }: JobCardProps) {
 
       {/* ── Salary ──────────────────────────────────────────────────────── */}
       <div className="flex items-center gap-1.5 text-sm text-muted-foreground">
-        <DollarSign className="size-4 shrink-0" />
+        <PoundSterling className="size-4 shrink-0" />
         <span>{formatSalary(job.salary_min, job.salary_max, job.salary_currency)}</span>
       </div>
 
