@@ -23,7 +23,7 @@ import {
 import { Separator } from "@/components/ui/separator";
 import type { AxiosError } from "axios";
 import { JobCard } from "./job-card";
-import type { JobMatch } from "@/lib/mock-jobs";
+import type { JobMatch } from "@/lib/job-types";
 import { getActiveResume } from "@/middle-service/resumes";
 import { getJobMatches } from "@/middle-service/jobs";
 

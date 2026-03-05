@@ -5,7 +5,7 @@
  * PATCH /api/v1/jobs/matches/{matchId}/status { status: ApplicationStatus }
  */
 
-import type { ApplicationStatus, JobMatch } from "@/lib/mock-jobs";
+import type { ApplicationStatus, JobMatch } from "@/lib/job-types";
 import { apiClient } from "./client";
 
 // ─── Fetch curated job matches for a resume ──────────────────────────────────

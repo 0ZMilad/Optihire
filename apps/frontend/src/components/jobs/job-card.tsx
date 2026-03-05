@@ -24,7 +24,7 @@ import {
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 import { updateApplicationStatus } from "@/middle-service/jobs";
-import type { JobMatch, ApplicationStatus } from "@/lib/mock-jobs";
+import type { JobMatch, ApplicationStatus } from "@/lib/job-types";
 
 // ─── Score helpers ───────────────────────────────────────────────────────────
 
