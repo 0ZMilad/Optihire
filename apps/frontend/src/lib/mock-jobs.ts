@@ -33,8 +33,6 @@ export interface JobMatch {
   location_match_score: number | null;
   matched_skills: string[];
   missing_skills: string[];
-  is_saved: boolean;
-  is_hidden: boolean;
   application_status: ApplicationStatus;
   job_listing: JobListing;
 }
@@ -50,8 +48,6 @@ export const MOCK_JOB_MATCHES: JobMatch[] = [
     location_match_score: 88,
     matched_skills: ["TypeScript", "React", "Next.js", "Node.js", "PostgreSQL", "REST APIs", "Git"],
     missing_skills: ["GraphQL", "AWS"],
-    is_saved: true,
-    is_hidden: false,
     application_status: "applied",
     job_listing: {
       id: "jl-001",
@@ -81,8 +77,6 @@ export const MOCK_JOB_MATCHES: JobMatch[] = [
     location_match_score: 100,
     matched_skills: ["React", "TypeScript", "Tailwind CSS", "REST APIs", "Git", "Figma"],
     missing_skills: ["Vue.js", "Docker"],
-    is_saved: false,
-    is_hidden: false,
     application_status: "not_applied",
     job_listing: {
       id: "jl-002",
@@ -112,8 +106,6 @@ export const MOCK_JOB_MATCHES: JobMatch[] = [
     location_match_score: null,
     matched_skills: ["Python", "FastAPI", "PostgreSQL", "Docker", "REST APIs"],
     missing_skills: ["Kubernetes", "Redis", "Celery"],
-    is_saved: false,
-    is_hidden: false,
     application_status: "interviewing",
     job_listing: {
       id: "jl-003",
@@ -143,8 +135,6 @@ export const MOCK_JOB_MATCHES: JobMatch[] = [
     location_match_score: 75,
     matched_skills: ["React", "JavaScript", "CSS", "HTML", "Git"],
     missing_skills: ["React Native", "Swift", "Kotlin"],
-    is_saved: false,
-    is_hidden: false,
     application_status: "not_applied",
     job_listing: {
       id: "jl-004",
@@ -174,8 +164,6 @@ export const MOCK_JOB_MATCHES: JobMatch[] = [
     location_match_score: null,
     matched_skills: ["TypeScript", "Node.js", "Git", "Agile"],
     missing_skills: ["Java", "Microservices", "Kafka", "Spring Boot"],
-    is_saved: false,
-    is_hidden: false,
     application_status: "not_applied",
     job_listing: {
       id: "jl-005",
@@ -205,8 +193,6 @@ export const MOCK_JOB_MATCHES: JobMatch[] = [
     location_match_score: 60,
     matched_skills: ["React", "TypeScript", "CSS"],
     missing_skills: ["Svelte", "SolidJS", "WebAssembly", "Rust"],
-    is_saved: false,
-    is_hidden: false,
     application_status: "rejected",
     job_listing: {
       id: "jl-006",
@@ -236,8 +222,6 @@ export const MOCK_JOB_MATCHES: JobMatch[] = [
     location_match_score: 100,
     matched_skills: ["Python", "Machine Learning", "Data Analysis", "SQL", "REST APIs", "Git"],
     missing_skills: ["PyTorch", "MLflow"],
-    is_saved: false,
-    is_hidden: false,
     application_status: "offer",
     job_listing: {
       id: "jl-007",
@@ -267,8 +251,6 @@ export const MOCK_JOB_MATCHES: JobMatch[] = [
     location_match_score: null,
     matched_skills: ["TypeScript", "React", "Node.js", "PostgreSQL", "Docker"],
     missing_skills: ["Go", "gRPC", "Terraform"],
-    is_saved: true,
-    is_hidden: false,
     application_status: "not_applied",
     job_listing: {
       id: "jl-008",

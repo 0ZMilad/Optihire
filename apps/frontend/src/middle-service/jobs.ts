@@ -1,13 +1,8 @@
 /**
- * Jobs service — frontend API layer for job matches and saved jobs.
+ * Jobs service — frontend API layer for job matches.
  *
- * getJobMatches is fully wired to the real backend endpoint.
- *
- * saveJob / updateApplicationStatus still use a simulated delay so the UI
- * feedback loop works end-to-end. Replace each body with a real call once the
- * backend endpoints are implemented:
- *   PATCH /api/v1/jobs/matches/{matchId}/save   { is_saved: boolean }
- *   PATCH /api/v1/jobs/matches/{matchId}/status { status: ApplicationStatus }
+ * GET  /api/v1/resumes/{resumeId}/job-matches
+ * PATCH /api/v1/jobs/matches/{matchId}/status { status: ApplicationStatus }
  */
 
 import type { ApplicationStatus, JobMatch } from "@/lib/mock-jobs";
@@ -22,21 +17,13 @@ export async function getJobMatches(resumeId: string): Promise<JobMatch[]> {
   return response.data;
 }
 
-// ─── Save / unsave a job ─────────────────────────────────────────────────────
-
-export async function saveJob(matchId: string, saved: boolean): Promise<void> {
-  // TODO: replace with real call once the save endpoint is implemented:
-  // await apiClient.patch(`/api/v1/jobs/matches/${matchId}/save`, { is_saved: saved });
-  return new Promise((resolve) => setTimeout(resolve, 400));
-}
-
 // ─── Update application status ───────────────────────────────────────────────
 
 export async function updateApplicationStatus(
   matchId: string,
   status: ApplicationStatus
 ): Promise<void> {
-  // TODO: replace with real call once the status endpoint is implemented:
-  // await apiClient.patch(`/api/v1/jobs/matches/${matchId}/status`, { status });
-  return new Promise((resolve) => setTimeout(resolve, 400));
+  await apiClient.patch(`/api/v1/jobs/matches/${encodeURIComponent(matchId)}/status`, {
+    status,
+  });
 }

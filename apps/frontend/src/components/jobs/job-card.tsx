@@ -317,13 +317,29 @@ function JobCardInner({ match }: JobCardProps) {
           </SelectContent>
         </Select>
 
+        {/* Apply Now (first visit) → View Job (already actioned) */}
         {job.external_url && (
-          <Button variant="outline" size="sm" asChild className="shrink-0">
-            <a href={job.external_url} target="_blank" rel="noopener noreferrer">
+          status === "not_applied" ? (
+            <Button
+              variant="default"
+              size="sm"
+              className="shrink-0"
+              onClick={() => {
+                window.open(job.external_url!, "_blank", "noopener,noreferrer");
+                handleStatusChange("applied");
+              }}
+            >
               <ExternalLink className="size-3.5 mr-1.5" />
-              View Posting
-            </a>
-          </Button>
+              Apply Now
+            </Button>
+          ) : (
+            <Button variant="outline" size="sm" asChild className="shrink-0">
+              <a href={job.external_url} target="_blank" rel="noopener noreferrer">
+                <ExternalLink className="size-3.5 mr-1.5" />
+                View Job
+              </a>
+            </Button>
+          )
         )}
       </div>
     </div>
