@@ -21,18 +21,17 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Separator } from "@/components/ui/separator";
+import type { AxiosError } from "axios";
 import { JobCard } from "./job-card";
-import { MOCK_JOB_MATCHES, type JobMatch } from "@/lib/mock-jobs";
+import type { JobMatch } from "@/lib/mock-jobs";
+import { getActiveResume } from "@/middle-service/resumes";
+import { getJobMatches } from "@/middle-service/jobs";
 
-// ─── Simulated fetch ────────────────────────────────────────────────────────
+// ─── Real API fetch ──────────────────────────────────────────────────────────
 
 async function fetchRecommendedJobs(): Promise<JobMatch[]> {
-  // Simulates a 1.2 s network request — swap this body for a real API call later.
-  return new Promise((resolve) => {
-    setTimeout(() => {
-      resolve(MOCK_JOB_MATCHES);
-    }, 1200);
-  });
+  const resume = await getActiveResume();
+  return getJobMatches(resume.id);
 }
 
 // ─── Filter state type ──────────────────────────────────────────────────────
@@ -160,9 +159,18 @@ export function RecommendedJobsView() {
           setLoading(false);
         }
       })
-      .catch((err: Error) => {
+      .catch((err: AxiosError<{ detail?: string }>) => {
         if (!cancelled) {
-          setError(err.message ?? "An unexpected error occurred. Please try again.");
+          const detail = err.response?.data?.detail;
+          let message: string;
+          if (err.response?.status === 404 && detail?.includes("not been analyzed")) {
+            message = "Run an analysis on your resume first to see job matches.";
+          } else if (err.response?.status === 404) {
+            message = "No resume found. Upload and parse a resume first.";
+          } else {
+            message = detail ?? err.message ?? "An unexpected error occurred. Please try again.";
+          }
+          setError(message);
           setLoading(false);
         }
       });

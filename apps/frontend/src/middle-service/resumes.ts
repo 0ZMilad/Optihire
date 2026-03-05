@@ -116,6 +116,11 @@ export const updateResume = async (resumeId: string, data: Partial<ResumeRead>) 
   return response.data;
 }
 
+export const getActiveResume = async () => {
+  const response = await apiClient.get<ResumeRead>(`/api/v1/resumes/active`);
+  return response.data;
+}
+
 export const getUserResumes = async () => {
   const response = await apiClient.get<ResumeListItem[]>(`/api/v1/resumes`);
   return response.data;
