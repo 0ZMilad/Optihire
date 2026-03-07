@@ -30,7 +30,13 @@ export function Footer() {
                 href="/privacy"
                 className="text-muted-foreground transition-colors hover:text-foreground"
               >
-                Privacy
+                Privacy Policy
+              </Link>
+              <Link
+                href="/terms"
+                className="text-muted-foreground transition-colors hover:text-foreground"
+              >
+                Terms of Service
               </Link>
             </div>
             <div className="flex items-center space-x-4">
