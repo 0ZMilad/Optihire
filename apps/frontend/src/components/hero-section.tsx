@@ -30,7 +30,7 @@ const PartnerLogos = () => (
 export function HeroSection() {
   return (
     <section className="relative w-full pt-6 sm:pt-12 pb-12 sm:pb-20 lg:pt-20 lg:pb-28 overflow-hidden">
-      <div className="fixed inset-0 -z-50 h-full w-full bg-white bg-[linear-gradient(to_right,#80808012_1px,transparent_1px),linear-gradient(to_bottom,#80808012_1px,transparent_1px)] bg-[size:24px_24px] [mask-image:linear-gradient(to_bottom,black_40%,transparent_100%)] pointer-events-none"></div>
+      <div className="fixed inset-0 -z-50 h-full w-full bg-background bg-[linear-gradient(to_right,#80808012_1px,transparent_1px),linear-gradient(to_bottom,#80808012_1px,transparent_1px)] bg-[size:24px_24px] [mask-image:linear-gradient(to_bottom,black_40%,transparent_100%)] pointer-events-none"></div>
 
       <div className="container mx-auto px-3 sm:px-4 md:px-6">
         <div className="grid items-center gap-8 md:gap-12 lg:gap-8 xl:gap-12 lg:grid-cols-[1fr_1fr]">
@@ -60,7 +60,7 @@ export function HeroSection() {
                 <Button
                   size="lg"
                   variant="outline"
-                  className="text-base px-8 h-12 rounded-full border border-gray-200 text-black hover:bg-gray-50"
+                  className="text-base px-8 h-12 rounded-full border border-border text-foreground hover:bg-muted"
                 >
                   View dashboard
                 </Button>

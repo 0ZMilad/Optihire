@@ -85,7 +85,7 @@ const PersonalDetails = memo(({
           value={data.first_name}
           onChange={onChange}
           placeholder="John"
-          className={errors.first_name ? "border-destructive focus-visible:ring-destructive" : "border-slate-300"}
+          className={errors.first_name ? "border-destructive focus-visible:ring-destructive" : "border-input"}
         />
         {errors.first_name && (
           <p className="text-xs text-destructive flex items-center gap-1.5 animate-in slide-in-from-top-1">
@@ -104,7 +104,7 @@ const PersonalDetails = memo(({
           value={data.last_name}
           onChange={onChange}
           placeholder="Doe"
-          className={errors.last_name ? "border-destructive focus-visible:ring-destructive" : "border-slate-300"}
+          className={errors.last_name ? "border-destructive focus-visible:ring-destructive" : "border-input"}
         />
         {errors.last_name && (
           <p className="text-xs text-destructive flex items-center gap-1.5 animate-in slide-in-from-top-1">
@@ -124,7 +124,7 @@ const PersonalDetails = memo(({
           value={data.email}
           onChange={onChange}
           placeholder="john@example.com"
-          className={errors.email ? "border-destructive focus-visible:ring-destructive" : "border-slate-300"}
+          className={errors.email ? "border-destructive focus-visible:ring-destructive" : "border-input"}
         />
         {errors.email && (
           <p className="text-xs text-destructive flex items-center gap-1.5 animate-in slide-in-from-top-1">
@@ -141,7 +141,7 @@ const PersonalDetails = memo(({
           value={formatPhoneNumber(data.phone)}
           onChange={(e) => onPhoneChange(unformatPhoneNumber(e.target.value))}
           placeholder="(555) 000-0000"
-          className="border-slate-300"
+          className="border-input"
         />
       </div>
 
@@ -153,7 +153,7 @@ const PersonalDetails = memo(({
           value={data.location}
           onChange={onChange}
           placeholder="New York, NY"
-          className="border-slate-300"
+          className="border-input"
         />
       </div>
     </div>
@@ -196,7 +196,7 @@ const ProfessionalLinks = memo(({
       <div className="space-y-2">
         <Label htmlFor="linkedin_url" className="text-sm font-medium">LinkedIn</Label>
         <div className="flex">
-          <span className="inline-flex items-center px-3 text-xs text-muted-foreground bg-muted border border-r-0 border-slate-300 rounded-l-md whitespace-nowrap">
+          <span className="inline-flex items-center px-3 text-xs text-muted-foreground bg-muted border border-r-0 border-input rounded-l-md whitespace-nowrap">
             linkedin.com/in/
           </span>
           <Input
@@ -205,7 +205,7 @@ const ProfessionalLinks = memo(({
             value={extractLinkedInHandle(data.linkedin_url)}
             onChange={(e) => onLinkedInChange(e.target.value ? buildLinkedInUrl(e.target.value) : '')}
             placeholder="johndoe"
-            className="border-slate-300 rounded-l-none"
+            className="border-input rounded-l-none"
           />
         </div>
       </div>
@@ -217,7 +217,7 @@ const ProfessionalLinks = memo(({
           value={data.github_url}
           onChange={onChange}
           placeholder="https://github.com/..."
-          className="border-slate-300"
+          className="border-input"
         />
       </div>
       <div className="space-y-2">
@@ -228,7 +228,7 @@ const ProfessionalLinks = memo(({
           value={data.portfolio_url}
           onChange={onChange}
           placeholder="https://myportfolio.com"
-          className="border-slate-300"
+          className="border-input"
         />
       </div>
     </div>
@@ -256,7 +256,7 @@ const SummarySection = memo(({
       onChange={onChange}
       placeholder="Brief overview of your professional background..."
       rows={3}
-      className="resize-y min-h-[80px] border-slate-300"
+      className="resize-y min-h-[80px] border-input"
     />
   </div>
 ));
@@ -336,7 +336,7 @@ const SkillsSection = memo(({
             onChange={(e) => setNewSkill(e.target.value)}
             onKeyDown={handleKeyDown}
             placeholder="Add a skill (e.g., React, Python)..."
-            className="text-xs border-slate-300"
+            className="text-xs border-input"
           />
           <Button
             type="button"
@@ -430,7 +430,7 @@ const ExperienceSection = memo(({
                       value={exp.job_title}
                       onChange={(e) => updateExperience(index, { job_title: e.target.value })}
                       placeholder="Software Engineer"
-                      className="text-xs border-slate-300"
+                      className="text-xs border-input"
                     />
                   </div>
                   <div>
@@ -439,7 +439,7 @@ const ExperienceSection = memo(({
                       value={exp.company_name}
                       onChange={(e) => updateExperience(index, { company_name: e.target.value })}
                       placeholder="Tech Corp"
-                      className="text-xs border-slate-300"
+                      className="text-xs border-input"
                     />
                   </div>
                 </div>
@@ -450,7 +450,7 @@ const ExperienceSection = memo(({
                       value={exp.start_date}
                       onChange={(e) => updateExperience(index, { start_date: e.target.value })}
                       placeholder="Jan 2020"
-                      className="text-xs border-slate-300"
+                      className="text-xs border-input"
                     />
                   </div>
                   <div>
@@ -460,7 +460,7 @@ const ExperienceSection = memo(({
                       onChange={(e) => updateExperience(index, { end_date: e.target.value, is_current: false })}
                       placeholder="Dec 2023"
                       disabled={exp.is_current}
-                      className="text-xs border-slate-300"
+                      className="text-xs border-input"
                     />
                   </div>
                   <div className="flex items-end">
@@ -482,7 +482,7 @@ const ExperienceSection = memo(({
                     onChange={(e) => updateExperience(index, { description: e.target.value })}
                     placeholder="Describe your responsibilities and achievements..."
                     rows={3}
-                    className="text-xs resize-y border-slate-300"
+                    className="text-xs resize-y border-input"
                   />
                 </div>
                 <div className="flex gap-2">
@@ -647,7 +647,7 @@ const EducationSection = memo(({
                       value={edu.institution_name}
                       onChange={(e) => updateEducation(index, { institution_name: e.target.value })}
                       placeholder="University of Example"
-                      className="text-xs border-slate-300"
+                      className="text-xs border-input"
                     />
                   </div>
                 </div>
@@ -658,7 +658,7 @@ const EducationSection = memo(({
                       value={edu.degree_type || ''}
                       onChange={(e) => updateEducation(index, { degree_type: e.target.value })}
                       placeholder="Bachelor's, Master's, PhD"
-                      className="text-xs border-slate-300"
+                      className="text-xs border-input"
                     />
                   </div>
                   <div>
@@ -667,7 +667,7 @@ const EducationSection = memo(({
                       value={edu.field_of_study || ''}
                       onChange={(e) => updateEducation(index, { field_of_study: e.target.value })}
                       placeholder="Computer Science"
-                      className="text-xs border-slate-300"
+                      className="text-xs border-input"
                     />
                   </div>
                 </div>
@@ -678,7 +678,7 @@ const EducationSection = memo(({
                       value={edu.start_date || ''}
                       onChange={(e) => updateEducation(index, { start_date: e.target.value })}
                       placeholder="2018"
-                      className="text-xs border-slate-300"
+                      className="text-xs border-input"
                     />
                   </div>
                   <div>
@@ -688,7 +688,7 @@ const EducationSection = memo(({
                       onChange={(e) => updateEducation(index, { end_date: e.target.value, is_current: false })}
                       placeholder="2022"
                       disabled={edu.is_current}
-                      className="text-xs border-slate-300"
+                      className="text-xs border-input"
                     />
                   </div>
                   <div className="flex items-end">

@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Spinner } from "@/components/ui/spinner";
 import { logger } from "@/lib/logger";
 
 import { FormEvent, useState } from "react";
@@ -107,10 +108,10 @@ export default function Login() {
               disabled={isLoading}
             >
               {isLoading ? (
-                <span className="flex items-center justify-center gap-1">
-                  <span className="inline-block h-3 w-3 animate-spin rounded-full border border-background border-t-foreground" />
-                  <span className="text-sm">Signing in...</span>
-                </span>
+                <div className="flex items-center justify-center gap-2">
+                  <Spinner className="h-4 w-4" />
+                  <span>Signing in...</span>
+                </div>
               ) : (
                 "Sign In"
               )}

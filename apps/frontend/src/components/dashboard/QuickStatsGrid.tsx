@@ -26,7 +26,7 @@ export default memo(function QuickStatsGrid({ className, atsExpanded = false, on
         </div>
       </div>
 
-      <div className="rounded-xl border p-4 hover:bg-muted/40 transition-colors">
+      <div className="rounded-xl border p-6 hover:bg-muted/40 transition-colors">
         <div className="flex items-center justify-between">
           <span className="text-sm text-muted-foreground">Interviews</span>
           <BarChart3 className="size-4 text-muted-foreground" aria-hidden />
@@ -42,7 +42,7 @@ export default memo(function QuickStatsGrid({ className, atsExpanded = false, on
         </div>
       </div>
 
-      <div className="rounded-xl border p-4 hover:bg-muted/40 transition-colors">
+      <div className="rounded-xl border p-6 hover:bg-muted/40 transition-colors">
         <div className="flex items-center justify-between">
           <span className="text-sm text-muted-foreground">Offers</span>
           <CheckCircle2 className="size-4 text-muted-foreground" aria-hidden />
@@ -59,7 +59,7 @@ export default memo(function QuickStatsGrid({ className, atsExpanded = false, on
       </div>
 
       <div
-        className={`rounded-xl border p-4 transition-colors ${
+        className={`rounded-xl border p-6 transition-colors ${
           atsExpanded ? "bg-muted/40" : "hover:bg-muted/40"
         }`}
       >

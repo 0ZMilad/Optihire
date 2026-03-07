@@ -211,7 +211,7 @@ export default function EnhancedResumeBuilderUI({
 
               <TabsContent value="preview" className="mt-0">
                 {/* Gray background for document metaphor */}
-                <div className="bg-gray-100 -mx-6 px-6 py-6">
+                <div className="bg-muted -mx-6 px-6 py-6">
                   {/* Document Preview */}
                   <div className="flex justify-center">
                     <div className="w-full max-w-[8.5in] bg-white shadow-lg rounded-lg overflow-hidden" style={{aspectRatio: '8.5/11'}}>

@@ -87,7 +87,7 @@ export default function AuthCallback() {
           </svg>
         </div>
         <h2 className="text-2xl font-bold text-red-600 mb-2">{errorDetails.title}</h2>
-        <p className="text-gray-600 mb-8">{errorDetails.message}</p>
+        <p className="text-muted-foreground mb-8">{errorDetails.message}</p>
         <Button onClick={() => router.push('/login')} variant="outline" className="w-full">
           Return to Login
         </Button>
@@ -105,12 +105,12 @@ export default function AuthCallback() {
       <h2 className="text-2xl font-bold text-green-600 mb-2">
         {callbackType === 'recovery' ? 'Ready to Reset' : 'Email Verified!'}
       </h2>
-      <p className="text-gray-600 mb-6">
+      <p className="text-muted-foreground mb-6">
         {callbackType === 'recovery'
           ? 'Your link is valid. Redirecting you to the password reset form...'
           : 'Your email has been successfully verified. Logging you in...'}
       </p>
-      <p className="text-sm text-gray-400 mb-8">
+      <p className="text-sm text-muted-foreground mb-8">
         Redirecting in <span className="font-bold text-foreground">{seconds}</span> seconds
       </p>
       <Button onClick={redirectUser} className="w-full">
