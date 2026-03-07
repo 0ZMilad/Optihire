@@ -12,6 +12,7 @@ import {
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/components/auth-provider";
+import { useUserProfile } from "@/stores/user-profile-store";
 import { userService } from "@/middle-service/users";
 import { authService } from "@/middle-service/supabase";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
@@ -67,12 +68,12 @@ const initialPasswordForm: PasswordFormState = {
 export function SettingsPageUI() {
   const router = useRouter();
   const { user } = useAuth();
-  const [backendUserId, setBackendUserId] = useState<string | null>(null);
+  const { profile, isLoading: isProfileLoading, setProfile, clearProfile } = useUserProfile();
+  const backendUserId = profile?.id ?? null;
   const [personalForm, setPersonalForm] =
     useState<PersonalFormState>(initialPersonalForm);
   const [passwordForm, setPasswordForm] =
     useState<PasswordFormState>(initialPasswordForm);
-  const [isProfileLoading, setIsProfileLoading] = useState(true);
   const [isSavingProfile, setIsSavingProfile] = useState(false);
   const [isUpdatingPassword, setIsUpdatingPassword] = useState(false);
   const [isDeletingAccount, setIsDeletingAccount] = useState(false);
@@ -82,51 +83,27 @@ export function SettingsPageUI() {
   const [securityError, setSecurityError] = useState<string>("");
   const [dangerMessage, setDangerMessage] = useState<string>("");
 
+  // Sync form from cached store profile; fall back to Supabase metadata
   useEffect(() => {
-    // Wait for the auth session to resolve before fetching
-    if (!user) return;
-
-    let cancelled = false;
-    setIsProfileLoading(true);
-    userService
-      .getCurrentUser()
-      .then((profile) => {
-        if (cancelled) return;
-        setBackendUserId(profile.id);
-        setPersonalForm({
-          fullName: profile.full_name ?? "",
-          email: profile.email,
-          phone: profile.phone ?? "",
-        });
-      })
-      .catch((error: unknown) => {
-        if (cancelled) return;
-        // Silently fall back to Supabase metadata for 404
-        // (user profile not bootstrapped yet — valid state for new accounts)
-        const status =
-          (error as { response?: { status?: number } })?.response?.status;
-        setPersonalForm((prev) => ({
-          ...prev,
-          fullName:
-            prev.fullName ||
-            (typeof user?.user_metadata?.full_name === "string"
-              ? user.user_metadata.full_name
-              : ""),
-          email: prev.email || user?.email || "",
-        }));
-        if (status !== 404) {
-          setProfileError(
-            "Could not load profile from server. Showing local data."
-          );
-        }
-      })
-      .finally(() => {
-        if (!cancelled) setIsProfileLoading(false);
+    if (profile) {
+      setPersonalForm({
+        fullName: profile.full_name ?? "",
+        email: profile.email,
+        phone: profile.phone ?? "",
       });
-    return () => {
-      cancelled = true;
-    };
-  }, [user]);
+    } else if (!isProfileLoading) {
+      // Profile not bootstrapped — seed from Supabase session metadata
+      setPersonalForm((prev) => ({
+        ...prev,
+        fullName:
+          prev.fullName ||
+          (typeof user?.user_metadata?.full_name === "string"
+            ? user.user_metadata.full_name
+            : ""),
+        email: prev.email || user?.email || "",
+      }));
+    }
+  }, [profile, isProfileLoading, user]);
 
   const handleSaveProfile = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -134,11 +111,12 @@ export function SettingsPageUI() {
     setProfileMessage("");
     setProfileError("");
     try {
-      await userService.updateCurrentUserProfile({
+      const updated = await userService.updateCurrentUserProfile({
         full_name: personalForm.fullName.trim() || undefined,
         email: personalForm.email.trim() || undefined,
         phone: personalForm.phone.trim() || undefined,
       });
+      setProfile(updated);
       setProfileMessage("Profile updated successfully.");
     } catch {
       setProfileError("Failed to save profile. Please try again.");
@@ -206,6 +184,7 @@ export function SettingsPageUI() {
     setIsDeletingAccount(true);
     try {
       await userService.deleteUser(backendUserId);
+      clearProfile();
       await authService.signOut();
       router.push("/");
     } catch {

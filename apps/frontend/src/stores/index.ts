@@ -14,3 +14,5 @@ export {
 } from './resume-builder-store';
 
 export type { ResumeBuilderStore } from './resume-builder-store';
+
+export { useUserProfileStore, useUserProfile, updateProfileInStore } from './user-profile-store';
