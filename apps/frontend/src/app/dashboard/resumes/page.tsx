@@ -2,7 +2,6 @@
 
 import { useState, useCallback, memo } from "react";
 import { Main } from "@/components/main";
-import { DashboardLayout } from "@/components/dashboard-layout";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardFooter, CardHeader } from "@/components/ui/card";
 import { 
@@ -321,7 +320,7 @@ export default function ResumesPage() {
   }, []);
 
   return (
-    <DashboardLayout>
+    <>
       <Main>
         <div className="mx-auto max-w-7xl space-y-8 px-4">
           {showBuilder ? (
@@ -405,6 +404,6 @@ export default function ResumesPage() {
           )}
         </div>
       </Main>
-    </DashboardLayout>
+    </>
   );
 }

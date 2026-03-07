@@ -11,7 +11,6 @@ import {
 import dynamic from "next/dynamic";
 import { DashboardHeader } from "@/components/dashboard-header";
 import { Main } from "@/components/main";
-import { DashboardLayout } from "@/components/dashboard-layout";
 import { DashboardUI } from "@/components/dashboard";
 
 // Lazy-load 1000+ line review form — only fetched when the dialog opens
@@ -78,7 +77,7 @@ export default function DashboardPage() {
   const handleUploadClick = useCallback(() => inputRef.current?.click(), []);
 
   return (
-    <DashboardLayout>
+    <>
       <DashboardHeader />
 
       <Main>
@@ -118,6 +117,6 @@ export default function DashboardPage() {
           </DialogContent>
         </Dialog>
       </Main>
-    </DashboardLayout>
+    </>
   );
 }

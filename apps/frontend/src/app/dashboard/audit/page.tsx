@@ -1,7 +1,6 @@
 "use client";
 
 import { useState, useCallback } from "react";
-import { DashboardLayout } from "@/components/dashboard-layout";
 import { DashboardHeader } from "@/components/dashboard-header";
 import { Main } from "@/components/main";
 import { AuditInputView } from "@/components/audit/audit-input-view";
@@ -154,7 +153,7 @@ export default function AuditPage() {
   );
 
   return (
-    <DashboardLayout>
+    <>
       <DashboardHeader>
         <h2 className="text-lg font-semibold">ATS Audit</h2>
       </DashboardHeader>
@@ -216,6 +215,6 @@ export default function AuditPage() {
           onDelete={handleDeleteHistory}
         />
       </Main>
-    </DashboardLayout>
+    </>
   );
 }

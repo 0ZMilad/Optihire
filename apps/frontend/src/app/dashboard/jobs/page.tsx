@@ -1,7 +1,6 @@
 "use client";
 
 import dynamic from "next/dynamic";
-import { DashboardLayout } from "@/components/dashboard-layout";
 import { DashboardHeader } from "@/components/dashboard-header";
 import { Main } from "@/components/main";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -32,13 +31,13 @@ const RecommendedJobsView = dynamic(
 
 export default function JobsPage() {
   return (
-    <DashboardLayout>
+    <>
       <DashboardHeader>
         <h2 className="text-lg font-semibold">Recommended Jobs</h2>
       </DashboardHeader>
       <Main>
         <RecommendedJobsView />
       </Main>
-    </DashboardLayout>
+    </>
   );
 }
