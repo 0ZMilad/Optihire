@@ -10,7 +10,10 @@ import {
   UserRound,
 } from "lucide-react";
 import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
 import { useAuth } from "@/components/auth-provider";
+import { userService } from "@/middle-service/users";
+import { authService } from "@/middle-service/supabase";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import {
@@ -36,13 +39,11 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Textarea } from "@/components/ui/textarea";
 
 type PersonalFormState = {
   fullName: string;
   email: string;
   phone: string;
-  bio: string;
 };
 
 type PasswordFormState = {
@@ -55,7 +56,6 @@ const initialPersonalForm: PersonalFormState = {
   fullName: "",
   email: "",
   phone: "",
-  bio: "",
 };
 
 const initialPasswordForm: PasswordFormState = {
@@ -65,41 +65,91 @@ const initialPasswordForm: PasswordFormState = {
 };
 
 export function SettingsPageUI() {
+  const router = useRouter();
   const { user } = useAuth();
+  const [backendUserId, setBackendUserId] = useState<string | null>(null);
   const [personalForm, setPersonalForm] =
     useState<PersonalFormState>(initialPersonalForm);
   const [passwordForm, setPasswordForm] =
     useState<PasswordFormState>(initialPasswordForm);
+  const [isProfileLoading, setIsProfileLoading] = useState(true);
+  const [isSavingProfile, setIsSavingProfile] = useState(false);
+  const [isUpdatingPassword, setIsUpdatingPassword] = useState(false);
+  const [isDeletingAccount, setIsDeletingAccount] = useState(false);
   const [profileMessage, setProfileMessage] = useState<string>("");
+  const [profileError, setProfileError] = useState<string>("");
   const [securityMessage, setSecurityMessage] = useState<string>("");
   const [securityError, setSecurityError] = useState<string>("");
   const [dangerMessage, setDangerMessage] = useState<string>("");
 
   useEffect(() => {
-    const metadataName =
-      typeof user?.user_metadata?.full_name === "string"
-        ? user.user_metadata.full_name
-        : "";
+    // Wait for the auth session to resolve before fetching
+    if (!user) return;
 
-    if (!metadataName && !user?.email) {
-      return;
-    }
-
-    setPersonalForm((prev) => ({
-      ...prev,
-      fullName: prev.fullName || metadataName,
-      email: prev.email || user?.email || "",
-    }));
+    let cancelled = false;
+    setIsProfileLoading(true);
+    userService
+      .getCurrentUser()
+      .then((profile) => {
+        if (cancelled) return;
+        setBackendUserId(profile.id);
+        setPersonalForm({
+          fullName: profile.full_name ?? "",
+          email: profile.email,
+          phone: profile.phone ?? "",
+        });
+      })
+      .catch((error: unknown) => {
+        if (cancelled) return;
+        // Silently fall back to Supabase metadata for 404
+        // (user profile not bootstrapped yet — valid state for new accounts)
+        const status =
+          (error as { response?: { status?: number } })?.response?.status;
+        setPersonalForm((prev) => ({
+          ...prev,
+          fullName:
+            prev.fullName ||
+            (typeof user?.user_metadata?.full_name === "string"
+              ? user.user_metadata.full_name
+              : ""),
+          email: prev.email || user?.email || "",
+        }));
+        if (status !== 404) {
+          setProfileError(
+            "Could not load profile from server. Showing local data."
+          );
+        }
+      })
+      .finally(() => {
+        if (!cancelled) setIsProfileLoading(false);
+      });
+    return () => {
+      cancelled = true;
+    };
   }, [user]);
 
-  const handleSaveProfile = (event: React.FormEvent<HTMLFormElement>) => {
+  const handleSaveProfile = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
-    setProfileMessage(
-      "Profile changes are staged in the UI. API integration is not enabled yet."
-    );
+    setIsSavingProfile(true);
+    setProfileMessage("");
+    setProfileError("");
+    try {
+      await userService.updateCurrentUserProfile({
+        full_name: personalForm.fullName.trim() || undefined,
+        email: personalForm.email.trim() || undefined,
+        phone: personalForm.phone.trim() || undefined,
+      });
+      setProfileMessage("Profile updated successfully.");
+    } catch {
+      setProfileError("Failed to save profile. Please try again.");
+    } finally {
+      setIsSavingProfile(false);
+    }
   };
 
-  const handleSaveSecurity = (event: React.FormEvent<HTMLFormElement>) => {
+  const handleSaveSecurity = async (
+    event: React.FormEvent<HTMLFormElement>
+  ) => {
     event.preventDefault();
     setSecurityError("");
     setSecurityMessage("");
@@ -114,25 +164,62 @@ export function SettingsPageUI() {
       return;
     }
 
-    setSecurityMessage(
-      "Password update is currently a UI placeholder. No changes were sent."
-    );
-    setPasswordForm(initialPasswordForm);
+    const email = user?.email;
+    if (!email) {
+      setSecurityError(
+        "Unable to determine your account email. Please refresh."
+      );
+      return;
+    }
+
+    setIsUpdatingPassword(true);
+    try {
+      const { error: signInError } = await authService.signIn(
+        email,
+        passwordForm.currentPassword
+      );
+      if (signInError) {
+        setSecurityError("Current password is incorrect.");
+        return;
+      }
+      const { error: updateError } = await authService.updatePassword(
+        passwordForm.newPassword
+      );
+      if (updateError) {
+        setSecurityError("Failed to update password. Please try again.");
+        return;
+      }
+      setSecurityMessage("Password updated successfully.");
+      setPasswordForm(initialPasswordForm);
+    } finally {
+      setIsUpdatingPassword(false);
+    }
   };
 
-  const handleDeleteAccount = () => {
-    setDangerMessage(
-      "Delete account is a placeholder action for now. No account changes were made."
-    );
+  const handleDeleteAccount = async () => {
+    if (!backendUserId) {
+      setDangerMessage(
+        "Cannot delete account: user ID not found. Please refresh."
+      );
+      return;
+    }
+    setIsDeletingAccount(true);
+    try {
+      await userService.deleteUser(backendUserId);
+      await authService.signOut();
+      router.push("/");
+    } catch {
+      setDangerMessage("Failed to delete account. Please try again.");
+      setIsDeletingAccount(false);
+    }
   };
 
   const filledProfileFields = [
     personalForm.fullName,
     personalForm.email,
     personalForm.phone,
-    personalForm.bio,
   ].filter((value) => value.trim() !== "").length;
-  const profileCompletion = Math.round((filledProfileFields / 4) * 100);
+  const profileCompletion = Math.round((filledProfileFields / 3) * 100);
   const displayName =
     personalForm.fullName ||
     (typeof user?.user_metadata?.full_name === "string"
@@ -236,74 +323,75 @@ export function SettingsPageUI() {
               </CardHeader>
               <form onSubmit={handleSaveProfile}>
                 <CardContent className="space-y-4 pt-6">
-                  <div className="grid gap-4 md:grid-cols-2">
-                    <div className="space-y-2">
-                      <Label htmlFor="fullName">Full Name</Label>
-                      <Input
-                        id="fullName"
-                        placeholder="Enter your full name"
-                        value={personalForm.fullName}
-                        onChange={(event) =>
-                          setPersonalForm((prev) => ({
-                            ...prev,
-                            fullName: event.target.value,
-                          }))
-                        }
-                      />
+                  {isProfileLoading ? (
+                    <div className="rounded-xl border bg-muted/20 px-4 py-3 text-sm text-muted-foreground animate-pulse">
+                      Loading profile…
                     </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="email">Email Address</Label>
-                      <Input
-                        id="email"
-                        type="email"
-                        placeholder="name@example.com"
-                        value={personalForm.email}
-                        onChange={(event) =>
-                          setPersonalForm((prev) => ({
-                            ...prev,
-                            email: event.target.value,
-                          }))
-                        }
-                      />
+                  ) : (
+                    <div className="grid gap-4 md:grid-cols-2">
+                      <div className="space-y-2">
+                        <Label htmlFor="fullName">Full Name</Label>
+                        <Input
+                          id="fullName"
+                          placeholder="Enter your full name"
+                          value={personalForm.fullName}
+                          onChange={(event) =>
+                            setPersonalForm((prev) => ({
+                              ...prev,
+                              fullName: event.target.value,
+                            }))
+                          }
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="email">Email Address</Label>
+                        <Input
+                          id="email"
+                          type="email"
+                          placeholder="name@example.com"
+                          value={personalForm.email}
+                          onChange={(event) =>
+                            setPersonalForm((prev) => ({
+                              ...prev,
+                              email: event.target.value,
+                            }))
+                          }
+                        />
+                      </div>
+                      <div className="space-y-2 md:col-span-2">
+                        <Label htmlFor="phone">Phone Number</Label>
+                        <Input
+                          id="phone"
+                          placeholder="Enter your phone number"
+                          value={personalForm.phone}
+                          onChange={(event) =>
+                            setPersonalForm((prev) => ({
+                              ...prev,
+                              phone: event.target.value,
+                            }))
+                          }
+                        />
+                      </div>
                     </div>
-                    <div className="space-y-2 md:col-span-2">
-                      <Label htmlFor="phone">Phone Number</Label>
-                      <Input
-                        id="phone"
-                        placeholder="Enter your phone number"
-                        value={personalForm.phone}
-                        onChange={(event) =>
-                          setPersonalForm((prev) => ({
-                            ...prev,
-                            phone: event.target.value,
-                          }))
-                        }
-                      />
+                  )}
+                  {profileError ? (
+                    <div className="rounded-xl border border-destructive/20 bg-destructive/5 px-4 py-3 text-sm text-destructive">
+                      {profileError}
                     </div>
-                    <div className="space-y-2 md:col-span-2">
-                      <Label htmlFor="bio">Bio</Label>
-                      <Textarea
-                        id="bio"
-                        placeholder="Tell us about your background"
-                        className="min-h-[140px]"
-                        value={personalForm.bio}
-                        onChange={(event) =>
-                          setPersonalForm((prev) => ({
-                            ...prev,
-                            bio: event.target.value,
-                          }))
-                        }
-                      />
-                    </div>
-                  </div>
-                  {profileMessage ? (
+                  ) : null}
+                  {!profileError && profileMessage ? (
                     <div className="rounded-xl border border-emerald-500/20 bg-emerald-500/5 px-4 py-3 text-sm text-emerald-700 dark:text-emerald-400">
                       {profileMessage}
                     </div>
                   ) : null}
                 </CardContent>
                 <CardFooter className="justify-end border-t pt-6">
-                  <Button type="submit">Save Changes</Button>
+                  <Button
+                    type="submit"
+                    disabled={isSavingProfile || isProfileLoading}
+                  >
+                    {isSavingProfile ? "Saving…" : "Save Changes"}
+                  </Button>
                 </CardFooter>
               </form>
             </Card>
@@ -356,12 +444,6 @@ export function SettingsPageUI() {
                     <Phone className="size-4" />
                     <span>{personalForm.phone || "Add a phone number"}</span>
                   </div>
-                </div>
-
-                <div className="rounded-xl border p-4 text-sm text-muted-foreground">
-                  {personalForm.bio
-                    ? personalForm.bio
-                    : "Add a short bio so your profile feels more complete across the product."}
                 </div>
               </CardContent>
             </Card>
@@ -440,7 +522,9 @@ export function SettingsPageUI() {
                   ) : null}
                 </CardContent>
                 <CardFooter className="justify-end border-t pt-6">
-                  <Button type="submit">Update Security</Button>
+                  <Button type="submit" disabled={isUpdatingPassword}>
+                    {isUpdatingPassword ? "Updating…" : "Update Password"}
+                  </Button>
                 </CardFooter>
               </form>
             </Card>
@@ -458,9 +542,9 @@ export function SettingsPageUI() {
                     Use at least 8 characters and avoid reusing old passwords.
                   </div>
                   <div className="rounded-xl border p-4 text-muted-foreground">
-                    Password changes remain UI-only for now and will not be
-                    sent to the backend until the real account security flow is
-                    implemented.
+                    Your current password is verified before any change is
+                    applied. You will remain signed in after a successful
+                    update.
                   </div>
                 </div>
               </CardContent>
@@ -480,12 +564,8 @@ export function SettingsPageUI() {
                 </CardDescription>
               </CardHeader>
               <CardContent className="space-y-4 pt-6">
-                <div className="rounded-xl border border-destructive/30 bg-destructive/5 p-4 text-sm text-muted-foreground">
-                  This action is intentionally disabled behind a UI placeholder.
-                  It does not remove any account data yet.
-                </div>
                 {dangerMessage ? (
-                  <div className="rounded-xl border border-emerald-500/20 bg-emerald-500/5 px-4 py-3 text-sm text-emerald-700 dark:text-emerald-400">
+                  <div className="rounded-xl border border-destructive/20 bg-destructive/5 px-4 py-3 text-sm text-destructive">
                     {dangerMessage}
                   </div>
                 ) : null}
@@ -493,23 +573,29 @@ export function SettingsPageUI() {
               <CardFooter className="justify-end border-t pt-6">
                 <AlertDialog>
                   <AlertDialogTrigger asChild>
-                    <Button variant="destructive">
+                    <Button
+                      variant="destructive"
+                      disabled={isDeletingAccount}
+                    >
                       <Trash2 className="mr-2 size-4" />
-                      Delete Account
+                      {isDeletingAccount ? "Deleting…" : "Delete Account"}
                     </Button>
                   </AlertDialogTrigger>
                   <AlertDialogContent>
                     <AlertDialogHeader>
                       <AlertDialogTitle>Delete your account?</AlertDialogTitle>
                       <AlertDialogDescription>
-                        This is a confirmation preview only. No account data will
-                        be removed yet.
+                        This will permanently deactivate your account and sign
+                        you out. This action cannot be undone.
                       </AlertDialogDescription>
                     </AlertDialogHeader>
                     <AlertDialogFooter>
                       <AlertDialogCancel>Cancel</AlertDialogCancel>
-                      <AlertDialogAction onClick={handleDeleteAccount}>
-                        Continue
+                      <AlertDialogAction
+                        onClick={handleDeleteAccount}
+                        disabled={isDeletingAccount}
+                      >
+                        {isDeletingAccount ? "Deleting…" : "Delete Account"}
                       </AlertDialogAction>
                     </AlertDialogFooter>
                   </AlertDialogContent>
@@ -521,18 +607,17 @@ export function SettingsPageUI() {
               <CardHeader className="space-y-2 border-b">
                 <CardTitle className="text-lg">Before You Proceed</CardTitle>
                 <CardDescription>
-                  Use this area for destructive actions only when backend flows
-                  are available.
+                  What happens when you delete your account.
                 </CardDescription>
               </CardHeader>
               <CardContent className="space-y-3 pt-6 text-sm text-muted-foreground">
                 <div className="rounded-xl border p-4">
-                  Account deletion should remove authentication access and any
-                  stored user data in a coordinated flow.
+                  Your account will be deactivated and all associated resumes,
+                  analyses, and profile data will be inaccessible.
                 </div>
                 <div className="rounded-xl border p-4">
-                  Until then, this page keeps the interaction visible without
-                  allowing a real destructive operation.
+                  You will be signed out immediately after deletion and
+                  redirected to the home page.
                 </div>
               </CardContent>
             </Card>

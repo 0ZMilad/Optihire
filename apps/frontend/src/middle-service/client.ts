@@ -74,13 +74,6 @@ apiClient.interceptors.response.use(
       }
     }
 
-    if (error.response?.status === 404) {
-      const errorKey = `404-${error.config?.url || 'unknown'}`;
-      if (shouldLogError(errorKey)) {
-        logger.error("Resource not found", { status: 404, url: error.config?.url });
-      }
-    }
-
     if (error.response?.status && error.response.status >= 500) {
       const errorKey = `${error.response.status}-${error.config?.url || 'unknown'}`;
       if (shouldLogError(errorKey)) {

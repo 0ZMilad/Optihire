@@ -26,7 +26,7 @@ export const userService = {
    * Get current user profile (using session token)
    */
   getCurrentUser: async (): Promise<UserRead> => {
-    const response = await apiClient.get<UserRead>("/api/v1/users/me");
+    const response = await apiClient.get<UserRead>("/api/v1/users/profile");
     return response.data;
   },
 
@@ -41,6 +41,14 @@ export const userService = {
       `/api/v1/users/${userId}`,
       userData
     );
+    return response.data;
+  },
+
+  /**
+   * Update the currently authenticated user's profile (no user ID required)
+   */
+  updateCurrentUserProfile: async (userData: UserUpdate): Promise<UserRead> => {
+    const response = await apiClient.put<UserRead>("/api/v1/users/profile", userData);
     return response.data;
   },
 
