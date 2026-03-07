@@ -12,7 +12,7 @@ const partnerLogos = [
 ];
 
 const PartnerLogos = () => (
-  <div className="flex flex-wrap items-center justify-center lg:justify-start gap-8 opacity-60 grayscale hover:opacity-100 transition-all duration-500">
+  <div className="flex flex-wrap items-center justify-center lg:justify-start gap-8 opacity-60 grayscale hover:opacity-100 hover:grayscale-0 transition-[opacity,filter] duration-500">
     {partnerLogos.map(({ name, src, width, height }) => (
       <div key={name} className="relative h-6 sm:h-8 w-auto">
         <Image
@@ -30,7 +30,7 @@ const PartnerLogos = () => (
 export function HeroSection() {
   return (
     <section className="relative w-full pt-6 sm:pt-12 pb-12 sm:pb-20 lg:pt-20 lg:pb-28 overflow-hidden">
-      <div className="fixed inset-0 -z-50 h-full w-full bg-background bg-[linear-gradient(to_right,#80808012_1px,transparent_1px),linear-gradient(to_bottom,#80808012_1px,transparent_1px)] bg-[size:24px_24px] [mask-image:linear-gradient(to_bottom,black_40%,transparent_100%)] pointer-events-none"></div>
+      <div className="fixed inset-0 -z-50 h-full w-full bg-background bg-[linear-gradient(to_right,#80808012_1px,transparent_1px),linear-gradient(to_bottom,#80808012_1px,transparent_1px)] bg-[size:24px_24px] [mask-image:linear-gradient(to_bottom,black_40%,transparent_100%)] pointer-events-none [transform:translateZ(0)]"></div>
 
       <div className="container mx-auto px-3 sm:px-4 md:px-6">
         <div className="grid items-center gap-8 md:gap-12 lg:gap-8 xl:gap-12 lg:grid-cols-[1fr_1fr]">
@@ -52,7 +52,7 @@ export function HeroSection() {
             <div className="flex flex-col sm:flex-row gap-4 justify-center lg:justify-start">
               <Button
                 size="lg"
-                className="bg-brand-primary hover:bg-brand-primary/90 text-brand-primary-foreground font-semibold text-base px-8 h-12 rounded-full shadow-lg hover:shadow-xl transition-all duration-300"
+                className="bg-brand-primary hover:bg-brand-primary/90 text-brand-primary-foreground font-semibold text-base px-8 h-12 rounded-full shadow-lg hover:shadow-xl transition-[background-color,box-shadow] duration-200"
               >
                 Upload your resume
               </Button>
@@ -76,7 +76,7 @@ export function HeroSection() {
           </div>
 
           <div className="relative w-full max-w-[500px] h-[500px] mx-auto flex items-center justify-center lg:perspective-[1000px] hidden md:flex">
-            <div className="absolute top-0 left-1/2 -translate-x-1/2 -translate-y-12 bg-white/80 backdrop-blur-md border border-slate-200 px-4 py-1.5 rounded-full shadow-sm flex items-center gap-3 z-20">
+            <div className="absolute top-0 left-1/2 -translate-x-1/2 -translate-y-12 bg-white border border-slate-200 px-4 py-1.5 rounded-full shadow-sm flex items-center gap-3 z-20">
               <div className="flex gap-1.5">
                 <div className="h-1.5 w-1.5 rounded-full bg-red-400"></div>
                 <div className="h-1.5 w-1.5 rounded-full bg-amber-400"></div>
@@ -89,7 +89,7 @@ export function HeroSection() {
               </span>
             </div>
 
-            <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[350px] h-[350px] bg-brand-primary/5 rounded-full blur-[80px] animate-pulse"></div>
+            <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[350px] h-[350px] bg-brand-primary/5 rounded-full blur-[80px] animate-pulse [will-change:opacity]"></div>
 
             <div className="relative w-[320px] h-[440px] bg-white rounded-lg border border-slate-200 shadow-2xl overflow-visible lg:rotate-y-[-10deg] lg:rotate-x-[5deg] transition-transform duration-700 hover:rotate-0 group">
               <div className="h-24 bg-slate-50/50 border-b border-slate-100 p-6 flex items-center gap-4">
@@ -104,7 +104,7 @@ export function HeroSection() {
 
               <div className="p-6 space-y-5 opacity-100">
                 <div className="relative">
-                  <div className="flex gap-4 p-2 -m-2 rounded-lg transition-colors duration-500 hover:bg-emerald-50/50">
+                  <div className="flex gap-4 p-2 -m-2 rounded-lg transition-colors duration-200 hover:bg-emerald-50/50">
                     <div className="h-32 w-2 bg-slate-100 rounded-full"></div>
                     <div className="flex-1 space-y-4">
                       <div className="h-2 w-full bg-slate-200 rounded-sm"></div>
@@ -122,7 +122,7 @@ export function HeroSection() {
               </div>
 
               <div className="absolute inset-0 w-full h-full pointer-events-none overflow-hidden rounded-lg">
-                <div className="absolute top-0 left-0 w-full h-[40%] bg-gradient-to-b from-transparent via-brand-primary/5 to-transparent -translate-y-full animate-scan">
+                <div className="absolute top-0 left-0 w-full h-[40%] bg-gradient-to-b from-transparent via-brand-primary/5 to-transparent -translate-y-full animate-scan [will-change:transform]">
                   <div className="absolute bottom-0 left-0 w-full h-[1px] bg-brand-primary/30 shadow-[0_0_20px_rgba(255,107,107,0.5)]"></div>
                 </div>
               </div>
@@ -162,7 +162,7 @@ export function HeroSection() {
               </svg>
             </div>
 
-            <div className="absolute top-20 -left-4 md:-left-20 bg-white/90 backdrop-blur-md border border-emerald-100 p-3 rounded-lg shadow-[0_8px_30px_rgb(0,0,0,0.04)] animate-float z-10">
+            <div className="absolute top-20 -left-4 md:-left-20 bg-white border border-emerald-100 p-3 rounded-lg shadow-[0_8px_30px_rgb(0,0,0,0.04)] animate-float z-10 [will-change:transform]">
               <div className="flex items-center gap-3">
                 <div className="bg-emerald-50 p-1.5 rounded-md border border-emerald-100 shadow-sm">
                   <CheckCircle2 className="w-4 h-4 text-emerald-600" />
@@ -178,7 +178,7 @@ export function HeroSection() {
               </div>
             </div>
 
-            <div className="absolute bottom-16 -right-4 md:-right-14 bg-white/90 backdrop-blur-md border border-indigo-100 p-3 rounded-lg shadow-[0_8px_30px_rgb(0,0,0,0.04)] animate-float-delayed z-10">
+            <div className="absolute bottom-16 -right-4 md:-right-14 bg-white border border-indigo-100 p-3 rounded-lg shadow-[0_8px_30px_rgb(0,0,0,0.04)] animate-float-delayed z-10 [will-change:transform]">
               <div className="flex items-center gap-3">
                 <div className="bg-indigo-50 p-1.5 rounded-md border border-indigo-100 shadow-sm">
                   <BarChart3 className="w-4 h-4 text-indigo-600" />

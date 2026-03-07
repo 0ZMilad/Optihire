@@ -16,25 +16,25 @@ export function Footer() {
             <div className="hidden flex-wrap items-center justify-center gap-x-6 gap-y-2 text-sm sm:flex">
               <a
                 href="#benefits"
-                className="text-muted-foreground transition-colors hover:text-foreground"
+                className="rounded-sm text-muted-foreground transition-colors hover:text-foreground outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
               >
                 Benefits
               </a>
               <a
                 href="#process"
-                className="text-muted-foreground transition-colors hover:text-foreground"
+                className="rounded-sm text-muted-foreground transition-colors hover:text-foreground outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
               >
                 Process
               </a>
               <Link
                 href="/privacy"
-                className="text-muted-foreground transition-colors hover:text-foreground"
+                className="rounded-sm text-muted-foreground transition-colors hover:text-foreground outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
               >
                 Privacy Policy
               </Link>
               <Link
                 href="/terms"
-                className="text-muted-foreground transition-colors hover:text-foreground"
+                className="rounded-sm text-muted-foreground transition-colors hover:text-foreground outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
               >
                 Terms of Service
               </Link>
@@ -42,24 +42,24 @@ export function Footer() {
             <div className="flex items-center space-x-4">
               <a
                 href="#"
-                className="text-muted-foreground transition-colors hover:text-foreground"
-                aria-label="X"
+                className="rounded-sm text-muted-foreground transition-colors hover:text-foreground outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+                aria-label="X (Twitter)"
               >
-                <X className="h-5 w-5" />
+                <X className="h-5 w-5" aria-hidden />
               </a>
               <a
                 href="#"
-                className="text-muted-foreground transition-colors hover:text-foreground"
+                className="rounded-sm text-muted-foreground transition-colors hover:text-foreground outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
                 aria-label="GitHub"
               >
-                <Github className="h-5 w-5" />
+                <Github className="h-5 w-5" aria-hidden />
               </a>
               <a
                 href="#"
-                className="text-muted-foreground transition-colors hover:text-foreground"
+                className="rounded-sm text-muted-foreground transition-colors hover:text-foreground outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
                 aria-label="LinkedIn"
               >
-                <Linkedin className="h-5 w-5" />
+                <Linkedin className="h-5 w-5" aria-hidden />
               </a>
             </div>
           </div>

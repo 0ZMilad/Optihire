@@ -201,14 +201,7 @@
   }
 }
 
-@supports not (zoom: 0.9) {
-  body {
-    transform: scale(0.9);
-    transform-origin: top center;
-    width: calc(100% / 0.9);
-    min-height: calc(100vh / 0.9);
-  }
-}
+
 
 ::-webkit-scrollbar {
   width: 0;

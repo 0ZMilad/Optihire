@@ -34,7 +34,6 @@ export function Header() {
             height={50}
             className="h-8 w-auto"
             priority
-            unoptimized
           />
         </Link>
 

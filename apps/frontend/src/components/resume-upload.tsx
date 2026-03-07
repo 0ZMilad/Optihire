@@ -16,8 +16,8 @@ const validateFile = (file: File): { valid: boolean; error: string | null } => {
   const fileExtension = "." + file.name.split(".").pop()?.toLowerCase();
   
   const isValidType =
-    FILE_UPLOAD.ALLOWED_TYPES.includes(file.type) ||
-    FILE_UPLOAD.ALLOWED_EXTENSIONS.includes(fileExtension);
+    (FILE_UPLOAD.ALLOWED_TYPES as readonly string[]).includes(file.type) ||
+    (FILE_UPLOAD.ALLOWED_EXTENSIONS as readonly string[]).includes(fileExtension);
 
   if (!isValidType) {
     return {
@@ -127,6 +127,7 @@ export function ResumeUpload({
       role="button"
       tabIndex={disabled ? -1 : 0}
       aria-label="Upload resume file"
+      aria-disabled={disabled}
       onDragOver={handleDragOver}
       onDragLeave={handleDragLeave}
       onDrop={handleDrop}
