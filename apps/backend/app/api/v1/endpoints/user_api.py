@@ -4,10 +4,12 @@ from fastapi import APIRouter, Depends, HTTPException
 from sqlmodel import Session
 
 from app.core.dependencies import get_current_user, get_current_user_id, require_scopes
+from app.core.logging_config import log_error
 from app.core.utils import require_found
 from app.db.session import get_db
 from app.schemas.user_schema import UserCreate, UserRead, UserUpdate
 from app.services import user_service
+from app.services.storage_service import delete_user_files, get_supabase_client
 
 router = APIRouter()
 
@@ -99,6 +101,57 @@ async def update_user(
     
     user = user_service.update_user(db=db, user_id=user_id, user_data=user_data)
     return require_found(user, "User")
+
+
+@router.delete("/account", status_code=204, dependencies=[Depends(require_scopes(["users:delete"]))])
+async def delete_own_account(
+    db: Session = Depends(get_db),
+    current_user_id: UUID = Depends(get_current_user_id),
+):
+    """
+    Permanently delete the authenticated user's account.
+
+    Steps performed in order:
+    1. Collect storage paths for all user files.
+    2. Hard-delete every database row owned by the user (resumes, sections,
+       analyses, suggestions, job descriptions, uploaded files, etc.).
+    3. Delete files from Supabase Storage (best-effort).
+    4. Delete the user from Supabase Auth via the Admin API (requires
+       SUPABASE_SERVICE_ROLE_KEY; best-effort if key is missing).
+
+    This is irreversible. The soft-delete endpoint (DELETE /{user_id})
+    remains available for internal/administrative use.
+    """
+    user = user_service.get_user_by_id(db=db, user_id=current_user_id)
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+
+    supabase_user_id = user.supabase_user_id
+
+    # ── Step 1 & 2: purge all app DB data, get back storage paths ────────────
+    storage_paths = user_service.purge_user_account(db=db, user_id=current_user_id)
+
+    # ── Step 3: delete files from Supabase Storage (best-effort) ─────────────
+    if storage_paths:
+        try:
+            delete_user_files(storage_paths)
+        except Exception as exc:
+            log_error(
+                f"Storage cleanup failed for user {current_user_id}: {exc}"
+            )
+
+    # ── Step 4: delete user from Supabase Auth (requires service role key) ───
+    try:
+        supabase = get_supabase_client()
+        supabase.auth.admin.delete_user(str(supabase_user_id))
+    except Exception as exc:
+        # Log and continue — app data is already purged. The orphaned Auth
+        # entry cannot log in because there is no corresponding app profile.
+        log_error(
+            f"Supabase Auth deletion failed for user {supabase_user_id}: {exc}"
+        )
+
+    return None
 
 
 @router.delete("/{user_id}", status_code=204, dependencies=[Depends(require_scopes(["users:delete"]))])

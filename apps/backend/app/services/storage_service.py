@@ -77,3 +77,24 @@ def delete_file(path: str) -> bool:
     except Exception as e:
         log_warning(f"File deletion failed for path '{path}': {str(e)}")
         return False
+
+
+def delete_user_files(paths: list[str]) -> None:
+    """
+    Bulk-delete a list of storage paths belonging to a user.
+    Splits into batches of 100 to stay within Supabase API limits.
+    Errors are logged but do not raise — storage cleanup is best-effort.
+    """
+    if not paths:
+        return
+
+    client = get_supabase_client()
+    bucket = settings.SUPABASE_STORAGE_BUCKET
+    batch_size = 100
+
+    for i in range(0, len(paths), batch_size):
+        batch = paths[i : i + batch_size]
+        try:
+            client.storage.from_(bucket).remove(batch)
+        except Exception as e:
+            log_warning(f"Bulk file deletion failed for batch starting at index {i}: {str(e)}")

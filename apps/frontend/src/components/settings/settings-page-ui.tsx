@@ -69,7 +69,6 @@ export function SettingsPageUI() {
   const router = useRouter();
   const { user } = useAuth();
   const { profile, isLoading: isProfileLoading, setProfile, clearProfile } = useUserProfile();
-  const backendUserId = profile?.id ?? null;
   const [personalForm, setPersonalForm] =
     useState<PersonalFormState>(initialPersonalForm);
   const [passwordForm, setPasswordForm] =
@@ -175,15 +174,11 @@ export function SettingsPageUI() {
   };
 
   const handleDeleteAccount = async () => {
-    if (!backendUserId) {
-      setDangerMessage(
-        "Cannot delete account: user ID not found. Please refresh."
-      );
-      return;
-    }
     setIsDeletingAccount(true);
     try {
-      await userService.deleteUser(backendUserId);
+      // Calls DELETE /api/v1/users/account — purges all DB data, storage
+      // files, and the Supabase Auth entry server-side in one request.
+      await userService.deleteAccount();
       clearProfile();
       await authService.signOut();
       router.push("/");

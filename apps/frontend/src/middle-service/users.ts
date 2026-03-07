@@ -53,6 +53,15 @@ export const userService = {
   },
 
   /**
+   * Permanently delete the authenticated user's account.
+   * Purges all app data, storage files, and the Supabase Auth entry server-side.
+   * This is irreversible.
+   */
+  deleteAccount: async (): Promise<void> => {
+    await apiClient.delete("/api/v1/users/account");
+  },
+
+  /**
    * Delete user profile
    * This performs a soft delete (sets deleted_at timestamp)
    */

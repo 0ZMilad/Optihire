@@ -1,10 +1,29 @@
 from datetime import datetime, timezone
 from uuid import UUID
 
+from sqlalchemy import delete as sa_delete, or_
 from sqlalchemy.exc import IntegrityError
 from sqlmodel import Session, select
 
-from app.models.user_model import User
+from app.models.analysis_model import (
+    AnalysisResult,
+    JobDescription,
+    SkillCorrection,
+    Suggestion,
+    SuggestionInteraction,
+)
+from app.models.file_model import ParseTask, UploadedFile
+from app.models.job_model import UserJobApplication
+from app.models.resume_model import (
+    Resume,
+    ResumeCertification,
+    ResumeCustomSection,
+    ResumeEducation,
+    ResumeExperience,
+    ResumeProject,
+    ResumeSkill,
+)
+from app.models.user_model import User, UserOnboardingProgress
 from app.schemas.user_schema import UserCreate, UserUpdate
 
 
@@ -75,3 +94,130 @@ def delete_user(db: Session, user_id: UUID) -> bool:
     db.add(user)
     db.commit()
     return True
+
+
+def purge_user_account(db: Session, user_id: UUID) -> list[str]:
+    """
+    Hard-delete every row owned by the user and return storage paths that
+    must be removed from Supabase Storage.
+
+    Deletion order respects FK dependency (child tables before parents):
+      SuggestionInteractions → Suggestions → AnalysisResults
+      → Resume sections → Resumes
+      → JobDescriptions
+      → SkillCorrections, UserJobApplications, ParseTasks, UploadedFiles
+      → UserOnboardingProgress
+      → User
+    """
+    # ── 1. Collect storage paths before any rows are removed ─────────────────
+    storage_paths: list[str] = []
+
+    resume_file_paths = db.execute(
+        select(Resume.file_path).where(
+            Resume.user_id == user_id, Resume.file_path.isnot(None)
+        )
+    ).scalars().all()
+    storage_paths.extend(resume_file_paths)
+
+    uploaded_keys = db.execute(
+        select(UploadedFile.object_key).where(UploadedFile.user_id == user_id)
+    ).scalars().all()
+    storage_paths.extend(uploaded_keys)
+
+    # ── 2. Gather IDs needed for child-table deletes ──────────────────────────
+    resume_ids: list[UUID] = db.execute(
+        select(Resume.id).where(Resume.user_id == user_id)
+    ).scalars().all()
+
+    jd_ids: list[UUID] = db.execute(
+        select(JobDescription.id).where(JobDescription.user_id == user_id)
+    ).scalars().all()
+
+    analysis_ids: list[UUID] = []
+    if resume_ids or jd_ids:
+        clauses = []
+        if resume_ids:
+            clauses.append(AnalysisResult.resume_id.in_(resume_ids))
+        if jd_ids:
+            clauses.append(AnalysisResult.job_description_id.in_(jd_ids))
+        analysis_ids = db.execute(
+            select(AnalysisResult.id).where(or_(*clauses))
+        ).scalars().all()
+
+    suggestion_ids: list[UUID] = []
+    if analysis_ids:
+        suggestion_ids = db.execute(
+            select(Suggestion.id).where(Suggestion.analysis_id.in_(analysis_ids))
+        ).scalars().all()
+
+    # ── 3. Delete in dependency order ─────────────────────────────────────────
+    # SuggestionInteractions (linked by suggestion and by user_id directly)
+    if suggestion_ids:
+        db.execute(
+            sa_delete(SuggestionInteraction).where(
+                SuggestionInteraction.suggestion_id.in_(suggestion_ids)
+            )
+        )
+    db.execute(
+        sa_delete(SuggestionInteraction).where(
+            SuggestionInteraction.user_id == user_id
+        )
+    )
+
+    # Suggestions
+    if analysis_ids:
+        db.execute(
+            sa_delete(Suggestion).where(Suggestion.analysis_id.in_(analysis_ids))
+        )
+
+    # AnalysisResults
+    if resume_ids:
+        db.execute(
+            sa_delete(AnalysisResult).where(AnalysisResult.resume_id.in_(resume_ids))
+        )
+    if jd_ids:
+        db.execute(
+            sa_delete(AnalysisResult).where(
+                AnalysisResult.job_description_id.in_(jd_ids)
+            )
+        )
+
+    # Resume child sections
+    if resume_ids:
+        for SectionModel in (
+            ResumeExperience,
+            ResumeEducation,
+            ResumeSkill,
+            ResumeCertification,
+            ResumeProject,
+            ResumeCustomSection,
+        ):
+            db.execute(
+                sa_delete(SectionModel).where(SectionModel.resume_id.in_(resume_ids))
+            )
+
+    # Resumes
+    db.execute(sa_delete(Resume).where(Resume.user_id == user_id))
+
+    # JobDescriptions (after AnalysisResults referencing them are gone)
+    db.execute(sa_delete(JobDescription).where(JobDescription.user_id == user_id))
+
+    # Remaining user-owned rows (no further child dependencies)
+    db.execute(sa_delete(SkillCorrection).where(SkillCorrection.user_id == user_id))
+    db.execute(
+        sa_delete(UserJobApplication).where(UserJobApplication.user_id == user_id)
+    )
+    db.execute(sa_delete(ParseTask).where(ParseTask.user_id == user_id))
+    db.execute(sa_delete(UploadedFile).where(UploadedFile.user_id == user_id))
+    db.execute(
+        sa_delete(UserOnboardingProgress).where(
+            UserOnboardingProgress.user_id == user_id
+        )
+    )
+
+    # Finally remove the user row itself
+    db.execute(sa_delete(User).where(User.id == user_id))
+
+    db.commit()
+
+    return [p for p in storage_paths if p]
