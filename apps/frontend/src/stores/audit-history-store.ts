@@ -1,5 +1,6 @@
 import { create } from 'zustand';
 import { useEffect } from 'react';
+import { useShallow } from 'zustand/react/shallow';
 import { listAuditResults } from '../middle-service/audit';
 import type { AuditResult } from '../middle-service/audit';
 
@@ -69,7 +70,17 @@ export const useAuditHistoryStore = create<AuditHistoryStore>()((set, get) => ({
 // ============================================================================
 
 export function useAuditHistory() {
-  const { history, isLoading, error, fetchHistory, prependResult, removeResult } = useAuditHistoryStore();
+  const { history, isLoading, error, fetchHistory, prependResult, removeResult } =
+    useAuditHistoryStore(
+      useShallow((state) => ({
+        history: state.history,
+        isLoading: state.isLoading,
+        error: state.error,
+        fetchHistory: state.fetchHistory,
+        prependResult: state.prependResult,
+        removeResult: state.removeResult,
+      }))
+    );
 
   useEffect(() => {
     void fetchHistory();

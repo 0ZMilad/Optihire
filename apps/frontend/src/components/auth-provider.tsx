@@ -6,6 +6,7 @@ import {
   useState,
   useEffect,
   useContext,
+  useMemo,
 } from "react";
 import type { Session, User } from "@supabase/supabase-js";
 import { authService } from "@/middle-service/supabase";
@@ -39,10 +40,13 @@ export const AuthProvider = ({ children }: PropsWithChildren) => {
     return () => subscription?.unsubscribe();
   }, []);
 
+  const value = useMemo(
+    () => ({ session: currentSession, user: currentUser }),
+    [currentSession, currentUser]
+  );
+
   return (
-    <AuthContext.Provider
-      value={{ session: currentSession, user: currentUser }}
-    >
+    <AuthContext.Provider value={value}>
       {children}
     </AuthContext.Provider>
   );

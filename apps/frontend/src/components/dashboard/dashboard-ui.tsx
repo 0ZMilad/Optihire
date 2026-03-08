@@ -3,11 +3,11 @@
 import { useState, useCallback } from "react";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
-import QuickStatsGrid from "./QuickStatsGrid";
-import ResumeUpload from "./ResumeUpload";
-import QuickActions from "./QuickActions";
-import DashboardWidgets from "./DashboardWidgets";
-import ATSScoreWidget from "./ATSScoreWidget";
+import QuickStatsGrid from "./quick-stats-grid";
+import ResumeUpload from "./resume-upload";
+import QuickActions from "./quick-actions";
+import DashboardWidgets from "./dashboard-widgets";
+import ATSScoreWidget from "./ats-score-widget";
 
 interface DashboardUIProps {
   className?: string;
@@ -45,7 +45,7 @@ export default function DashboardUI({
           <p className="text-sm text-muted-foreground">Upload your resume or build one from scratch.</p>
         </div>
         <Button asChild>
-          <Link href="/resume">Open Builder</Link>
+          <Link href="/dashboard/resumes">Open Builder</Link>
         </Button>
       </div>
 

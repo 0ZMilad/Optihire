@@ -588,7 +588,6 @@ export const useResumeBuilderStore = create<ResumeBuilderStore>()(
           console.error('Failed to save resume to backend:', error);
           set({ saveStatus: 'error' });
           
-          // Handle specific error types
           if (error.response?.status === 409) {
             toast.error('A resume with this version name already exists. Please choose a different name.');
           } else if (error.response?.status === 403) {

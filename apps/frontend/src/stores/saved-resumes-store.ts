@@ -20,7 +20,7 @@ interface SavedResumesActions {
   refreshResumes: () => Promise<void>;
   deleteResume: (id: string) => Promise<void>;
   deleteAllResumes: () => Promise<void>;
-  duplicateResume: (id: string) => Promise<void>;
+  duplicateResume: (id: string) => Promise<ResumeListItem>;
   addNewResume: (resume: ResumeListItem) => void;
   getResume: (id: string) => ResumeListItem | undefined;
 }

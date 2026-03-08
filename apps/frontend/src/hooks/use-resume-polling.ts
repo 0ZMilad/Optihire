@@ -84,9 +84,11 @@ export const useResumePolling = (
           return;
         }
 
-        // CASE: Pending/Processing - Schedule next poll
+        // CASE: Pending/Processing - Schedule next poll with exponential backoff
         if (!isCancelled) {
-          timerId = setTimeout(poll, interval);
+          const backoff = Math.min(interval * Math.pow(2, attemptCount.current - 1), 16000);
+          const jitter = Math.random() * 0.1 * backoff;
+          timerId = setTimeout(poll, backoff + jitter);
         }
 
       } catch (error) {
