@@ -193,24 +193,100 @@ class TestUserAPI:
         self, client: TestClient, session: Session, test_user_id: str
     ):
         """Test getting the current user's profile."""
-        # Create user with matching supabase_user_id
+        # Create user keyed by Supabase ID (JWT sub)
         user = User(
             id=uuid4(),
-            supabase_user_id=uuid4().hex[:32] + test_user_id[-4:],  # Different to test by id
+            supabase_user_id=test_user_id,
             email="profile@example.com",
             full_name="Profile User",
             is_active=True,
         )
-        # Actually, we need to create with a user whose ID we'll look up
-        # The endpoint uses get_current_user_id which extracts 'sub' from JWT
-        # and then queries by User.id - but wait, that's wrong!
-        # Let me check the actual flow...
-        
-        # Actually the get_current_user_id returns UUID(current_user["sub"])
-        # Then the service queries User.id == user_id
-        # But the sub is the Supabase user ID, not the local user ID!
-        # This is a design issue we should note but not change (API contract)
-        pass
+        session.add(user)
+        session.commit()
+
+        payload = {
+            "sub": test_user_id,
+            "email": "profile@example.com",
+            "role": "authenticated",
+            "scopes": ["users:read", "users:create", "users:update", "users:delete"],
+            "exp": datetime.now(timezone.utc) + timedelta(hours=1),
+            "iat": datetime.now(timezone.utc),
+            "aud": settings.JWT_AUDIENCE,
+            "iss": settings.jwt_issuer,
+        }
+        token = _create_token(payload)
+        auth_headers = {"Authorization": f"Bearer {token}"}
+
+        response = client.get("/api/v1/users/profile", headers=auth_headers)
+        assert response.status_code == status.HTTP_200_OK
+        data = response.json()
+        assert data["supabase_user_id"] == test_user_id
+        assert data["email"] == "profile@example.com"
+
+    def test_update_current_user_profile(
+        self, client: TestClient, session: Session, test_user_id: str
+    ):
+        """Test updating current profile by Supabase ID from JWT sub."""
+        user = User(
+            id=uuid4(),
+            supabase_user_id=test_user_id,
+            email="before@example.com",
+            full_name="Before Name",
+            is_active=True,
+        )
+        session.add(user)
+        session.commit()
+
+        payload = {
+            "sub": test_user_id,
+            "email": "before@example.com",
+            "role": "authenticated",
+            "scopes": ["users:read", "users:create", "users:update", "users:delete"],
+            "exp": datetime.now(timezone.utc) + timedelta(hours=1),
+            "iat": datetime.now(timezone.utc),
+            "aud": settings.JWT_AUDIENCE,
+            "iss": settings.jwt_issuer,
+        }
+        token = _create_token(payload)
+        auth_headers = {"Authorization": f"Bearer {token}"}
+
+        response = client.put(
+            "/api/v1/users/profile",
+            json={"full_name": "After Name", "phone": "+15551234567"},
+            headers=auth_headers,
+        )
+        assert response.status_code == status.HTTP_200_OK
+        data = response.json()
+        assert data["full_name"] == "After Name"
+        assert data["phone"] == "+15551234567"
+
+    def test_update_current_user_profile_bootstraps_missing_user(
+        self, client: TestClient, test_user_id: str
+    ):
+        """Test PUT /users/profile creates profile when user row is missing."""
+        payload = {
+            "sub": test_user_id,
+            "email": "bootstrap@example.com",
+            "role": "authenticated",
+            "scopes": ["users:read", "users:create", "users:update", "users:delete"],
+            "exp": datetime.now(timezone.utc) + timedelta(hours=1),
+            "iat": datetime.now(timezone.utc),
+            "aud": settings.JWT_AUDIENCE,
+            "iss": settings.jwt_issuer,
+        }
+        token = _create_token(payload)
+        auth_headers = {"Authorization": f"Bearer {token}"}
+
+        response = client.put(
+            "/api/v1/users/profile",
+            json={"full_name": "Bootstrapped User"},
+            headers=auth_headers,
+        )
+        assert response.status_code == status.HTTP_200_OK
+        data = response.json()
+        assert data["supabase_user_id"] == test_user_id
+        assert data["email"] == "bootstrap@example.com"
+        assert data["full_name"] == "Bootstrapped User"
     
     def test_get_user_profile_not_found(self, client: TestClient, auth_headers: dict):
         """Test getting profile when user doesn't exist."""

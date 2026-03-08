@@ -42,8 +42,17 @@ def create_user(db: Session, user_data: UserCreate) -> User:
 
 
 def get_user_by_id(db: Session, user_id: UUID) -> User | None:
-    """Get a user by their ID."""
-    statement = select(User).where(User.id == user_id, User.deleted_at.is_(None))
+    """
+    Get a user by either internal app ID or Supabase user ID.
+
+    JWT `sub` contains the Supabase user ID, while some callers may still pass
+    the internal `users.id`. Supporting both keeps profile/account endpoints
+    compatible with existing token behavior.
+    """
+    statement = select(User).where(
+        or_(User.id == user_id, User.supabase_user_id == user_id),
+        User.deleted_at.is_(None),
+    )
     user = db.exec(statement).first()
     return user
 
@@ -109,28 +118,41 @@ def purge_user_account(db: Session, user_id: UUID) -> list[str]:
       → UserOnboardingProgress
       → User
     """
+    # Resolve both possible identifiers (internal id and Supabase id), then
+    # delete data keyed by either to handle mixed historical data safely.
+    user = db.exec(
+        select(User).where(or_(User.id == user_id, User.supabase_user_id == user_id))
+    ).first()
+
+    user_ids: list[UUID] = [user_id]
+    if user:
+        if user.id not in user_ids:
+            user_ids.append(user.id)
+        if user.supabase_user_id not in user_ids:
+            user_ids.append(user.supabase_user_id)
+
     # ── 1. Collect storage paths before any rows are removed ─────────────────
     storage_paths: list[str] = []
 
     resume_file_paths = db.execute(
         select(Resume.file_path).where(
-            Resume.user_id == user_id, Resume.file_path.isnot(None)
+            Resume.user_id.in_(user_ids), Resume.file_path.isnot(None)
         )
     ).scalars().all()
     storage_paths.extend(resume_file_paths)
 
     uploaded_keys = db.execute(
-        select(UploadedFile.object_key).where(UploadedFile.user_id == user_id)
+        select(UploadedFile.object_key).where(UploadedFile.user_id.in_(user_ids))
     ).scalars().all()
     storage_paths.extend(uploaded_keys)
 
     # ── 2. Gather IDs needed for child-table deletes ──────────────────────────
     resume_ids: list[UUID] = db.execute(
-        select(Resume.id).where(Resume.user_id == user_id)
+        select(Resume.id).where(Resume.user_id.in_(user_ids))
     ).scalars().all()
 
     jd_ids: list[UUID] = db.execute(
-        select(JobDescription.id).where(JobDescription.user_id == user_id)
+        select(JobDescription.id).where(JobDescription.user_id.in_(user_ids))
     ).scalars().all()
 
     analysis_ids: list[UUID] = []
@@ -160,7 +182,7 @@ def purge_user_account(db: Session, user_id: UUID) -> list[str]:
         )
     db.execute(
         sa_delete(SuggestionInteraction).where(
-            SuggestionInteraction.user_id == user_id
+            SuggestionInteraction.user_id.in_(user_ids)
         )
     )
 
@@ -197,26 +219,30 @@ def purge_user_account(db: Session, user_id: UUID) -> list[str]:
             )
 
     # Resumes
-    db.execute(sa_delete(Resume).where(Resume.user_id == user_id))
+    db.execute(sa_delete(Resume).where(Resume.user_id.in_(user_ids)))
 
     # JobDescriptions (after AnalysisResults referencing them are gone)
-    db.execute(sa_delete(JobDescription).where(JobDescription.user_id == user_id))
+    db.execute(sa_delete(JobDescription).where(JobDescription.user_id.in_(user_ids)))
 
     # Remaining user-owned rows (no further child dependencies)
-    db.execute(sa_delete(SkillCorrection).where(SkillCorrection.user_id == user_id))
+    db.execute(sa_delete(SkillCorrection).where(SkillCorrection.user_id.in_(user_ids)))
     db.execute(
-        sa_delete(UserJobApplication).where(UserJobApplication.user_id == user_id)
+        sa_delete(UserJobApplication).where(UserJobApplication.user_id.in_(user_ids))
     )
-    db.execute(sa_delete(ParseTask).where(ParseTask.user_id == user_id))
-    db.execute(sa_delete(UploadedFile).where(UploadedFile.user_id == user_id))
+    db.execute(sa_delete(ParseTask).where(ParseTask.user_id.in_(user_ids)))
+    db.execute(sa_delete(UploadedFile).where(UploadedFile.user_id.in_(user_ids)))
     db.execute(
         sa_delete(UserOnboardingProgress).where(
-            UserOnboardingProgress.user_id == user_id
+            UserOnboardingProgress.user_id.in_(user_ids)
         )
     )
 
     # Finally remove the user row itself
-    db.execute(sa_delete(User).where(User.id == user_id))
+    db.execute(
+        sa_delete(User).where(
+            or_(User.id.in_(user_ids), User.supabase_user_id.in_(user_ids))
+        )
+    )
 
     db.commit()
 

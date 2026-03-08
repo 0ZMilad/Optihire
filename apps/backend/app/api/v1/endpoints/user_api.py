@@ -53,13 +53,43 @@ async def update_current_user_profile(
     user_data: UserUpdate,
     db: Session = Depends(get_db),
     current_user_id: UUID = Depends(get_current_user_id),
+    current_user: dict = Depends(get_current_user),
 ):
     """
     Update the currently authenticated user's profile.
     Updates profile information without requiring user_id as a path parameter.
     """
     user = user_service.update_user(db=db, user_id=current_user_id, user_data=user_data)
-    return require_found(user, "User")
+    if user:
+        return user
+
+    # Bootstrap profile on first save if no app user row exists yet.
+    bootstrap_email = user_data.email or current_user.get("email")
+    if not bootstrap_email:
+        raise HTTPException(
+            status_code=400,
+            detail="Email is required to create a profile"
+        )
+
+    created_user = user_service.create_user(
+        db=db,
+        user_data=UserCreate(
+            supabase_user_id=current_user_id,
+            email=bootstrap_email,
+            full_name=user_data.full_name,
+            phone=user_data.phone,
+            location=user_data.location,
+            linkedin_url=user_data.linkedin_url,
+            github_url=user_data.github_url,
+            portfolio_url=user_data.portfolio_url,
+            preferred_roles=user_data.preferred_roles or [],
+            preferred_locations=user_data.preferred_locations or [],
+            preferred_salary_min=user_data.preferred_salary_min,
+            preferred_salary_max=user_data.preferred_salary_max,
+            years_of_experience=user_data.years_of_experience,
+        ),
+    )
+    return created_user
 
 
 @router.get("/{user_id}", response_model=UserRead, dependencies=[Depends(require_scopes(["users:read"]))])
