@@ -14,7 +14,9 @@ supabase>=2.0.0
 # Configuration
 pydantic-settings
 python-dotenv
-ruff
+
+# Rate Limiting
+slowapi>=0.1.9
 
 # Authentication & Security
 pyjwt[crypto]

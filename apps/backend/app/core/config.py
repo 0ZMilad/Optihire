@@ -28,6 +28,22 @@ class Settings(BaseSettings):
     PROJECT_NAME: str = "Optihire API"
     API_V1_STR: str = "/api/v1"
 
+    # CORS
+    ALLOWED_ORIGINS: list[str] = [
+        "http://localhost:3000",
+        "http://localhost:3001",
+    ]
+
+    # Rate Limiting (targeted endpoints only)
+    RATE_LIMIT_UPLOAD: str = "10/minute"
+    RATE_LIMIT_AUDIT: str = "20/minute"
+
+    # Database Pool
+    DB_POOL_SIZE: int = 10
+    DB_MAX_OVERFLOW: int = 20
+    DB_POOL_RECYCLE: int = 300
+    DB_POOL_TIMEOUT: int = 30
+
     @property
     def jwt_issuer(self) -> str:
         """Extract issuer from Supabase URL for JWT validation"""

@@ -3,6 +3,8 @@ import logging
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
+from slowapi import _rate_limit_exceeded_handler
+from slowapi.errors import RateLimitExceeded
 from sqlalchemy.exc import IntegrityError
 
 from app.api.v1.endpoints import system_api, user_api, resumes, analysis, jobs
@@ -16,6 +18,8 @@ logging.getLogger("uvicorn").setLevel(logging.WARNING)
 logging.getLogger("uvicorn.access").setLevel(logging.WARNING)
 logging.getLogger("fastapi").setLevel(logging.WARNING)
 
+from app.core.limiter import limiter
+
 app = FastAPI(
     title=settings.PROJECT_NAME,
     description="AI-powered ATS Resume Optimization Platform",
@@ -23,6 +27,8 @@ app = FastAPI(
     docs_url="/docs",
     redoc_url="/redoc",
 )
+app.state.limiter = limiter
+app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
 
 
 # =============================================================================
@@ -74,14 +80,10 @@ app.add_middleware(JWTMiddleware)
 # CORS configuration (for your Next.js frontend)
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=[
-        "http://localhost:3000",  # Local Next.js development
-        "http://localhost:3001",  # Alternative port
-        "https://syicfsqcndapnfpqqbee.supabase.co", # Supabase deployed frontend
-    ],
+    allow_origins=settings.ALLOWED_ORIGINS,
     allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
+    allow_methods=["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
+    allow_headers=["Authorization", "Content-Type", "X-Request-Id"],
 )
 
 # Include routers
