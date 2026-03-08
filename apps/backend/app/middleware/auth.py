@@ -65,8 +65,8 @@ class JWTMiddleware(BaseHTTPMiddleware):
         validator = get_jwt_validator()
         
         try:
-            # Validate token
-            payload = validator.validate_token(token)
+            # Validate token (async — non-blocking JWKS fetch)
+            payload = await validator.validate_token(token)
 
             if "sub" not in payload:
                 error_response = create_error_response(

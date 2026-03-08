@@ -1,3 +1,4 @@
+import hashlib
 from datetime import datetime, timezone
 from functools import lru_cache
 
@@ -8,11 +9,16 @@ from fastapi import HTTPException, status
 
 from app.core.config import settings
 
-# Cache for decoded tokens (5 minute TTL, max 1000 tokens)
+# Cache for decoded tokens keyed by SHA-256 hash (5 minute TTL, max 1000)
 token_cache = TTLCache(maxsize=1000, ttl=300)
 
 # Cache for JWKS (JSON Web Key Set)
-jwks_cache = {"keys": None, "fetched_at": None}
+jwks_cache: dict = {"keys": None, "fetched_at": None}
+
+
+def _hash_token(token: str) -> str:
+    """Hash a JWT so raw tokens are never stored in memory as cache keys."""
+    return hashlib.sha256(token.encode("utf-8")).hexdigest()
 
 
 class JWTValidator:
@@ -23,32 +29,33 @@ class JWTValidator:
         self.issuer = settings.jwt_issuer
         self.jwks_url = f"{settings.SUPABASE_URL}/auth/v1/.well-known/jwks.json"
     
-    def get_signing_key(self, token: str):
-        """Get the signing key from JWKS endpoint"""
-        # Decode header to get kid
+    async def _fetch_jwks(self) -> None:
+        """Fetch JWKS from Supabase using async HTTP (non-blocking)."""
+        try:
+            async with httpx.AsyncClient(timeout=5.0) as client:
+                response = await client.get(self.jwks_url)
+                response.raise_for_status()
+                jwks_cache["keys"] = response.json()["keys"]
+                jwks_cache["fetched_at"] = datetime.now(timezone.utc).timestamp()
+        except httpx.HTTPError as e:
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail=f"Failed to fetch JWKS: {str(e)}"
+            )
+
+    async def get_signing_key(self, token: str):
+        """Get the signing key from JWKS endpoint (async)."""
         unverified_header = jwt.get_unverified_header(token)
         kid = unverified_header.get("kid")
         
-        # Fetch JWKS if not cached or expired
+        # Fetch JWKS if not cached or expired (1 hour TTL)
         if jwks_cache["keys"] is None or jwks_cache["fetched_at"] is None or \
            (datetime.now(timezone.utc).timestamp() - jwks_cache["fetched_at"]) > 3600:
-            try:
-                # Use httpx for synchronous HTTP that doesn't block event loop
-                with httpx.Client(timeout=5.0) as client:
-                    response = client.get(self.jwks_url)
-                    response.raise_for_status()
-                    jwks_cache["keys"] = response.json()["keys"]
-                    jwks_cache["fetched_at"] = datetime.now(timezone.utc).timestamp()
-            except httpx.HTTPError as e:
-                raise HTTPException(
-                    status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                    detail=f"Failed to fetch JWKS: {str(e)}"
-                )
+            await self._fetch_jwks()
         
         # Find the key with matching kid
         for key in jwks_cache["keys"]:
             if key.get("kid") == kid:
-                # Use the appropriate algorithm based on key type
                 key_type = key.get("kty")
                 if key_type == "EC":
                     return jwt.algorithms.ECAlgorithm.from_jwk(key)
@@ -65,32 +72,28 @@ class JWTValidator:
             detail="No matching key found in JWKS"
         )
     
-    def validate_token(self, token: str) -> dict:
+    async def validate_token(self, token: str) -> dict:
         """
         Validate JWT token and return decoded payload.
-        Implements caching to reduce validation overhead.
+        Uses SHA-256 hashed cache keys so raw tokens are never stored in memory.
         """
-        # Check cache first (TTLCache automatically handles expiry)
-        if token in token_cache:
-            return token_cache[token]
+        cache_key = _hash_token(token)
+        if cache_key in token_cache:
+            return token_cache[cache_key]
         
         try:
-            # Get algorithm from token header
             unverified_header = jwt.get_unverified_header(token)
             algorithm = unverified_header.get("alg")
             
-            # Get signing key for ES256/RS256 tokens
             if algorithm in ["ES256", "RS256"]:
-                key = self.get_signing_key(token)
+                key = await self.get_signing_key(token)
             else:
-                # HS256 not supported without explicit secret configuration
                 raise HTTPException(
                     status_code=status.HTTP_401_UNAUTHORIZED,
                     detail=f"Unsupported algorithm: {algorithm}",
                     headers={"WWW-Authenticate": "Bearer"},
                 )
             
-            # Decode and validate token
             payload = jwt.decode(
                 token,
                 key,
@@ -106,8 +109,8 @@ class JWTValidator:
                 }
             )
             
-            # Cache the validated token
-            token_cache[token] = payload
+            # Cache by hash, not by raw token
+            token_cache[cache_key] = payload
             
             return payload
             
