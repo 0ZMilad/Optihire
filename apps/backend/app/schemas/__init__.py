@@ -2,7 +2,6 @@
 Schema exports for the Optihire application.
 """
 
-# Common enums
 # Analysis schemas
 from app.schemas.analysis_schema import (
     AnalysisResultCreate,
@@ -21,17 +20,7 @@ from app.schemas.analysis_schema import (
     SuggestionUpdate,
 )
 
-# Application schemas
-from app.schemas.application_schema import (
-    ApplicationActivityCreate,
-    ApplicationActivityRead,
-    ApplicationContactCreate,
-    ApplicationContactRead,
-    ApplicationContactUpdate,
-    JobApplicationCreate,
-    JobApplicationRead,
-    JobApplicationUpdate,
-)
+# Common enums
 from app.schemas.common_schema import (
     ActivityType,
     ApplicationStatus,
@@ -45,43 +34,6 @@ from app.schemas.common_schema import (
     RemoteType,
     StorageBackend,
     SuggestionState,
-)
-
-# Content schemas
-from app.schemas.content_schema import (
-    CoverLetterCreate,
-    CoverLetterRead,
-    CoverLetterUpdate,
-    InterviewQuestionCreate,
-    InterviewQuestionRead,
-    SuggestedProjectCreate,
-    SuggestedProjectRead,
-    SuggestedProjectUpdate,
-    UserSuggestedProjectCreate,
-    UserSuggestedProjectRead,
-    UserSuggestedProjectUpdate,
-)
-
-# File schemas
-from app.schemas.file_schema import (
-    ParseTaskCreate,
-    ParseTaskRead,
-    ParseTaskUpdate,
-    UploadedFileCreate,
-    UploadedFileRead,
-    UploadedFileUpdate,
-)
-
-# Job schemas
-from app.schemas.job_schema import (
-    JobListingCreate,
-    JobListingRead,
-    JobListingUpdate,
-    JobMatchCreate,
-    JobMatchRead,
-    JobMatchUpdate,
-    UserJobFeedbackCreate,
-    UserJobFeedbackRead,
 )
 
 # Resume schemas
@@ -109,25 +61,6 @@ from app.schemas.resume_schema import (
     SkillCreate,
     SkillRead,
     SkillUpdate,
-)
-
-# System schemas
-from app.schemas.system_schema import (
-    AuditLogCreate,
-    AuditLogRead,
-    FeatureFlagCreate,
-    FeatureFlagRead,
-    FeatureFlagUpdate,
-    IdempotencyKeyCreate,
-    IdempotencyKeyRead,
-    IdempotencyKeyUpdate,
-    SystemConfigCreate,
-    SystemConfigRead,
-    SystemConfigUpdate,
-    SystemHealthCheckCreate,
-    SystemHealthCheckRead,
-    TelemetryEventCreate,
-    TelemetryEventRead,
 )
 
 # User schemas
@@ -159,13 +92,6 @@ __all__ = [
     "UserRead",
     "OnboardingProgressCreate",
     "OnboardingProgressRead",
-    # File
-    "UploadedFileCreate",
-    "UploadedFileUpdate",
-    "UploadedFileRead",
-    "ParseTaskCreate",
-    "ParseTaskUpdate",
-    "ParseTaskRead",
     # Resume
     "ResumeTemplateRead",
     "ResumeCreate",
@@ -205,50 +131,5 @@ __all__ = [
     "IndustryKeywordCreate",
     "IndustryKeywordUpdate",
     "IndustryKeywordRead",
-    # Job
-    "JobListingCreate",
-    "JobListingUpdate",
-    "JobListingRead",
-    "JobMatchCreate",
-    "JobMatchUpdate",
-    "JobMatchRead",
-    "UserJobFeedbackCreate",
-    "UserJobFeedbackRead",
-    # Application
-    "JobApplicationCreate",
-    "JobApplicationUpdate",
-    "JobApplicationRead",
-    "ApplicationContactCreate",
-    "ApplicationContactUpdate",
-    "ApplicationContactRead",
-    "ApplicationActivityCreate",
-    "ApplicationActivityRead",
-    # Content
-    "CoverLetterCreate",
-    "CoverLetterUpdate",
-    "CoverLetterRead",
-    "InterviewQuestionCreate",
-    "InterviewQuestionRead",
-    "SuggestedProjectCreate",
-    "SuggestedProjectUpdate",
-    "SuggestedProjectRead",
-    "UserSuggestedProjectCreate",
-    "UserSuggestedProjectUpdate",
-    "UserSuggestedProjectRead",
-    # System
-    "SystemConfigCreate",
-    "SystemConfigUpdate",
-    "SystemConfigRead",
-    "FeatureFlagCreate",
-    "FeatureFlagUpdate",
-    "FeatureFlagRead",
-    "IdempotencyKeyCreate",
-    "IdempotencyKeyUpdate",
-    "IdempotencyKeyRead",
-    "AuditLogCreate",
-    "AuditLogRead",
-    "SystemHealthCheckCreate",
-    "SystemHealthCheckRead",
-    "TelemetryEventCreate",
-    "TelemetryEventRead",
 ]
+

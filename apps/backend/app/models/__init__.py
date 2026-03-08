@@ -55,4 +55,6 @@ __all__ = [
     "SuggestionInteraction",
     "SkillCorrection",
     "IndustryKeyword",
+    # Job Application
+    "UserJobApplication",
 ]

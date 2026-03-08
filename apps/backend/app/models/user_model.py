@@ -57,10 +57,10 @@ class User(UserBase, table=True):
         sa_column=Column(PGUUID(as_uuid=True), primary_key=True, default=uuid4),
     )
     created_at: datetime = Field(
-        default_factory=datetime.utcnow, sa_column_kwargs={"server_default": func.now()}
+        default_factory=lambda: datetime.now(timezone.utc), sa_column_kwargs={"server_default": func.now()}
     )
     updated_at: datetime = Field(
-        default_factory=datetime.utcnow,
+        default_factory=lambda: datetime.now(timezone.utc),
         sa_column_kwargs={"server_default": func.now(), "onupdate": func.now()},
     )
     last_login_at: datetime | None = Field(default=None)
@@ -77,6 +77,6 @@ class UserOnboardingProgress(SQLModel, table=True):
         sa_column=Column("data", JSONB, nullable=False)
     )  # JSONB in PostgreSQL
     updated_at: datetime = Field(
-        default_factory=datetime.utcnow,
+        default_factory=lambda: datetime.now(timezone.utc),
         sa_column_kwargs={"server_default": func.now(), "onupdate": func.now()},
     )

@@ -2,7 +2,7 @@
 Analysis, suggestions, and job description models for database operations.
 """
 
-from datetime import datetime
+from datetime import datetime, timezone
 from decimal import Decimal
 from uuid import UUID, uuid4
 
@@ -42,7 +42,7 @@ class JobDescription(SQLModel, table=True):
     )
     jd_hash: str | None = Field(default=None, max_length=64)
     created_at: datetime = Field(
-        default_factory=datetime.utcnow, sa_column_kwargs={"server_default": func.now()}
+        default_factory=lambda: datetime.now(timezone.utc), sa_column_kwargs={"server_default": func.now()}
     )
 
 
@@ -119,7 +119,7 @@ class AnalysisResult(SQLModel, table=True):
     keywords_rules_version: str | None = Field(default=None, max_length=20)
     analysis_version: str = Field(default="1.0", max_length=20, nullable=False)
     analyzed_at: datetime = Field(
-        default_factory=datetime.utcnow, sa_column_kwargs={"server_default": func.now()}
+        default_factory=lambda: datetime.now(timezone.utc), sa_column_kwargs={"server_default": func.now()}
     )
 
 
@@ -153,7 +153,7 @@ class Suggestion(SQLModel, table=True):
     rules_version: str = Field(max_length=20, nullable=False)
     context: dict | None = Field(default=None, sa_column=Column(JSONB))
     created_at: datetime = Field(
-        default_factory=datetime.utcnow, sa_column_kwargs={"server_default": func.now()}
+        default_factory=lambda: datetime.now(timezone.utc), sa_column_kwargs={"server_default": func.now()}
     )
     resolved_at: datetime | None = Field(default=None)
 
@@ -176,7 +176,7 @@ class SuggestionInteraction(SQLModel, table=True):
     action: str = Field(max_length=20, nullable=False)
     details: dict | None = Field(default=None, sa_column=Column(JSONB))
     created_at: datetime = Field(
-        default_factory=datetime.utcnow, sa_column_kwargs={"server_default": func.now()}
+        default_factory=lambda: datetime.now(timezone.utc), sa_column_kwargs={"server_default": func.now()}
     )
 
 
@@ -200,7 +200,7 @@ class SkillCorrection(SQLModel, table=True):
     action: str = Field(max_length=20, nullable=False)
     source: str = Field(max_length=20, nullable=False, default="user")
     created_at: datetime = Field(
-        default_factory=datetime.utcnow, sa_column_kwargs={"server_default": func.now()}
+        default_factory=lambda: datetime.now(timezone.utc), sa_column_kwargs={"server_default": func.now()}
     )
 
 
@@ -234,9 +234,9 @@ class IndustryKeyword(SQLModel, table=True):
     is_trending: bool = Field(default=False)
     rules_version: str = Field(max_length=20, nullable=False, default="v1")
     created_at: datetime = Field(
-        default_factory=datetime.utcnow, sa_column_kwargs={"server_default": func.now()}
+        default_factory=lambda: datetime.now(timezone.utc), sa_column_kwargs={"server_default": func.now()}
     )
     updated_at: datetime = Field(
-        default_factory=datetime.utcnow,
+        default_factory=lambda: datetime.now(timezone.utc),
         sa_column_kwargs={"server_default": func.now(), "onupdate": func.now()},
     )

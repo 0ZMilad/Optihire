@@ -5,7 +5,7 @@ Stores per-user application status for curated job listings.
 The curated listings themselves live in-memory in ``app/data/curated_jobs.py``.
 """
 
-from datetime import datetime
+from datetime import datetime, timezone
 from uuid import UUID, uuid4
 
 from sqlalchemy import Index, UniqueConstraint, func
@@ -41,10 +41,10 @@ class UserJobApplication(SQLModel, table=True):
     job_listing_id: str = Field(max_length=50, nullable=False)
     application_status: str = Field(default="not_applied", max_length=20)
     created_at: datetime = Field(
-        default_factory=datetime.utcnow,
+        default_factory=lambda: datetime.now(timezone.utc),
         sa_column_kwargs={"server_default": func.now()},
     )
     updated_at: datetime = Field(
-        default_factory=datetime.utcnow,
+        default_factory=lambda: datetime.now(timezone.utc),
         sa_column_kwargs={"server_default": func.now(), "onupdate": func.now()},
     )

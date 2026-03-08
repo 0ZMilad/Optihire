@@ -2,7 +2,7 @@
 File upload and parsing models for database operations.
 """
 
-from datetime import datetime
+from datetime import datetime, timezone
 from uuid import UUID, uuid4
 
 from sqlalchemy import Text, func
@@ -33,10 +33,10 @@ class UploadedFile(SQLModel, table=True):
     ttl_expires_at: datetime | None = Field(default=None)
     extracted_text: str | None = Field(default=None, sa_column=Column(Text))
     created_at: datetime = Field(
-        default_factory=datetime.utcnow, sa_column_kwargs={"server_default": func.now()}
+        default_factory=lambda: datetime.now(timezone.utc), sa_column_kwargs={"server_default": func.now()}
     )
     updated_at: datetime = Field(
-        default_factory=datetime.utcnow,
+        default_factory=lambda: datetime.now(timezone.utc),
         sa_column_kwargs={"server_default": func.now(), "onupdate": func.now()},
     )
 
@@ -62,9 +62,9 @@ class ParseTask(SQLModel, table=True):
     started_at: datetime | None = Field(default=None)
     completed_at: datetime | None = Field(default=None)
     created_at: datetime = Field(
-        default_factory=datetime.utcnow, sa_column_kwargs={"server_default": func.now()}
+        default_factory=lambda: datetime.now(timezone.utc), sa_column_kwargs={"server_default": func.now()}
     )
     updated_at: datetime = Field(
-        default_factory=datetime.utcnow,
+        default_factory=lambda: datetime.now(timezone.utc),
         sa_column_kwargs={"server_default": func.now(), "onupdate": func.now()},
     )

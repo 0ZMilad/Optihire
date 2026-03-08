@@ -2,7 +2,7 @@
 Resume and related section models for database operations.
 """
 
-from datetime import date, datetime
+from datetime import date, datetime, timezone
 from decimal import Decimal
 from uuid import UUID, uuid4
 
@@ -28,7 +28,7 @@ class ResumeTemplate(SQLModel, table=True):
     is_default: bool = Field(default=False)
     is_active: bool = Field(default=True)
     created_at: datetime = Field(
-        default_factory=datetime.utcnow, sa_column_kwargs={"server_default": func.now()}
+        default_factory=lambda: datetime.now(timezone.utc), sa_column_kwargs={"server_default": func.now()}
     )
 
 
@@ -76,10 +76,10 @@ class Resume(SQLModel, table=True):
     error_message: str | None = Field(default=None, sa_column=Column(Text))
     last_analyzed_at: datetime | None = Field(default=None)
     created_at: datetime = Field(
-        default_factory=datetime.utcnow, sa_column_kwargs={"server_default": func.now()}
+        default_factory=lambda: datetime.now(timezone.utc), sa_column_kwargs={"server_default": func.now()}
     )
     updated_at: datetime = Field(
-        default_factory=datetime.utcnow,
+        default_factory=lambda: datetime.now(timezone.utc),
         sa_column_kwargs={"server_default": func.now(), "onupdate": func.now()},
     )
     deleted_at: datetime | None = Field(default=None)
@@ -113,10 +113,10 @@ class ResumeExperience(SQLModel, table=True):
     )
     display_order: int = Field(default=0, nullable=False)
     created_at: datetime = Field(
-        default_factory=datetime.utcnow, sa_column_kwargs={"server_default": func.now()}
+        default_factory=lambda: datetime.now(timezone.utc), sa_column_kwargs={"server_default": func.now()}
     )
     updated_at: datetime = Field(
-        default_factory=datetime.utcnow,
+        default_factory=lambda: datetime.now(timezone.utc),
         sa_column_kwargs={"server_default": func.now(), "onupdate": func.now()},
     )
 
@@ -150,10 +150,10 @@ class ResumeEducation(SQLModel, table=True):
     )
     display_order: int = Field(default=0, nullable=False)
     created_at: datetime = Field(
-        default_factory=datetime.utcnow, sa_column_kwargs={"server_default": func.now()}
+        default_factory=lambda: datetime.now(timezone.utc), sa_column_kwargs={"server_default": func.now()}
     )
     updated_at: datetime = Field(
-        default_factory=datetime.utcnow,
+        default_factory=lambda: datetime.now(timezone.utc),
         sa_column_kwargs={"server_default": func.now(), "onupdate": func.now()},
     )
 
@@ -183,7 +183,7 @@ class ResumeSkill(SQLModel, table=True):
     is_primary: bool = Field(default=False)
     display_order: int = Field(default=0, nullable=False)
     created_at: datetime = Field(
-        default_factory=datetime.utcnow, sa_column_kwargs={"server_default": func.now()}
+        default_factory=lambda: datetime.now(timezone.utc), sa_column_kwargs={"server_default": func.now()}
     )
 
 
@@ -208,7 +208,7 @@ class ResumeCertification(SQLModel, table=True):
     credential_url: str | None = Field(default=None, max_length=500)
     display_order: int = Field(default=0, nullable=False)
     created_at: datetime = Field(
-        default_factory=datetime.utcnow, sa_column_kwargs={"server_default": func.now()}
+        default_factory=lambda: datetime.now(timezone.utc), sa_column_kwargs={"server_default": func.now()}
     )
 
 
@@ -240,10 +240,10 @@ class ResumeProject(SQLModel, table=True):
     )
     display_order: int = Field(default=0, nullable=False)
     created_at: datetime = Field(
-        default_factory=datetime.utcnow, sa_column_kwargs={"server_default": func.now()}
+        default_factory=lambda: datetime.now(timezone.utc), sa_column_kwargs={"server_default": func.now()}
     )
     updated_at: datetime = Field(
-        default_factory=datetime.utcnow,
+        default_factory=lambda: datetime.now(timezone.utc),
         sa_column_kwargs={"server_default": func.now(), "onupdate": func.now()},
     )
 
@@ -266,9 +266,9 @@ class ResumeCustomSection(SQLModel, table=True):
     content: dict = Field(sa_column=Column(JSONB, nullable=False))
     display_order: int = Field(default=0, nullable=False)
     created_at: datetime = Field(
-        default_factory=datetime.utcnow, sa_column_kwargs={"server_default": func.now()}
+        default_factory=lambda: datetime.now(timezone.utc), sa_column_kwargs={"server_default": func.now()}
     )
     updated_at: datetime = Field(
-        default_factory=datetime.utcnow,
+        default_factory=lambda: datetime.now(timezone.utc),
         sa_column_kwargs={"server_default": func.now(), "onupdate": func.now()},
     )
