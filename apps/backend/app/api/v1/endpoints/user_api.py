@@ -15,7 +15,7 @@ router = APIRouter()
 
 
 @router.post("/", response_model=UserRead, status_code=201, dependencies=[Depends(require_scopes(["users:create"]))])
-async def create_new_user(
+def create_new_user(
     user: UserCreate,
     db: Session = Depends(get_db),
     current_user: dict = Depends(get_current_user),
@@ -36,7 +36,7 @@ async def create_new_user(
 
 
 @router.get("/profile", response_model=UserRead, dependencies=[Depends(require_scopes(["users:read"]))])
-async def get_current_user_profile(
+def get_current_user_profile(
     db: Session = Depends(get_db),
     current_user_id: UUID = Depends(get_current_user_id),
 ):
@@ -49,7 +49,7 @@ async def get_current_user_profile(
 
 
 @router.put("/profile", response_model=UserRead, dependencies=[Depends(require_scopes(["users:update"]))])
-async def update_current_user_profile(
+def update_current_user_profile(
     user_data: UserUpdate,
     db: Session = Depends(get_db),
     current_user_id: UUID = Depends(get_current_user_id),
@@ -93,7 +93,7 @@ async def update_current_user_profile(
 
 
 @router.get("/{user_id}", response_model=UserRead, dependencies=[Depends(require_scopes(["users:read"]))])
-async def get_user(
+def get_user(
     user_id: UUID,
     db: Session = Depends(get_db),
     current_user_id: UUID = Depends(get_current_user_id),
@@ -113,7 +113,7 @@ async def get_user(
 
 
 @router.patch("/{user_id}", response_model=UserRead, dependencies=[Depends(require_scopes(["users:update"]))])
-async def update_user(
+def update_user(
     user_id: UUID,
     user_data: UserUpdate,
     db: Session = Depends(get_db),
@@ -134,7 +134,7 @@ async def update_user(
 
 
 @router.delete("/account", status_code=204, dependencies=[Depends(require_scopes(["users:delete"]))])
-async def delete_own_account(
+def delete_own_account(
     db: Session = Depends(get_db),
     current_user_id: UUID = Depends(get_current_user_id),
 ):
@@ -185,7 +185,7 @@ async def delete_own_account(
 
 
 @router.delete("/{user_id}", status_code=204, dependencies=[Depends(require_scopes(["users:delete"]))])
-async def delete_user(
+def delete_user(
     user_id: UUID,
     db: Session = Depends(get_db),
     current_user_id: UUID = Depends(get_current_user_id),

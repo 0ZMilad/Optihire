@@ -77,7 +77,7 @@ def _get_or_create_application(
     status_code=status.HTTP_204_NO_CONTENT,
     summary="Update application status for a curated job match",
 )
-async def update_match_status(
+def update_match_status(
     match_id: str,
     payload: JobStatusUpdate,
     user_id: UUID = Depends(get_current_user_id),

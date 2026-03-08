@@ -9,6 +9,7 @@ from datetime import datetime, timezone
 from typing import Optional
 
 from fastapi import APIRouter, Depends, HTTPException, Request
+from fastapi.responses import JSONResponse
 from sqlalchemy import text
 from sqlmodel import Session
 
@@ -26,7 +27,7 @@ router = APIRouter()
 
 
 @router.get("/health")
-async def check_system_health(db: Session = Depends(get_db)):
+def check_system_health(db: Session = Depends(get_db)):
     """
     Check the health of the system by verifying database connectivity.
     Returns service status and database connection state.
@@ -43,16 +44,19 @@ async def check_system_health(db: Session = Depends(get_db)):
         }
     except Exception as e:
         log_error("Health check failed", error=e, logger_name="backend")
-        return {
-            "status": "unhealthy",
-            "service": "Optihire Backend",
-            "database": f"disconnected: {str(e)}",
-            "timestamp": datetime.now(timezone.utc).isoformat(),
-        }
+        return JSONResponse(
+            status_code=503,
+            content={
+                "status": "unhealthy",
+                "service": "Optihire Backend",
+                "database": "disconnected",
+                "timestamp": datetime.now(timezone.utc).isoformat(),
+            },
+        )
 
 
 @router.post("/log", response_model=LogResponse)
-async def submit_frontend_log(
+def submit_frontend_log(
     log_data: FrontendLogPayload,
     request: Request,
 ) -> LogResponse:
@@ -146,7 +150,7 @@ async def submit_frontend_log(
 
 
 @router.get("/logs/stats")
-async def get_log_statistics():
+def get_log_statistics():
     """
     Get statistics about current log files.
     Returns file sizes and line counts for monitoring.

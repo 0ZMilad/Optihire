@@ -8,10 +8,12 @@ GET  /api/v1/analyses/{id}   — retrieve a previously computed audit result by 
 
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, Query, status
+from fastapi import APIRouter, Depends, Query, Request, status
 from sqlmodel import Session
 
+from app.core.config import settings
 from app.core.dependencies import get_current_user_id
+from app.core.limiter import limiter
 from app.db.session import get_db
 from app.schemas.analysis_schema import AuditRequest, AnalysisResultRead
 from app.services.analysis_service import run_audit, get_audit_result, get_latest_audit_result, list_audit_results, delete_audit_result
@@ -26,7 +28,7 @@ router = APIRouter()
     summary="List audit results",
     description="Return a paginated list of ATS audit results for the authenticated user, newest first.",
 )
-async def list_audit_results_endpoint(
+def list_audit_results_endpoint(
     skip: int = Query(0, ge=0, description="Number of results to skip."),
     limit: int = Query(20, ge=1, le=100, description="Maximum number of results to return."),
     current_user_id: UUID = Depends(get_current_user_id),
@@ -42,7 +44,7 @@ async def list_audit_results_endpoint(
     summary="Get latest audit result",
     description="Return the most recent ATS audit result for the authenticated user, or null if none exist.",
 )
-async def get_latest_audit_result_endpoint(
+def get_latest_audit_result_endpoint(
     current_user_id: UUID = Depends(get_current_user_id),
     db: Session = Depends(get_db),
 ) -> AnalysisResultRead | None:
@@ -60,7 +62,9 @@ async def get_latest_audit_result_endpoint(
         "Identical (resume, job description) combinations return a cached result."
     ),
 )
-async def run_audit_endpoint(
+@limiter.limit(settings.RATE_LIMIT_AUDIT)
+def run_audit_endpoint(
+    request: Request,
     payload: AuditRequest,
     ai_enhance: bool = Query(
         False,
@@ -86,7 +90,7 @@ async def run_audit_endpoint(
     summary="Get audit result",
     description="Retrieve a previously computed ATS audit result by its ID.",
 )
-async def get_audit_result_endpoint(
+def get_audit_result_endpoint(
     result_id: UUID,
     current_user_id: UUID = Depends(get_current_user_id),
     db: Session = Depends(get_db),
@@ -104,7 +108,7 @@ async def get_audit_result_endpoint(
     summary="Delete audit result",
     description="Permanently delete an ATS audit result by its ID.",
 )
-async def delete_audit_result_endpoint(
+def delete_audit_result_endpoint(
     result_id: UUID,
     current_user_id: UUID = Depends(get_current_user_id),
     db: Session = Depends(get_db),

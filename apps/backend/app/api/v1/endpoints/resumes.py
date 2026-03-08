@@ -1,12 +1,13 @@
 import re
 import uuid
-from fastapi import APIRouter, Depends, File, UploadFile, HTTPException, status, BackgroundTasks, Response
+from fastapi import APIRouter, Depends, File, UploadFile, HTTPException, Request, status, BackgroundTasks, Response
 from sqlmodel import Session
 from uuid import UUID
 from typing import List
 
 from app.core.config import settings
 from app.core.dependencies import get_current_user_id
+from app.core.limiter import limiter
 from app.core.logging_config import log_info, log_error, log_warning
 from app.db.session import get_db
 from app.models.analysis_model import AnalysisResult, Suggestion, SuggestionInteraction, SkillCorrection
@@ -54,7 +55,7 @@ ALLOWED_MIME_TYPES = [
 ]
 
 @router.post("", response_model=ResumeRead, status_code=status.HTTP_201_CREATED)
-async def create_resume_endpoint(
+def create_resume_endpoint(
     resume_data: ResumeCreate,
     current_user_id: UUID = Depends(get_current_user_id),
     db: Session = Depends(get_db)
@@ -99,7 +100,7 @@ async def create_resume_endpoint(
 
 
 @router.get("", response_model=List[ResumeListItem], status_code=status.HTTP_200_OK)
-async def list_user_resumes(
+def list_user_resumes(
     current_user_id: UUID = Depends(get_current_user_id),
     db: Session = Depends(get_db),
     limit: int = 50,
@@ -142,7 +143,9 @@ async def list_user_resumes(
 
 
 @router.post("/upload", status_code=status.HTTP_201_CREATED)
+@limiter.limit(settings.RATE_LIMIT_UPLOAD)
 async def upload_resume(
+    request: Request,
     file: UploadFile = File(...),
     background_tasks: BackgroundTasks = BackgroundTasks(),
     current_user_id: UUID = Depends(get_current_user_id),
@@ -271,7 +274,7 @@ async def upload_resume(
         }
     },
 )
-async def download_resume_pdf(
+def download_resume_pdf(
     resume_id: UUID,
     current_user_id: UUID = Depends(get_current_user_id),
     db: Session = Depends(get_db),
@@ -339,7 +342,7 @@ async def download_resume_pdf(
     status_code=status.HTTP_204_NO_CONTENT,
     summary="Delete all resumes for current user (TESTING ONLY)"
 )
-async def delete_all_resumes(
+def delete_all_resumes(
     current_user_id: UUID = Depends(get_current_user_id),
     db: Session = Depends(get_db)
 ):
@@ -435,7 +438,7 @@ async def delete_all_resumes(
     status_code=status.HTTP_200_OK,
     summary="Get active resume for current user"
 )
-async def get_active_resume_endpoint(
+def get_active_resume_endpoint(
     current_user_id: UUID = Depends(get_current_user_id),
     db: Session = Depends(get_db)
 ) -> ResumeRead:
@@ -465,7 +468,7 @@ async def get_active_resume_endpoint(
     status_code=status.HTTP_200_OK,
     summary="Get curated job matches for a resume"
 )
-async def get_job_matches_endpoint(
+def get_job_matches_endpoint(
     resume_id: UUID,
     current_user_id: UUID = Depends(get_current_user_id),
     db: Session = Depends(get_db),
@@ -491,7 +494,7 @@ async def get_job_matches_endpoint(
     status_code=status.HTTP_200_OK,
     summary="Get resume by ID"
 )
-async def get_resume(
+def get_resume(
     resume_id: UUID,
     current_user_id: UUID = Depends(get_current_user_id),
     db: Session = Depends(get_db)
@@ -521,7 +524,7 @@ async def get_resume(
     status_code=status.HTTP_200_OK,
     summary="Update resume"
 )
-async def update_resume(
+def update_resume(
     resume_id: UUID,
     resume_update: ResumeUpdate,
     current_user_id: UUID = Depends(get_current_user_id),
@@ -584,7 +587,7 @@ async def update_resume(
     status_code=status.HTTP_201_CREATED,
     summary="Duplicate resume with all sections"
 )
-async def duplicate_resume_endpoint(
+def duplicate_resume_endpoint(
     resume_id: UUID,
     current_user_id: UUID = Depends(get_current_user_id),
     db: Session = Depends(get_db),
@@ -642,7 +645,7 @@ async def duplicate_resume_endpoint(
     status_code=status.HTTP_204_NO_CONTENT,
     summary="Delete resume with cascading cleanup"
 )
-async def delete_resume(
+def delete_resume(
     resume_id: UUID,
     current_user_id: UUID = Depends(get_current_user_id),
     db: Session = Depends(get_db)
@@ -732,7 +735,7 @@ async def delete_resume(
     status_code=status.HTTP_200_OK,
     summary="Get resume parsing status"
 )
-async def get_resume_parse_status(
+def get_resume_parse_status(
     resume_id: UUID,
     current_user_id: UUID = Depends(get_current_user_id),
     db: Session = Depends(get_db)
@@ -784,7 +787,7 @@ async def get_resume_parse_status(
     status_code=status.HTTP_200_OK,
     summary="Get complete resume with all sections"
 )
-async def get_resume_complete_endpoint(
+def get_resume_complete_endpoint(
     resume_id: UUID,
     current_user_id: UUID = Depends(get_current_user_id),
     db: Session = Depends(get_db)
