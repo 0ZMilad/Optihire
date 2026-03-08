@@ -127,7 +127,7 @@ export function HeroSection() {
                 </div>
               </div>
 
-              <svg className="absolute inset-0 w-[180%] h-[140%] -top-[20%] -left-[40%] pointer-events-none z-0 visible lg:block hidden">
+              <svg className="absolute inset-0 w-[180%] h-[140%] -top-[20%] -left-[40%] pointer-events-none z-0 visible lg:block hidden" aria-hidden="true" role="presentation">
                 <path
                   d="M 175 235 L 80 235 L 80 160"
                   fill="none"

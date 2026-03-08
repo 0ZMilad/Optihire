@@ -135,18 +135,18 @@ export function PdfViewer({ url, filename, className }: PdfViewerProps) {
             variant="ghost" 
             size="sm"
             className="h-8 px-2"
-            title="Download"
+            aria-label="Download document"
           >
-            <Download className="w-4 h-4" />
+            <Download className="w-4 h-4" aria-hidden="true" />
           </Button>
           <Button 
             onClick={handleOpenInNewTab} 
             variant="ghost" 
             size="sm"
             className="h-8 px-2"
-            title="Open in new tab"
+            aria-label="Open in new tab"
           >
-            <ExternalLink className="w-4 h-4" />
+            <ExternalLink className="w-4 h-4" aria-hidden="true" />
           </Button>
         </div>
       </div>

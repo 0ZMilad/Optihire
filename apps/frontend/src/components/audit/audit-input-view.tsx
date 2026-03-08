@@ -61,9 +61,9 @@ export function AuditInputView({
       </div>
 
       <div className="space-y-2">
-        <label className="text-sm font-medium">Resume to audit</label>
+        <label id="resume-select-label" className="text-sm font-medium">Resume to audit</label>
         <Select value={selectedResumeId} onValueChange={setSelectedResumeId}>
-          <SelectTrigger className="w-full">
+          <SelectTrigger className="w-full" aria-labelledby="resume-select-label">
             <SelectValue placeholder="Select a resume…" />
           </SelectTrigger>
           <SelectContent>
@@ -194,11 +194,12 @@ export function AuditInputView({
         size="lg"
         className="w-full"
         disabled={!isValid || loading}
+        aria-busy={loading}
         onClick={() => onSubmit(selectedResumeId, sanitizeText(jobDescription))}
       >
         {loading ? (
           <>
-            <Loader2 className="size-4 animate-spin" />
+            <Loader2 className="size-4 animate-spin" aria-hidden="true" />
             Analyzing…
           </>
         ) : (

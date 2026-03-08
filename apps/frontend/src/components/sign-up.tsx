@@ -74,6 +74,8 @@ export default function SignupForm() {
             Join us today and get started with your journey.
           </p>
           <form className="mt-6 space-y-4" onSubmit={handleSignUp}>
+            <fieldset>
+              <legend className="sr-only">Create Account</legend>
 
             <div className="space-y-2">
               <Label
@@ -114,11 +116,13 @@ export default function SignupForm() {
                   size="icon"
                   className="absolute right-0 top-0 h-full px-3 text-muted-foreground hover:bg-transparent"
                   onClick={() => setShowPassword(!showPassword)}
+                  aria-label={showPassword ? "Hide password" : "Show password"}
+                  aria-pressed={showPassword}
                 >
                   {showPassword ? (
-                    <EyeOff className="h-4 w-4" />
+                    <EyeOff className="h-4 w-4" aria-hidden="true" />
                   ) : (
-                    <Eye className="h-4 w-4" />
+                    <Eye className="h-4 w-4" aria-hidden="true" />
                   )}
                 </Button>
               </div>
@@ -147,16 +151,16 @@ export default function SignupForm() {
               </label>
             </div>
             {errorMessage && (
-              <div className="rounded bg-destructive/10 border border-destructive/20 p-2">
+              <div role="alert" aria-live="polite" aria-atomic="true" className="rounded bg-destructive/10 border border-destructive/20 p-2">
                 <p className="text-xs font-medium text-destructive">
-                  ⚠️ {errorMessage}
+                  {errorMessage}
                 </p>
               </div>
             )}
             {successMessage && (
-              <div className="rounded bg-green-500/10 border border-green-500/20 p-2">
+              <div role="status" aria-live="polite" aria-atomic="true" className="rounded bg-green-500/10 border border-green-500/20 p-2">
                 <p className="text-xs font-medium text-green-600">
-                  ✅ {successMessage}
+                  {successMessage}
                 </p>
               </div>
             )}
@@ -164,6 +168,7 @@ export default function SignupForm() {
               type="submit"
               className="mt-6 w-full py-2 font-medium"
               disabled={isLoading}
+              aria-busy={isLoading}
             >
               {isLoading ? (
                 <div className="flex items-center justify-center gap-2">
@@ -174,6 +179,7 @@ export default function SignupForm() {
                 "Sign up"
               )}
             </Button>
+            </fieldset>
           </form>
 
           <p className="mt-6 text-sm text-muted-foreground dark:text-muted-foreground">

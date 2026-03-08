@@ -124,7 +124,7 @@ function EmptyState({ hasFilters }: { hasFilters: boolean }) {
 
 function StatsBar({ total, filtered }: { total: number; filtered: number }) {
   return (
-    <p className="text-sm text-muted-foreground">
+    <p className="text-sm text-muted-foreground" aria-live="polite" aria-atomic="true">
       Showing{" "}
       <span className="font-medium text-foreground">{filtered}</span>
       {filtered !== total && (

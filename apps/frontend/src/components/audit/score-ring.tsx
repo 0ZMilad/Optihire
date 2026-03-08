@@ -30,7 +30,16 @@ export function ScoreRing({
   const tier = getScoreTier(score);
 
   useEffect(() => {
-    const duration = 1200;
+    const prefersReducedMotion =
+      typeof window !== "undefined" &&
+      window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    const duration = prefersReducedMotion ? 0 : 1200;
+
+    if (duration === 0) {
+      setAnimatedScore(score);
+      return;
+    }
+
     const start = performance.now();
 
     function animate(now: number) {
@@ -47,7 +56,11 @@ export function ScoreRing({
   const offset = circumference - (animatedScore / 100) * circumference;
 
   return (
-    <div className={cn("flex flex-col items-center gap-3", className)}>
+    <div
+      className={cn("flex flex-col items-center gap-3", className)}
+      aria-label={`${score} out of 100 score: ${tier.label}`}
+      role="img"
+    >
       <div className="relative" style={{ width: size, height: size }}>
         <svg
           width={size}

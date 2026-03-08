@@ -100,13 +100,13 @@ export function AuditResultsView({
   const checklistPassCount = useMemo(() => checklistItems.filter((i) => i.passed).length, [checklistItems]);
   const criticalCount = useMemo(() => priorityActions.filter((a) => a.priority === "critical").length, [priorityActions]);
 
-  const tabs = useMemo<{ id: TabId; label: string; icon: React.ReactNode; show: boolean; alert?: string }[]>(() => [
-    { id: "overview", label: "Overview", icon: <BarChart3 className="size-3.5" />, show: true },
-    { id: "actions", label: "Action Plan", icon: <ListChecks className="size-3.5" />, show: priorityActions.length > 0, alert: criticalCount > 0 ? String(criticalCount) : undefined },
-    { id: "skills", label: "Skills Gap", icon: <Search className="size-3.5" />, show: true },
-    { id: "health", label: "Resume Health", icon: <ActivitySquare className="size-3.5" />, show: !!impactAnalysis || !!resumeMetrics },
-    { id: "coach", label: "AI Coach", icon: <Sparkles className="size-3.5" />, show: !!aiEnhancement },
-  ].filter((t) => t.show), [priorityActions.length, criticalCount, impactAnalysis, resumeMetrics, aiEnhancement]);
+  const tabs = useMemo(() => ([
+    { id: "overview" as TabId, label: "Overview", icon: <BarChart3 className="size-3.5" />, show: true },
+    { id: "actions" as TabId, label: "Action Plan", icon: <ListChecks className="size-3.5" />, show: priorityActions.length > 0, alert: criticalCount > 0 ? String(criticalCount) : undefined },
+    { id: "skills" as TabId, label: "Skills Gap", icon: <Search className="size-3.5" />, show: true },
+    { id: "health" as TabId, label: "Resume Health", icon: <ActivitySquare className="size-3.5" />, show: !!impactAnalysis || !!resumeMetrics },
+    { id: "coach" as TabId, label: "AI Coach", icon: <Sparkles className="size-3.5" />, show: !!aiEnhancement },
+  ] as { id: TabId; label: string; icon: React.ReactNode; show: boolean; alert?: string }[]).filter((t) => t.show), [priorityActions.length, criticalCount, impactAnalysis, resumeMetrics, aiEnhancement]);
 
   return (
     <div className="space-y-5">
@@ -203,10 +203,14 @@ export function AuditResultsView({
       </div>
 
       {/* ── Tab nav ──────────────────────────────────────────── */}
-      <div className="flex items-center gap-1 overflow-x-auto pb-0.5 scrollbar-none border-b">
+      <div role="tablist" aria-label="Audit report sections" className="flex items-center gap-1 overflow-x-auto pb-0.5 scrollbar-none border-b">
         {tabs.map((tab) => (
           <button
             key={tab.id}
+            role="tab"
+            id={`tab-${tab.id}`}
+            aria-selected={activeTab === tab.id}
+            aria-controls={`tabpanel-${tab.id}`}
             onClick={() => setActiveTab(tab.id)}
             className={cn(
               "flex items-center gap-1.5 px-3 py-2 text-sm font-medium whitespace-nowrap transition-colors border-b-2 -mb-px",
@@ -231,7 +235,7 @@ export function AuditResultsView({
 
         {/* Overview */}
         {activeTab === "overview" && (
-          <div className="space-y-6">
+          <div role="tabpanel" id="tabpanel-overview" aria-labelledby="tab-overview" className="space-y-6">
             {/* ATS Checklist — folded in from old ATS Checks tab */}
             <SectionHeader
               icon={<ShieldCheck className="size-4" />}
@@ -256,7 +260,7 @@ export function AuditResultsView({
 
         {/* Action Plan */}
         {activeTab === "actions" && (
-          <div className="space-y-5">
+          <div role="tabpanel" id="tabpanel-actions" aria-labelledby="tab-actions" className="space-y-5">
             <SectionHeader
               icon={<ListChecks className="size-4" />}
               title="Action Plan"
@@ -274,7 +278,7 @@ export function AuditResultsView({
 
         {/* Skills Gap */}
         {activeTab === "skills" && (
-          <div className="space-y-5">
+          <div role="tabpanel" id="tabpanel-skills" aria-labelledby="tab-skills" className="space-y-5">
             <SectionHeader
               icon={<Search className="size-4" />}
               title="Skills Gap Analysis"
@@ -297,7 +301,7 @@ export function AuditResultsView({
 
         {/* Resume Health (merged Impact + Metrics) */}
         {activeTab === "health" && (impactAnalysis || resumeMetrics) && (
-          <div className="space-y-5">
+          <div role="tabpanel" id="tabpanel-health" aria-labelledby="tab-health" className="space-y-5">
             <SectionHeader
               icon={<ActivitySquare className="size-4" />}
               title="Resume Health"
@@ -312,7 +316,7 @@ export function AuditResultsView({
 
         {/* AI Coach */}
         {activeTab === "coach" && aiEnhancement && (
-          <div className="space-y-5">
+          <div role="tabpanel" id="tabpanel-coach" aria-labelledby="tab-coach" className="space-y-5">
             <SectionHeader
               icon={<Sparkles className="size-4" />}
               title="AI Career Coach"

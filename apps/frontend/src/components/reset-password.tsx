@@ -112,16 +112,16 @@ export default function ResetPassword() {
                   />
                 </div>
                 {errorMessage && (
-                  <div className="rounded bg-destructive/10 border border-destructive/20 p-2">
+                  <div role="alert" aria-live="polite" aria-atomic="true" className="rounded bg-destructive/10 border border-destructive/20 p-2">
                     <p className="text-xs font-medium text-destructive">
-                      ⚠️ {errorMessage}
+                      {errorMessage}
                     </p>
                   </div>
                 )}
                 {successMessage && (
-                  <div className="rounded bg-green-500/10 border border-green-500/20 p-2">
+                  <div role="status" aria-live="polite" aria-atomic="true" className="rounded bg-green-500/10 border border-green-500/20 p-2">
                     <p className="text-xs font-medium text-green-600">
-                      ✅ {successMessage}
+                      {successMessage}
                     </p>
                   </div>
                 )}

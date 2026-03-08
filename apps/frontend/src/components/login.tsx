@@ -54,11 +54,11 @@ export default function Login() {
             Enter your credentials to access your account.
           </p>
           <form
-            action="#"
-            method="post"
             className="mt-6 space-y-4"
             onSubmit={handleLogin}
           >
+            <fieldset>
+              <legend className="sr-only">Account Login</legend>
             <div>
               <Label
                 htmlFor="email-login-03"
@@ -96,9 +96,9 @@ export default function Login() {
               />
             </div>
             {errorMessage && (
-              <div className="rounded bg-destructive/10 border border-destructive/20 p-2">
+              <div role="alert" aria-live="polite" aria-atomic="true" className="rounded bg-destructive/10 border border-destructive/20 p-2">
                 <p className="text-xs font-medium text-destructive">
-                  ⚠️ {errorMessage}
+                  {errorMessage}
                 </p>
               </div>
             )}
@@ -106,6 +106,7 @@ export default function Login() {
               type="submit"
               className="mt-4 w-full py-2 font-medium"
               disabled={isLoading}
+              aria-busy={isLoading}
             >
               {isLoading ? (
                 <div className="flex items-center justify-center gap-2">
@@ -116,6 +117,7 @@ export default function Login() {
                 "Sign In"
               )}
             </Button>
+            </fieldset>
           </form>
           <div className="mt-6 space-y-3">
             <Button variant="outline" className="w-full" asChild>
