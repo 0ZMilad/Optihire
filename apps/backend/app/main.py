@@ -24,8 +24,9 @@ app = FastAPI(
     title=settings.PROJECT_NAME,
     description="AI-powered ATS Resume Optimization Platform",
     version="1.0.0",
-    docs_url="/docs",
-    redoc_url="/redoc",
+    docs_url="/docs" if settings.DOCS_ENABLED else None,
+    redoc_url="/redoc" if settings.DOCS_ENABLED else None,
+    openapi_url="/openapi.json" if settings.DOCS_ENABLED else None,
 )
 app.state.limiter = limiter
 app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
@@ -78,9 +79,13 @@ app.add_middleware(LoggingMiddleware)
 app.add_middleware(JWTMiddleware)
 
 # CORS configuration (for your Next.js frontend)
+_origins = list(settings.ALLOWED_ORIGINS)
+if settings.FRONTEND_URL:
+    _origins.append(settings.FRONTEND_URL)
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=settings.ALLOWED_ORIGINS,
+    allow_origins=_origins,
     allow_credentials=True,
     allow_methods=["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
     allow_headers=["Authorization", "Content-Type", "X-Request-Id"],
@@ -106,10 +111,12 @@ app.include_router(
 
 @app.get("/")
 def read_root():
-    return {
+    response = {
         "message": "Welcome to Optihire API",
         "version": "1.0.0",
-        "docs": "/docs",
-        "redoc": "/redoc",
         "health": "/api/v1/system/health",
     }
+    if settings.DOCS_ENABLED:
+        response["docs"] = "/docs"
+        response["redoc"] = "/redoc"
+    return response

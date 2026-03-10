@@ -1,7 +1,6 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
-  distDir: "dist/apps/frontend/",
   async headers() {
     return [
       {

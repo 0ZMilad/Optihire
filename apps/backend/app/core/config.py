@@ -27,8 +27,11 @@ class Settings(BaseSettings):
     # Application settings
     PROJECT_NAME: str = "Optihire API"
     API_V1_STR: str = "/api/v1"
+    DOCS_ENABLED: bool = False  # Enable only in local dev, never in production
 
     # CORS
+    # Add your production Vercel URL here or via the FRONTEND_URL env var
+    FRONTEND_URL: str = ""
     ALLOWED_ORIGINS: list[str] = [
         "http://localhost:3000",
         "http://localhost:3001",
