@@ -35,6 +35,7 @@ from app.models.resume_model import (
 )
 from app.schemas.resume_schema import ResumeParseStatusResponse, ResumeCreate
 from app.services.storage_service import get_supabase_client
+from app.models.analysis_model import AnalysisResult
 
 # =============================================================================
 # RESUME CREATION
@@ -1380,23 +1381,42 @@ def get_active_resume(
     db: Session
 ) -> Resume | None:
     """
-    Retrieve the most recently uploaded active resume for the user.
-    
+    Retrieve the active resume for the user.
+
+    Prefers the resume with the most recent analysis (so that the jobs page
+    always gets an analysed resume even when a fresh blank resume was just
+    created).  Falls back to the most recently created resume when no
+    analysed resume exists.
+
     Args:
         user_id: UUID of the current user
         db: Database session
     Returns:
         Resume instance if found, None otherwise
     """
-    statement = select(Resume).where(
-        Resume.user_id == user_id,
-        Resume.deleted_at.is_(None)
-    ).order_by(Resume.created_at.desc())
-    
-    result = db.exec(statement)
-    resume = result.first()
-    
-    return resume
+    # Try to find the most recently *analysed* resume for this user.
+    analysed = db.exec(
+        select(Resume)
+        .join(AnalysisResult, AnalysisResult.resume_id == Resume.id)
+        .where(
+            Resume.user_id == user_id,
+            Resume.deleted_at.is_(None),
+        )
+        .order_by(AnalysisResult.analyzed_at.desc())
+    ).first()
+
+    if analysed is not None:
+        return analysed
+
+    # Fall back to the most recently created resume (may be unanalysed).
+    return db.exec(
+        select(Resume)
+        .where(
+            Resume.user_id == user_id,
+            Resume.deleted_at.is_(None),
+        )
+        .order_by(Resume.created_at.desc())
+    ).first()
 
 
 def get_resume_complete(

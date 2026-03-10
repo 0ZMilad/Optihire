@@ -46,6 +46,52 @@ _MAX_RESUME_CHARS = 6000
 _CODE_FENCE_RE = re.compile(r"```(?:json)?\s*(.*?)\s*```", re.DOTALL)
 
 
+def _sanitize_llm_response(parsed: dict) -> dict:
+    """Drop incomplete bullet_rewrites and supply fallbacks for missing required fields.
+
+    LLMs occasionally truncate mid-generation, leaving the last bullet
+    without its ``rewritten``/``rationale`` fields and omitting the trailing
+    ``role_fit_summary`` key entirely.  Rather than discarding the whole
+    response, this helper salvages every structurally-complete entry and
+    inserts safe defaults for any missing top-level required fields.
+    """
+    # Filter out any bullet that is missing a required field
+    raw_bullets = parsed.get("bullet_rewrites")
+    if isinstance(raw_bullets, list):
+        complete = [
+            b for b in raw_bullets
+            if isinstance(b, dict)
+            and b.get("original")
+            and b.get("rewritten")
+            and b.get("rationale")
+        ]
+        if len(complete) < len(raw_bullets):
+            logger.warning(
+                "Dropped %d incomplete bullet_rewrite(s) from LLM response",
+                len(raw_bullets) - len(complete),
+            )
+        parsed["bullet_rewrites"] = complete
+        if len(complete) < 4:
+            logger.warning(
+                "Only %d complete bullet_rewrite(s) after filtering — below minimum of 4",
+                len(complete),
+            )
+
+    # Ensure keyword_context_tips is always a list
+    if not isinstance(parsed.get("keyword_context_tips"), list):
+        parsed["keyword_context_tips"] = []
+
+    # Provide a fallback for the required role_fit_summary when truncated
+    if not parsed.get("role_fit_summary"):
+        logger.warning("LLM response missing role_fit_summary — using fallback")
+        parsed["role_fit_summary"] = (
+            "The AI summary was unavailable for this analysis. "
+            "Please re-run the audit to generate a complete result."
+        )
+
+    return parsed
+
+
 def _extract_json(content: str) -> Any:
     """Best-effort JSON extraction + repair from a (possibly fenced) LLM response.
 
@@ -139,7 +185,7 @@ tailor their resume for this role. Return ONLY valid JSON matching this schema:
 }
 
 Rules:
-- Provide 3-5 bullet rewrites focusing on the weakest examples.
+- Provide EXACTLY 4-6 bullet rewrites focusing on the weakest examples. You MUST provide at least 4.
 - For each missing keyword, show WHERE and HOW to insert it naturally.
 - The role_fit_summary should be honest but constructive.
 - Do NOT invent experience the candidate does not have.
@@ -301,6 +347,9 @@ def enhance_analysis(
             return None
 
         parsed = _extract_json(content)
+
+        # 4b. Sanitise: drop structurally-incomplete bullets, fill missing fields
+        parsed = _sanitize_llm_response(parsed)
 
         # 5. Validate against Pydantic schema
         payload = AIEnhancementPayload.model_validate(parsed)
