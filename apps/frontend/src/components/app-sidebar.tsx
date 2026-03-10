@@ -11,7 +11,6 @@ import {
   Settings,
 } from "lucide-react";
 import Image from "next/image";
-import OmegaLogo from "../../public/Omega.png";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useAuth } from "@/components/auth-provider";
@@ -131,7 +130,7 @@ export function AppSidebar() {
         <div className="flex items-center justify-center gap-2 px-2 py-4">
           <div className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-lg">
             <Image
-              src={OmegaLogo}
+              src="/Omega.png"
               alt="Optihire"
               width={32}
               height={32}

@@ -28,7 +28,7 @@ export function Header() {
       <div className="container relative mx-auto flex h-16 items-center justify-between px-3 sm:px-4 md:px-6">
         <Link href="/" className="flex items-center space-x-2">
           <Image
-            src="/optihire.png"
+            src="/OptiHire.png"
             alt="Optihire Logo"
             width={50}
             height={50}
