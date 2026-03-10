@@ -4,7 +4,7 @@ region: nyc
 services:
   - name: optihire-api
     source_dir: apps/backend
-    dockerfile_path: Dockerfile
+    dockerfile_path: apps/backend/Dockerfile
     github:
       branch: main
       deploy_on_push: true
