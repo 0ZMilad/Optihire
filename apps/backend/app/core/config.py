@@ -30,11 +30,13 @@ class Settings(BaseSettings):
     DOCS_ENABLED: bool = False  # Enable only in local dev, never in production
 
     # CORS
-    # Add your production Vercel URL here or via the FRONTEND_URL env var
+    # Production Vercel URL (also settable via FRONTEND_URL env var on the host)
     FRONTEND_URL: str = ""
     ALLOWED_ORIGINS: list[str] = [
         "http://localhost:3000",
         "http://localhost:3001",
+        "https://optihire-frontend.vercel.app",
+        "https://optihire-frontend-git-main-0zmilads-projects.vercel.app",
     ]
 
     # Rate Limiting (targeted endpoints only)
