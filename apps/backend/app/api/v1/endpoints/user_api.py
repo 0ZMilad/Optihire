@@ -3,7 +3,7 @@ from uuid import UUID
 from fastapi import APIRouter, Depends, HTTPException
 from sqlmodel import Session
 
-from app.core.dependencies import get_current_user, get_current_user_id, require_scopes
+from app.core.dependencies import get_current_user, get_current_user_id, require_not_demo, require_scopes
 from app.core.logging_config import log_error
 from app.core.utils import require_found
 from app.db.session import get_db
@@ -48,7 +48,7 @@ def get_current_user_profile(
     return require_found(user, "User")
 
 
-@router.put("/profile", response_model=UserRead, dependencies=[Depends(require_scopes(["users:update"]))])
+@router.put("/profile", response_model=UserRead, dependencies=[Depends(require_scopes(["users:update"])), Depends(require_not_demo)])
 def update_current_user_profile(
     user_data: UserUpdate,
     db: Session = Depends(get_db),
@@ -112,7 +112,7 @@ def get_user(
     return require_found(user, "User")
 
 
-@router.patch("/{user_id}", response_model=UserRead, dependencies=[Depends(require_scopes(["users:update"]))])
+@router.patch("/{user_id}", response_model=UserRead, dependencies=[Depends(require_scopes(["users:update"])), Depends(require_not_demo)])
 def update_user(
     user_id: UUID,
     user_data: UserUpdate,
@@ -133,7 +133,7 @@ def update_user(
     return require_found(user, "User")
 
 
-@router.delete("/account", status_code=204, dependencies=[Depends(require_scopes(["users:delete"]))])
+@router.delete("/account", status_code=204, dependencies=[Depends(require_scopes(["users:delete"])), Depends(require_not_demo)])
 def delete_own_account(
     db: Session = Depends(get_db),
     current_user_id: UUID = Depends(get_current_user_id),
@@ -184,7 +184,7 @@ def delete_own_account(
     return None
 
 
-@router.delete("/{user_id}", status_code=204, dependencies=[Depends(require_scopes(["users:delete"]))])
+@router.delete("/{user_id}", status_code=204, dependencies=[Depends(require_scopes(["users:delete"])), Depends(require_not_demo)])
 def delete_user(
     user_id: UUID,
     db: Session = Depends(get_db),

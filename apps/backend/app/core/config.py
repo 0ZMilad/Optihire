@@ -24,6 +24,9 @@ class Settings(BaseSettings):
     LITELLM_MAX_TOKENS: int = 4000
     MAX_AI_CALLS_PER_DAY: int = 10
 
+    # Demo account restrictions
+    DEMO_ACCOUNT_EMAIL: str = "demo@optihire.com"
+
     # Application settings
     PROJECT_NAME: str = "Optihire API"
     API_V1_STR: str = "/api/v1"

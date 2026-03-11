@@ -3,6 +3,10 @@ from uuid import UUID
 
 from fastapi import Depends, HTTPException, status, Request
 
+from app.core.config import Settings
+
+settings = Settings()
+
 
 def require_scopes(required_scopes: list[str]):
     """Factory that creates a scope-checking dependency"""
@@ -117,6 +121,21 @@ async def get_current_user_id(
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Invalid user ID in token",
+        )
+
+
+async def require_not_demo(
+    current_user: dict = Depends(get_current_user),
+) -> None:
+    """
+    Blocks mutating operations for the shared demo account.
+    Raises 403 when the authenticated user is the demo account email.
+    """
+    email = current_user.get("email", "")
+    if settings.DEMO_ACCOUNT_EMAIL and email.lower() == settings.DEMO_ACCOUNT_EMAIL.lower():
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="This action is disabled for the demo account.",
         )
 
 

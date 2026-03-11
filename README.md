@@ -4,6 +4,21 @@
 
 Optihire is a web platform that helps job seekers improve their CVs for Applicant Tracking Systems (ATS). This platform provides automated analysis, compatibility scoring, and actionable suggestions to increase your chances of landing an interview.
 
+> **Live Demo:** [https://optihire-frontend.vercel.app/](https://optihire-frontend.vercel.app/)
+
+---
+
+## 🔑 Demo Account
+
+Want to try OptiHire without signing up? Use the following credentials to log in:
+
+| Field    | Value               |
+| :------- | :------------------ |
+| Email    | `demo@optihire.com` |
+| Password | `OptiHire@Demo1`    |
+
+> **Note:** The demo account is read-accessible to everyone — please do not change the password or delete data.
+
 ---
 
 ## 📸 Gallery
