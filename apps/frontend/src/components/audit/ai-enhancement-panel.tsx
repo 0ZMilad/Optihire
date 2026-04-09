@@ -1,6 +1,13 @@
 "use client";
 
-import { ArrowRight, Lightbulb, Sparkles, Quote } from "lucide-react";
+import {
+  ArrowRight,
+  LayoutList,
+  Lightbulb,
+  ListChecks,
+  Quote,
+  Sparkles,
+} from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 import type { AIEnhancementPayload } from "@/middle-service/audit";
@@ -10,7 +17,13 @@ interface AIEnhancementPanelProps {
 }
 
 export function AIEnhancementPanel({ payload }: AIEnhancementPanelProps) {
-  const { role_fit_summary, bullet_rewrites, keyword_context_tips } = payload;
+  const {
+    role_fit_summary,
+    bullet_rewrites = [],
+    keyword_context_tips = [],
+    priority_gap_feedback = [],
+    section_feedback = [],
+  } = payload;
 
   return (
     <div className="space-y-8">
@@ -23,7 +36,83 @@ export function AIEnhancementPanel({ payload }: AIEnhancementPanelProps) {
               Role Fit Summary
             </p>
           </div>
-          <p className="text-sm leading-relaxed text-foreground">{role_fit_summary}</p>
+          <p className="text-sm leading-relaxed text-foreground">
+            {role_fit_summary}
+          </p>
+        </div>
+      )}
+
+      {priority_gap_feedback.length > 0 && (
+        <div className="space-y-4">
+          <div className="flex items-center gap-2">
+            <ListChecks className="size-4 text-violet-600 dark:text-violet-400" />
+            <h3 className="text-sm font-semibold">Top Improvements</h3>
+            <Badge
+              variant="outline"
+              className="text-xs border-violet-200 text-violet-600 dark:border-violet-800 dark:text-violet-400"
+            >
+              {priority_gap_feedback.length}
+            </Badge>
+          </div>
+
+          <div className="grid gap-3 md:grid-cols-2">
+            {priority_gap_feedback.map((item, idx) => (
+              <div
+                key={`${idx}-${item.slice(0, 24)}`}
+                className="flex items-start gap-3 rounded-xl border bg-card p-4"
+              >
+                <span className="flex size-6 shrink-0 items-center justify-center rounded-full bg-violet-100 text-[11px] font-semibold text-violet-700 dark:bg-violet-950/40 dark:text-violet-300">
+                  {idx + 1}
+                </span>
+                <p className="text-sm leading-relaxed text-foreground">
+                  {item}
+                </p>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {section_feedback.length > 0 && (
+        <div className="space-y-4">
+          <div className="flex items-center gap-2">
+            <LayoutList className="size-4 text-emerald-600 dark:text-emerald-400" />
+            <h3 className="text-sm font-semibold">Section Coaching</h3>
+            <Badge variant="outline" className="text-xs">
+              {section_feedback.length}
+            </Badge>
+          </div>
+
+          <div className="grid gap-3 lg:grid-cols-2">
+            {section_feedback.map((item, idx) => (
+              <div
+                key={`${idx}-${item.section_name}`}
+                className="space-y-3 rounded-xl border bg-card p-4"
+              >
+                <div className="flex items-center justify-between gap-2">
+                  <span className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground">
+                    {item.section_name}
+                  </span>
+                  <Badge variant="outline" className="text-[10px]">
+                    Focus
+                  </Badge>
+                </div>
+
+                <p className="text-sm font-medium leading-relaxed text-foreground">
+                  {item.focus}
+                </p>
+
+                <div className="rounded-lg bg-muted/40 p-3">
+                  <p className="mb-1 text-[10px] font-semibold uppercase tracking-widest text-muted-foreground">
+                    Suggested Update
+                  </p>
+                  <p className="text-xs leading-relaxed text-muted-foreground">
+                    {item.suggested_update}
+                  </p>
+                </div>
+              </div>
+            ))}
+          </div>
         </div>
       )}
 
@@ -44,7 +133,7 @@ export function AIEnhancementPanel({ payload }: AIEnhancementPanelProps) {
           <div className="space-y-3">
             {bullet_rewrites.map((rewrite, idx) => (
               <div
-                key={idx}
+                key={`${rewrite.original}-${rewrite.rewritten}-${idx}`}
                 className="rounded-xl border bg-card overflow-hidden"
               >
                 {/* Before / After */}
@@ -95,7 +184,9 @@ export function AIEnhancementPanel({ payload }: AIEnhancementPanelProps) {
         <div className="space-y-4">
           <div className="flex items-center gap-2">
             <Lightbulb className="size-4 text-amber-500" />
-            <h3 className="text-sm font-semibold">How to Use Missing Keywords</h3>
+            <h3 className="text-sm font-semibold">
+              How to Use Missing Keywords
+            </h3>
             <Badge variant="outline" className="text-xs">
               {keyword_context_tips.length}
             </Badge>
@@ -104,7 +195,7 @@ export function AIEnhancementPanel({ payload }: AIEnhancementPanelProps) {
           <div className="grid gap-3 sm:grid-cols-2">
             {keyword_context_tips.map((tip, idx) => (
               <div
-                key={idx}
+                key={`${tip.keyword}-${tip.suggested_section}-${idx}`}
                 className="rounded-xl border bg-card p-4 space-y-2.5"
               >
                 <div className="flex items-center justify-between gap-2">
@@ -114,7 +205,7 @@ export function AIEnhancementPanel({ payload }: AIEnhancementPanelProps) {
                   <span
                     className={cn(
                       "text-[10px] font-medium px-2 py-0.5 rounded-full border",
-                      "text-muted-foreground border-border bg-muted/40",
+                      "text-muted-foreground border-border bg-muted/40"
                     )}
                   >
                     Add to {tip.suggested_section}
@@ -132,12 +223,16 @@ export function AIEnhancementPanel({ payload }: AIEnhancementPanelProps) {
       )}
 
       {/* Empty state */}
-      {bullet_rewrites.length === 0 && keyword_context_tips.length === 0 && !role_fit_summary && (
-        <div className="text-center py-12 text-muted-foreground">
-          <Sparkles className="size-8 mx-auto mb-3 opacity-40" />
-          <p className="text-sm">No AI suggestions available.</p>
-        </div>
-      )}
+      {priority_gap_feedback.length === 0 &&
+        section_feedback.length === 0 &&
+        bullet_rewrites.length === 0 &&
+        keyword_context_tips.length === 0 &&
+        !role_fit_summary && (
+          <div className="text-center py-12 text-muted-foreground">
+            <Sparkles className="size-8 mx-auto mb-3 opacity-40" />
+            <p className="text-sm">No AI suggestions available.</p>
+          </div>
+        )}
     </div>
   );
 }

@@ -73,7 +73,15 @@ export interface KeywordContextTip {
   example_usage: string;
 }
 
+export interface SectionFeedbackItem {
+  section_name: string;
+  focus: string;
+  suggested_update: string;
+}
+
 export interface AIEnhancementPayload {
+  priority_gap_feedback: string[];
+  section_feedback: SectionFeedbackItem[];
   bullet_rewrites: BulletRewrite[];
   keyword_context_tips: KeywordContextTip[];
   role_fit_summary: string;
@@ -109,31 +117,37 @@ export interface AuditContext {
   jobDescription: string;
 }
 
-export async function runAudit(data: AuditRequest, aiEnhance = true): Promise<AuditResult> {
+export async function runAudit(
+  data: AuditRequest,
+  aiEnhance = true
+): Promise<AuditResult> {
   const url = aiEnhance
     ? "/api/v1/analyses/audit?ai_enhance=true"
     : "/api/v1/analyses/audit";
-  const response = await apiClient.post<AuditResult>(url, data);
+  const response = await apiClient.post<AuditResult>(url, data, {
+    timeout: aiEnhance ? 90000 : undefined,
+  });
   return response.data;
 }
 
 export async function getAuditResult(id: string): Promise<AuditResult> {
-  const response = await apiClient.get<AuditResult>(
-    `/api/v1/analyses/${id}`,
-  );
+  const response = await apiClient.get<AuditResult>(`/api/v1/analyses/${id}`);
   return response.data;
 }
 
 export async function getLatestAuditResult(): Promise<AuditResult | null> {
   const response = await apiClient.get<AuditResult | null>(
-    "/api/v1/analyses/latest",
+    "/api/v1/analyses/latest"
   );
   return response.data ?? null;
 }
 
-export async function listAuditResults(skip = 0, limit = 20): Promise<AuditResult[]> {
+export async function listAuditResults(
+  skip = 0,
+  limit = 20
+): Promise<AuditResult[]> {
   const response = await apiClient.get<AuditResult[]>(
-    `/api/v1/analyses?skip=${skip}&limit=${limit}`,
+    `/api/v1/analyses?skip=${skip}&limit=${limit}`
   );
   return response.data;
 }
