@@ -30,9 +30,19 @@ class KeywordContextTip(BaseModel):
     example_usage: str = Field(..., description="Example sentence or bullet showing natural usage.")
 
 
+class SectionFeedbackItem(BaseModel):
+    """Role-specific coaching for a resume section."""
+
+    section_name: str = Field(..., description="Resume section name such as Summary, Experience, Skills, or Projects.")
+    focus: str = Field(..., description="What this section should emphasize for the role.")
+    suggested_update: str = Field(..., description="Concrete guidance on how to improve the section.")
+
+
 class AIEnhancementPayload(BaseModel):
     """Structured output from the LLM career-coach layer."""
 
+    priority_gap_feedback: list[str] = Field(default_factory=list)
+    section_feedback: list[SectionFeedbackItem] = Field(default_factory=list)
     bullet_rewrites: list[BulletRewrite] = Field(default_factory=list)
     keyword_context_tips: list[KeywordContextTip] = Field(default_factory=list)
     role_fit_summary: str = Field(..., description="A 2-3 sentence qualitative analysis of candidate fit.")

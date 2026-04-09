@@ -42,20 +42,423 @@ _URL_RE = re.compile(r"https?://\S+", re.IGNORECASE)
 # Maximum characters of anonymized resume text sent to the LLM
 _MAX_RESUME_CHARS = 6000
 
+# Minimum content targets for a rich coach response
+_MIN_BULLET_REWRITES = 4
+_MIN_PRIORITY_GAPS = 3
+_MIN_SECTION_FEEDBACK = 2
+_MAX_PRIORITY_GAPS = 5
+_MAX_SECTION_FEEDBACK = 4
+
 # Matches an optional ```json ... ``` wrapper that some models emit
 _CODE_FENCE_RE = re.compile(r"```(?:json)?\s*(.*?)\s*```", re.DOTALL)
 
 
-def _sanitize_llm_response(parsed: dict) -> dict:
-    """Drop incomplete bullet_rewrites and supply fallbacks for missing required fields.
+def _clean_string_list(values: Any) -> list[str]:
+    """Return only usable strings, preserving order and uniqueness."""
+    if not isinstance(values, list):
+        return []
 
-    LLMs occasionally truncate mid-generation, leaving the last bullet
-    without its ``rewritten``/``rationale`` fields and omitting the trailing
-    ``role_fit_summary`` key entirely.  Rather than discarding the whole
-    response, this helper salvages every structurally-complete entry and
-    inserts safe defaults for any missing top-level required fields.
-    """
-    # Filter out any bullet that is missing a required field
+    cleaned: list[str] = []
+    seen: set[str] = set()
+    for raw in values:
+        value = str(raw).strip()
+        if not value or value in seen:
+            continue
+        cleaned.append(value)
+        seen.add(value)
+
+    return cleaned
+
+
+def _clean_bullet_rewrites(values: Any) -> list[dict[str, str]]:
+    """Keep only complete bullet rewrite entries."""
+    if not isinstance(values, list):
+        return []
+
+    cleaned: list[dict[str, str]] = []
+    for raw in values:
+        if not isinstance(raw, dict):
+            continue
+        original = str(raw.get("original") or "").strip()
+        rewritten = str(raw.get("rewritten") or "").strip()
+        rationale = str(raw.get("rationale") or "").strip()
+        if original and rewritten and rationale:
+            cleaned.append(
+                {
+                    "original": original,
+                    "rewritten": rewritten,
+                    "rationale": rationale,
+                }
+            )
+
+    return cleaned
+
+
+def _clean_keyword_context_tips(values: Any) -> list[dict[str, str]]:
+    """Keep only complete keyword context tips."""
+    if not isinstance(values, list):
+        return []
+
+    cleaned: list[dict[str, str]] = []
+    seen: set[tuple[str, str]] = set()
+    for raw in values:
+        if not isinstance(raw, dict):
+            continue
+        keyword = str(raw.get("keyword") or "").strip()
+        suggested_section = str(raw.get("suggested_section") or "").strip()
+        example_usage = str(raw.get("example_usage") or "").strip()
+        key = (keyword.casefold(), suggested_section.casefold())
+        if not (keyword and suggested_section and example_usage) or key in seen:
+            continue
+        cleaned.append(
+            {
+                "keyword": keyword,
+                "suggested_section": suggested_section,
+                "example_usage": example_usage,
+            }
+        )
+        seen.add(key)
+
+    return cleaned
+
+
+def _clean_section_feedback(values: Any) -> list[dict[str, str]]:
+    """Keep only complete section feedback items."""
+    if not isinstance(values, list):
+        return []
+
+    cleaned: list[dict[str, str]] = []
+    seen: set[str] = set()
+    for raw in values:
+        if not isinstance(raw, dict):
+            continue
+        section_name = str(raw.get("section_name") or "").strip()
+        focus = str(raw.get("focus") or raw.get("role_focus") or "").strip()
+        suggested_update = str(
+            raw.get("suggested_update") or raw.get("specific_change") or ""
+        ).strip()
+        section_key = section_name.casefold()
+        if not (section_name and focus and suggested_update) or section_key in seen:
+            continue
+        cleaned.append(
+            {
+                "section_name": section_name,
+                "focus": focus,
+                "suggested_update": suggested_update,
+            }
+        )
+        seen.add(section_key)
+
+    return cleaned
+
+
+def _merge_unique_strings(
+    primary: list[str],
+    secondary: list[str],
+    *,
+    max_items: int,
+) -> list[str]:
+    """Merge two string lists while preserving order and uniqueness."""
+    merged: list[str] = []
+    seen: set[str] = set()
+
+    for value in [*primary, *secondary]:
+        item = value.strip()
+        if not item or item in seen:
+            continue
+        merged.append(item)
+        seen.add(item)
+        if len(merged) >= max_items:
+            break
+
+    return merged
+
+
+def _merge_section_feedback(
+    primary: list[dict[str, str]],
+    secondary: list[dict[str, str]],
+    *,
+    max_items: int,
+) -> list[dict[str, str]]:
+    """Merge section feedback items using section_name as the unique key."""
+    merged: list[dict[str, str]] = []
+    seen: set[str] = set()
+
+    for item in [*primary, *secondary]:
+        section_key = item["section_name"].casefold()
+        if section_key in seen:
+            continue
+        merged.append(item)
+        seen.add(section_key)
+        if len(merged) >= max_items:
+            break
+
+    return merged
+
+
+def _build_heuristic_role_fit_summary(
+    *,
+    heuristic_result: AnalysisResult,
+    target_role: str | None,
+) -> str:
+    """Generate a specific fallback summary when the LLM omits one."""
+    role_label = target_role or "this role"
+    matched_keywords = _clean_string_list(list(heuristic_result.matched_keywords or []))
+    missing_keywords = _clean_string_list(list(heuristic_result.missing_keywords or []))
+
+    if heuristic_result.overall_score >= 80:
+        opener = f"You already show a strong baseline match for {role_label}"
+    elif heuristic_result.overall_score >= 60:
+        opener = f"You show a competitive baseline match for {role_label}"
+    else:
+        opener = f"You have some relevant overlap for {role_label}"
+
+    if matched_keywords:
+        opener += f", especially around {', '.join(matched_keywords[:3])}."
+    else:
+        opener += "."
+
+    if missing_keywords:
+        closer = (
+            f"To improve alignment, make your experience with "
+            f"{', '.join(missing_keywords[:3])} more explicit and quantify the "
+            "strongest outcomes in your recent work."
+        )
+    elif not heuristic_result.has_action_verbs or not heuristic_result.has_bullet_points:
+        closer = (
+            "To improve alignment, rewrite your strongest bullets with clear action "
+            "verbs and measurable impact."
+        )
+    else:
+        closer = (
+            "To improve alignment, sharpen the role-specific language in your summary "
+            "and make your most relevant accomplishments easier to scan."
+        )
+
+    return f"{opener} {closer}"
+
+
+def _build_heuristic_priority_gap_feedback(
+    *,
+    heuristic_result: AnalysisResult,
+    target_role: str | None,
+) -> list[str]:
+    """Generate fallback improvement bullets from heuristic findings."""
+    feedback: list[str] = []
+
+    suggestions_payload = heuristic_result.suggestions_payload
+    if isinstance(suggestions_payload, dict):
+        raw_actions = suggestions_payload.get("priority_actions")
+        if isinstance(raw_actions, list):
+            for raw_action in raw_actions:
+                if not isinstance(raw_action, dict):
+                    continue
+                action = str(raw_action.get("action") or "").strip()
+                if action:
+                    feedback.append(action)
+
+    missing_keywords = _clean_string_list(list(heuristic_result.missing_keywords or []))
+    if missing_keywords:
+        feedback.append(
+            "Add direct, truthful evidence of "
+            f"{', '.join(missing_keywords[:3])} in your Experience and Skills sections."
+        )
+
+    if not heuristic_result.has_summary:
+        feedback.append(
+            f"Add a 2-3 sentence summary tailored to {target_role or 'the target role'} "
+            "and front-load your most relevant strengths."
+        )
+
+    if not heuristic_result.has_skills or missing_keywords:
+        feedback.append(
+            "Mirror the job description's terminology in your skills section so ATS "
+            "matching is easier."
+        )
+
+    if not heuristic_result.has_action_verbs or not heuristic_result.has_bullet_points:
+        feedback.append(
+            "Rewrite responsibility-style bullets into impact bullets that start with "
+            "strong action verbs and end with measurable outcomes."
+        )
+
+    if heuristic_result.keyword_score < 70:
+        feedback.append(
+            "Close the keyword gap by weaving the highest-value requirements into "
+            "existing achievements instead of listing them in isolation."
+        )
+
+    if heuristic_result.formatting_score < 80 or not heuristic_result.has_consistent_formatting:
+        feedback.append(
+            "Tighten formatting so the most relevant accomplishments are easy to scan "
+            "in under 10 seconds."
+        )
+
+    return _merge_unique_strings([], feedback, max_items=_MAX_PRIORITY_GAPS)
+
+
+def _build_heuristic_section_feedback(
+    *,
+    heuristic_result: AnalysisResult,
+    target_role: str | None,
+) -> list[dict[str, str]]:
+    """Generate section-by-section coaching when the LLM response is thin."""
+    matched_keywords = _clean_string_list(list(heuristic_result.matched_keywords or []))
+    missing_keywords = _clean_string_list(list(heuristic_result.missing_keywords or []))
+    items: list[dict[str, str]] = []
+
+    summary_strengths = ", ".join(matched_keywords[:2]) or "your strongest skills"
+    missing_focus = ", ".join(missing_keywords[:2]) or "the highest-priority requirements"
+
+    items.append(
+        {
+            "section_name": "Summary",
+            "focus": (
+                f"Frame yourself as a strong candidate for {target_role or 'the role'} "
+                "and surface your best-fit strengths immediately."
+            ),
+            "suggested_update": (
+                "Add a 2-3 sentence summary that names the role, highlights "
+                f"{summary_strengths}, and previews one measurable result."
+            ),
+        }
+    )
+    items.append(
+        {
+            "section_name": "Experience",
+            "focus": (
+                "Prioritize impact-driven bullets that show ownership, scale, and "
+                "business outcomes."
+            ),
+            "suggested_update": (
+                "Rewrite your top bullets to lead with action verbs, quantify the "
+                f"result, and naturally mention {missing_focus} where accurate."
+            ),
+        }
+    )
+    items.append(
+        {
+            "section_name": "Skills",
+            "focus": "Mirror the job description's technical language so ATS matching is stronger.",
+            "suggested_update": (
+                "Group your most relevant tools first and add any missing requirements "
+                "you genuinely have experience with."
+            ),
+        }
+    )
+
+    if not heuristic_result.has_education:
+        items.append(
+            {
+                "section_name": "Education",
+                "focus": "Make sure required credentials are easy for recruiters to spot.",
+                "suggested_update": (
+                    "Add an Education section with your degree, institution, and "
+                    "any relevant certifications."
+                ),
+            }
+        )
+    else:
+        items.append(
+            {
+                "section_name": "Projects",
+                "focus": "Use projects to cover gaps that are not obvious in formal roles.",
+                "suggested_update": (
+                    "If you have relevant side projects, add one with technologies, "
+                    "scope, and measurable outcomes tied to this role."
+                ),
+            }
+        )
+
+    return items[:_MAX_SECTION_FEEDBACK]
+
+
+def _response_needs_retry(parsed: dict[str, Any]) -> bool:
+    """Require a richer response than the bare minimum old schema."""
+    summary = str(parsed.get("role_fit_summary") or "").strip()
+    bullet_rewrites = _clean_bullet_rewrites(parsed.get("bullet_rewrites"))
+    priority_gap_feedback = _clean_string_list(parsed.get("priority_gap_feedback"))
+    section_feedback = _clean_section_feedback(parsed.get("section_feedback"))
+
+    return (
+        not summary
+        or len(bullet_rewrites) < _MIN_BULLET_REWRITES
+        or len(priority_gap_feedback) < _MIN_PRIORITY_GAPS
+        or len(section_feedback) < _MIN_SECTION_FEEDBACK
+    )
+
+
+def ai_enhancement_needs_refresh(payload: dict | None) -> bool:
+    """Refresh cached AI payloads that were created by the old thin schema."""
+    if not isinstance(payload, dict):
+        return True
+
+    summary = str(payload.get("role_fit_summary") or "").strip()
+    bullet_rewrites = _clean_bullet_rewrites(payload.get("bullet_rewrites"))
+    priority_gap_feedback = _clean_string_list(payload.get("priority_gap_feedback"))
+    section_feedback = _clean_section_feedback(payload.get("section_feedback"))
+
+    return (
+        not summary
+        or (len(priority_gap_feedback) == 0 and len(section_feedback) == 0)
+        or len(bullet_rewrites) < 2
+    )
+
+
+def _sanitize_llm_response(
+    parsed: dict[str, Any],
+    *,
+    heuristic_result: AnalysisResult,
+    target_role: str | None,
+) -> dict[str, Any]:
+    """Repair incomplete model output and top it up with heuristic fallbacks."""
+    raw_bullets = parsed.get("bullet_rewrites")
+    cleaned_bullets = _clean_bullet_rewrites(raw_bullets)
+    if isinstance(raw_bullets, list) and len(cleaned_bullets) < len(raw_bullets):
+        logger.warning(
+            "Dropped %d incomplete bullet_rewrite(s) from LLM response",
+            len(raw_bullets) - len(cleaned_bullets),
+        )
+    if len(cleaned_bullets) < _MIN_BULLET_REWRITES:
+        logger.warning(
+            "Only %d complete bullet_rewrite(s) after filtering; below target of %d",
+            len(cleaned_bullets),
+            _MIN_BULLET_REWRITES,
+        )
+    parsed["bullet_rewrites"] = cleaned_bullets
+
+    parsed["keyword_context_tips"] = _clean_keyword_context_tips(
+        parsed.get("keyword_context_tips")
+    )
+
+    parsed["priority_gap_feedback"] = _merge_unique_strings(
+        _clean_string_list(parsed.get("priority_gap_feedback")),
+        _build_heuristic_priority_gap_feedback(
+            heuristic_result=heuristic_result,
+            target_role=target_role,
+        ),
+        max_items=_MAX_PRIORITY_GAPS,
+    )
+
+    parsed["section_feedback"] = _merge_section_feedback(
+        _clean_section_feedback(parsed.get("section_feedback")),
+        _build_heuristic_section_feedback(
+            heuristic_result=heuristic_result,
+            target_role=target_role,
+        ),
+        max_items=_MAX_SECTION_FEEDBACK,
+    )
+
+    role_fit_summary = str(parsed.get("role_fit_summary") or "").strip()
+    if not role_fit_summary or role_fit_summary.lower() in {"n/a", "none", "null"}:
+        logger.warning("LLM response missing role_fit_summary; using heuristic fallback")
+        role_fit_summary = _build_heuristic_role_fit_summary(
+            heuristic_result=heuristic_result,
+            target_role=target_role,
+        )
+    parsed["role_fit_summary"] = role_fit_summary
+
+    return parsed
     raw_bullets = parsed.get("bullet_rewrites")
     if isinstance(raw_bullets, list):
         complete = [
@@ -175,6 +578,16 @@ Your task is to provide specific, actionable feedback to help the candidate \
 tailor their resume for this role. Return ONLY valid JSON matching this schema:
 
 {
+  "priority_gap_feedback": [
+    "..."
+  ],
+  "section_feedback": [
+    {
+      "section_name": "...",
+      "focus": "...",
+      "suggested_update": "..."
+    }
+  ],
   "bullet_rewrites": [
     {"original": "...", "rewritten": "...", "rationale": "..."}
   ],
@@ -185,11 +598,14 @@ tailor their resume for this role. Return ONLY valid JSON matching this schema:
 }
 
 Rules:
+- Provide 3-5 priority_gap_feedback items focused on the biggest resume-to-role gaps.
+- Provide 2-4 section_feedback items for the sections that most affect role fit.
 - Provide EXACTLY 4-6 bullet rewrites focusing on the weakest examples. You MUST provide at least 4.
 - For each missing keyword, show WHERE and HOW to insert it naturally.
-- The role_fit_summary should be honest but constructive.
+- The role_fit_summary should be honest, constructive, and specific to the target role.
 - Do NOT invent experience the candidate does not have.
 - Do NOT include any personally identifiable information in your response.
+- Every key in the schema must be present, even when a list is empty.
 - Return ONLY the raw JSON object. Do NOT wrap it in markdown code fences or add any text outside the JSON.
 """
 
@@ -200,11 +616,14 @@ def _build_prompt(
     missing_keywords: list[str],
     keyword_score: int,
     formatting_flags: dict[str, Any] | None,
+    target_role: str | None,
 ) -> list[dict[str, str]]:
     """Construct the chat messages for the LLM call."""
 
     # Summarize heuristic gaps
     gap_lines: list[str] = []
+    if target_role:
+        gap_lines.append(f"Target role: {target_role}")
     if missing_keywords:
         gap_lines.append(f"Missing keywords ({len(missing_keywords)}): {', '.join(missing_keywords[:20])}")
     gap_lines.append(f"Keyword match score: {keyword_score}/100")
@@ -229,6 +648,53 @@ def _build_prompt(
         {"role": "system", "content": _SYSTEM_PROMPT},
         {"role": "user", "content": user_message},
     ]
+
+
+def _coerce_message_content(content: Any) -> str:
+    """Normalize provider-specific content shapes into plain text."""
+    if isinstance(content, str):
+        return content
+
+    if isinstance(content, list):
+        parts: list[str] = []
+        for item in content:
+            if isinstance(item, str):
+                parts.append(item)
+                continue
+            if not isinstance(item, dict):
+                continue
+            text = item.get("text") or item.get("content")
+            if isinstance(text, str) and text.strip():
+                parts.append(text.strip())
+        return "\n".join(parts).strip()
+
+    return ""
+
+
+def _build_retry_messages(
+    base_messages: list[dict[str, str]],
+    *,
+    prior_content: str | None,
+    retry_reason: str,
+) -> list[dict[str, str]]:
+    """Ask the model for a corrected second attempt."""
+    messages = list(base_messages)
+    if prior_content:
+        messages.append({"role": "assistant", "content": prior_content})
+    messages.append(
+        {
+            "role": "user",
+            "content": (
+                "The previous response was incomplete. "
+                f"{retry_reason} "
+                "Return ONLY valid JSON with every schema key present, including "
+                "3-5 priority_gap_feedback items, 2-4 section_feedback items, "
+                "4-6 bullet_rewrites, keyword_context_tips, and a non-empty "
+                "role_fit_summary."
+            ),
+        }
+    )
+    return messages
 
 
 # ---------------------------------------------------------------------------
@@ -266,6 +732,7 @@ def enhance_analysis(
     job_description_text: str,
     heuristic_result: AnalysisResult,
     db: Session,
+    job_title: str | None = None,
 ) -> dict | None:
     """Run LLM enhancement on a completed heuristic analysis.
 
@@ -327,29 +794,82 @@ def enhance_analysis(
             missing_keywords=list(heuristic_result.missing_keywords or []),
             keyword_score=heuristic_result.keyword_score,
             formatting_flags=formatting_flags,
+            target_role=job_title,
         )
 
-        # 3. Call LLM via litellm
-        logger.info("Calling LLM (%s) for AI enhancement", settings.LLM_PROVIDER)
-        response = litellm.completion(
-            model=settings.LLM_PROVIDER,
-            api_key=settings.LITELLM_API_KEY,
-            messages=messages,
-            temperature=settings.LITELLM_TEMPERATURE,
-            max_tokens=settings.LITELLM_MAX_TOKENS,
-            timeout=30,
-        )
+        parsed: dict[str, Any] | None = None
+        retry_messages = messages
 
-        # 4. Parse response
-        content = response.choices[0].message.content
-        if not content:
-            logger.warning("LLM returned empty content")
+        # 3. Call LLM via litellm, retrying once if the first response is thin.
+        for attempt in range(2):
+            logger.info(
+                "Calling LLM (%s) for AI enhancement (attempt %d)",
+                settings.LLM_PROVIDER,
+                attempt + 1,
+            )
+            response = litellm.completion(
+                model=settings.LLM_PROVIDER,
+                api_key=settings.LITELLM_API_KEY,
+                messages=retry_messages,
+                temperature=settings.LITELLM_TEMPERATURE,
+                max_tokens=settings.LITELLM_MAX_TOKENS,
+                timeout=30,
+            )
+
+            content = _coerce_message_content(response.choices[0].message.content)
+            if not content:
+                logger.warning("LLM returned empty content on attempt %d", attempt + 1)
+                if attempt == 0:
+                    retry_messages = _build_retry_messages(
+                        messages,
+                        prior_content=None,
+                        retry_reason="The previous response was empty.",
+                    )
+                    continue
+                return None
+
+            try:
+                candidate = _extract_json(content)
+            except json.JSONDecodeError as exc:
+                logger.warning(
+                    "LLM returned invalid JSON on attempt %d: %s",
+                    attempt + 1,
+                    exc,
+                )
+                if attempt == 0:
+                    retry_messages = _build_retry_messages(
+                        messages,
+                        prior_content=content,
+                        retry_reason="The previous response was not valid JSON.",
+                    )
+                    continue
+                raise
+
+            if attempt == 0 and _response_needs_retry(candidate):
+                logger.warning(
+                    "LLM response was incomplete on first attempt; requesting a retry"
+                )
+                retry_messages = _build_retry_messages(
+                    messages,
+                    prior_content=content,
+                    retry_reason=(
+                        "The previous response omitted required fields or returned too few items."
+                    ),
+                )
+                continue
+
+            parsed = candidate
+            break
+
+        if parsed is None:
             return None
 
-        parsed = _extract_json(content)
-
-        # 4b. Sanitise: drop structurally-incomplete bullets, fill missing fields
-        parsed = _sanitize_llm_response(parsed)
+        # 4b. Sanitise: drop structurally-incomplete items, then top up with heuristics.
+        parsed = _sanitize_llm_response(
+            parsed,
+            heuristic_result=heuristic_result,
+            target_role=job_title,
+        )
 
         # 5. Validate against Pydantic schema
         payload = AIEnhancementPayload.model_validate(parsed)

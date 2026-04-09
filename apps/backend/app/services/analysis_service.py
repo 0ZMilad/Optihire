@@ -28,7 +28,10 @@ from sqlmodel import Session, select
 from app.models.analysis_model import AnalysisResult, JobDescription
 from app.models.resume_model import Resume
 from app.schemas.analysis_schema import AnalysisResultRead
-from app.services.ai_analysis_service import enhance_analysis
+from app.services.ai_analysis_service import (
+    ai_enhancement_needs_refresh,
+    enhance_analysis,
+)
 
 # ---------------------------------------------------------------------------
 # Constants
@@ -1324,14 +1327,15 @@ def run_audit(
     ).first()
 
     if cached is not None:
-        # If AI enhancement requested but not yet computed, backfill
-        if ai_enhance and cached.ai_enhancement is None:
+        # Backfill or refresh thin cached AI payloads on demand.
+        if ai_enhance and ai_enhancement_needs_refresh(cached.ai_enhancement):
             enhancement = enhance_analysis(
                 user_id=user_id,
                 resume=resume,
                 job_description_text=job_description_text,
                 heuristic_result=cached,
                 db=db,
+                job_title=job_title,
             )
             if enhancement is not None:
                 cached.ai_enhancement = enhancement
@@ -1415,6 +1419,7 @@ def run_audit(
             job_description_text=job_description_text,
             heuristic_result=result,
             db=db,
+            job_title=job_title,
         )
         if enhancement is not None:
             result.ai_enhancement = enhancement
