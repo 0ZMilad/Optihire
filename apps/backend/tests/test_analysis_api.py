@@ -257,6 +257,18 @@ class TestAuditEndpointAIEnhance:
         resume_id = uuid4()
 
         ai_payload = {
+            "priority_gap_feedback": [
+                "Add stronger Kubernetes evidence in experience bullets.",
+                "Mirror the job description's cloud language in skills.",
+                "Quantify the impact of your strongest backend wins.",
+            ],
+            "section_feedback": [
+                {
+                    "section_name": "Summary",
+                    "focus": "Lead with backend and platform strengths.",
+                    "suggested_update": "Add a short summary that mentions Python, APIs, and cloud impact.",
+                }
+            ],
             "bullet_rewrites": [
                 {
                     "original": "Built APIs",

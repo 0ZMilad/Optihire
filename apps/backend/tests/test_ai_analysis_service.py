@@ -212,6 +212,7 @@ class TestBuildPrompt:
             missing_keywords=["kubernetes"],
             keyword_score=55,
             formatting_flags=None,
+            target_role=None,
         )
         user_msg = messages[1]["content"]
         assert "Senior Python Developer" in user_msg
@@ -224,6 +225,7 @@ class TestBuildPrompt:
             missing_keywords=["docker", "terraform", "ci/cd"],
             keyword_score=40,
             formatting_flags=None,
+            target_role=None,
         )
         user_msg = messages[1]["content"]
         assert "docker" in user_msg
@@ -237,6 +239,7 @@ class TestBuildPrompt:
             missing_keywords=[],
             keyword_score=80,
             formatting_flags=None,
+            target_role=None,
         )
         user_msg = messages[1]["content"]
         assert "Built scalable APIs" in user_msg
@@ -250,6 +253,7 @@ class TestBuildPrompt:
             missing_keywords=[],
             keyword_score=80,
             formatting_flags=None,
+            target_role=None,
         )
         full_text = " ".join(m["content"] for m in messages)
         assert "jane" not in full_text.lower()
@@ -267,6 +271,7 @@ class TestBuildPrompt:
                 "has_action_verbs": False,
                 "has_bullet_points": False,
             },
+            target_role=None,
         )
         user_msg = messages[1]["content"]
         assert "has_action_verbs" in user_msg
@@ -279,9 +284,12 @@ class TestBuildPrompt:
             missing_keywords=[],
             keyword_score=80,
             formatting_flags=None,
+            target_role=None,
         )
         system_msg = messages[0]["content"]
         assert "JSON" in system_msg
+        assert "priority_gap_feedback" in system_msg
+        assert "section_feedback" in system_msg
         assert "bullet_rewrites" in system_msg
         assert "keyword_context_tips" in system_msg
         assert "role_fit_summary" in system_msg
@@ -293,6 +301,23 @@ class TestBuildPrompt:
 
 
 _VALID_LLM_RESPONSE = {
+    "priority_gap_feedback": [
+        "Add stronger Kubernetes evidence in your recent experience.",
+        "Mirror the job description's cloud and IaC language in your skills section.",
+        "Quantify the business impact of your strongest backend wins.",
+    ],
+    "section_feedback": [
+        {
+            "section_name": "Summary",
+            "focus": "Lead with backend, cloud, and platform strengths.",
+            "suggested_update": "Add a short summary that mentions Python, FastAPI, and cloud delivery impact.",
+        },
+        {
+            "section_name": "Experience",
+            "focus": "Show scale, ownership, and measurable outcomes.",
+            "suggested_update": "Rewrite your strongest bullets with metrics and direct platform keywords.",
+        },
+    ],
     "bullet_rewrites": [
         {
             "original": "Built APIs",
@@ -396,6 +421,8 @@ class TestEnhanceAnalysis:
         )
 
         assert enhancement is not None
+        assert "priority_gap_feedback" in enhancement
+        assert "section_feedback" in enhancement
         assert "bullet_rewrites" in enhancement
         assert "keyword_context_tips" in enhancement
         assert "role_fit_summary" in enhancement
@@ -456,12 +483,14 @@ class TestEnhanceAnalysis:
             heuristic_result=result,
             db=db,
         )
-        assert enhancement is None
+        assert enhancement is not None
+        assert enhancement["role_fit_summary"]
+        assert len(enhancement["priority_gap_feedback"]) >= 3
 
     @patch("app.services.ai_analysis_service.litellm")
     @patch("app.services.ai_analysis_service._check_rate_limit", return_value=True)
     @patch("app.services.ai_analysis_service.settings")
-    def test_graceful_on_schema_validation_error(self, mock_settings, mock_rate, mock_litellm):
+    def test_recovers_when_llm_omits_summary_and_extra_sections(self, mock_settings, mock_rate, mock_litellm):
         """LLM returns valid JSON but missing required fields — returns None."""
         mock_settings.AI_ENHANCE_ENABLED = True
         mock_settings.LITELLM_API_KEY = "sk-test"
@@ -469,7 +498,6 @@ class TestEnhanceAnalysis:
         mock_settings.LITELLM_TEMPERATURE = 0.3
         mock_settings.LITELLM_MAX_TOKENS = 2000
 
-        # Missing required 'role_fit_summary'
         incomplete = {"bullet_rewrites": [], "keyword_context_tips": []}
         mock_choice = MagicMock()
         mock_choice.message.content = json.dumps(incomplete)
@@ -488,7 +516,10 @@ class TestEnhanceAnalysis:
             heuristic_result=result,
             db=db,
         )
-        assert enhancement is None
+        assert enhancement is not None
+        assert enhancement["role_fit_summary"]
+        assert len(enhancement["priority_gap_feedback"]) >= 3
+        assert len(enhancement["section_feedback"]) >= 2
 
     @patch("app.services.ai_analysis_service.litellm")
     @patch("app.services.ai_analysis_service._check_rate_limit", return_value=True)
