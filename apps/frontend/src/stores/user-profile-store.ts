@@ -1,8 +1,8 @@
-import { create } from "zustand";
 import { useEffect, useRef } from "react";
+import { create } from "zustand";
 import { useShallow } from "zustand/react/shallow";
-import { userService } from "@/middle-service/users";
 import type { UserRead, UserUpdate } from "@/middle-service/types";
+import { userService } from "@/middle-service/users";
 
 // ============================================================================
 // State & Actions
@@ -82,15 +82,16 @@ export const useUserProfileStore = create<UserProfileStore>()((set, get) => ({
 // ============================================================================
 
 export const useUserProfile = () => {
-  const { profile, isLoading, error, fetchProfile, clearProfile } = useUserProfileStore(
-    useShallow((state) => ({
-      profile: state.profile,
-      isLoading: state.isLoading,
-      error: state.error,
-      fetchProfile: state.fetchProfile,
-      clearProfile: state.clearProfile,
-    }))
-  );
+  const { profile, isLoading, error, fetchProfile, clearProfile } =
+    useUserProfileStore(
+      useShallow((state) => ({
+        profile: state.profile,
+        isLoading: state.isLoading,
+        error: state.error,
+        fetchProfile: state.fetchProfile,
+        clearProfile: state.clearProfile,
+      }))
+    );
 
   const fetchedRef = useRef(false);
 
@@ -112,11 +113,4 @@ export const useUserProfile = () => {
 };
 
 // Convenience updater — call after a successful PUT to keep store in sync
-export const updateProfileInStore = (data: Partial<UserRead>) => {
-  const current = useUserProfileStore.getState().profile;
-  if (current) {
-    useUserProfileStore.getState().setProfile({ ...current, ...data });
-  }
-};
-
 export type { UserRead, UserUpdate };

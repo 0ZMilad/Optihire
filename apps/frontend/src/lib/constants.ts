@@ -10,8 +10,6 @@
 export const RESUME_POLLING = {
   INTERVAL: 2000, // Poll backend every 2 seconds
   MAX_ATTEMPTS: 60, // Stop after 60 attempts (2 minutes total)
-  TIMEOUT_MESSAGE:
-    "Parsing is taking longer than expected. Please refresh the page.",
 } as const;
 
 // ============================================================================
@@ -25,7 +23,6 @@ export const FILE_UPLOAD = {
     "application/pdf",
     "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
   ],
-  ALLOWED_EXTENSIONS: [".pdf", ".docx"],
 } as const;
 
 // ============================================================================
@@ -51,10 +48,3 @@ export const SUCCESS_MESSAGES = {
 // ============================================================================
 // STATUS MESSAGES
 // ============================================================================
-
-export const STATUS_MESSAGES = {
-  Pending: "Resume is queued for processing...",
-  Processing: "Analysing your resume...",
-  Completed: "Analysis complete!",
-  Failed: "Failed to process resume.",
-} as const;

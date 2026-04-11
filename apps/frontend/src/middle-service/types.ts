@@ -3,28 +3,6 @@
  * These types match your FastAPI backend schemas
  */
 
-// ============================================================================
-// User Types
-// ============================================================================
-
-export interface UserCreate {
-  supabase_user_id: string;
-  email: string;
-  full_name?: string;
-  phone?: string;
-  location?: string;
-  linkedin_url?: string;
-  github_url?: string;
-  portfolio_url?: string;
-  preferred_roles?: string[];
-  preferred_locations?: string[];
-  preferred_salary_min?: number;
-  preferred_salary_max?: number;
-  years_of_experience?: number;
-  has_completed_onboarding?: boolean;
-  is_active?: boolean;
-}
-
 export interface UserUpdate {
   email?: string;
   full_name?: string;
@@ -97,13 +75,13 @@ export interface ResumeUploadResponse {
   filename: string;
   stored_name: string;
   user_id: string;
-  processing_status: 'Pending' | 'Processing' | 'Completed' | 'Failed';
+  processing_status: "Pending" | "Processing" | "Completed" | "Failed";
   message?: string;
 }
 
 export interface ResumeParseStatusResponse {
   id: string;
-  status: 'Pending' | 'Processing' | 'Completed' | 'Failed';
+  status: "Pending" | "Processing" | "Completed" | "Failed";
   message?: string;
   created_at: string;
   updated_at: string;
@@ -251,7 +229,7 @@ export interface ResumeComplete extends ResumeRead {
   last_analyzed_at: string | null;
   deleted_at: string | null;
   file_url: string | null;
-  
+
   // Parsed structured sections
   experiences: ExperienceRead[];
   education: EducationRead[];
