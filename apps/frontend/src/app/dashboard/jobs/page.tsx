@@ -5,6 +5,11 @@ import { DashboardHeader } from "@/components/dashboard-header";
 import { Main } from "@/components/main";
 import { Skeleton } from "@/components/ui/skeleton";
 
+const JOB_SKELETON_KEYS = Array.from(
+  { length: 6 },
+  (_, index) => `job-skeleton-${index}`
+);
+
 // Lazy-load the view — avoids SSR issues with client-only state
 const RecommendedJobsView = dynamic(
   () =>
@@ -20,8 +25,8 @@ const RecommendedJobsView = dynamic(
           <Skeleton className="h-4 w-72" />
         </div>
         <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
-          {Array.from({ length: 6 }).map((_, i) => (
-            <Skeleton key={i} className="h-[320px] w-full rounded-xl" />
+          {JOB_SKELETON_KEYS.map((key) => (
+            <Skeleton key={key} className="h-[320px] w-full rounded-xl" />
           ))}
         </div>
       </div>

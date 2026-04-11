@@ -1,19 +1,18 @@
 "use client";
 
-import { useState, useEffect, useMemo } from "react";
-import { useDebounce } from "@/hooks/use-debounce";
+import type { AxiosError } from "axios";
 import {
-  Sparkles,
-  Search,
-  X,
   AlertCircle,
   BriefcaseIcon,
   RefreshCw,
+  Search,
   SlidersHorizontal,
+  Sparkles,
+  X,
 } from "lucide-react";
-import { Input } from "@/components/ui/input";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { Button } from "@/components/ui/button";
-import { Skeleton } from "@/components/ui/skeleton";
+import { Input } from "@/components/ui/input";
 import {
   Select,
   SelectContent,
@@ -21,12 +20,12 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Separator } from "@/components/ui/separator";
-import type { AxiosError } from "axios";
-import { JobCard } from "./job-card";
+import { Skeleton } from "@/components/ui/skeleton";
+import { useDebounce } from "@/hooks/use-debounce";
 import type { JobMatch } from "@/lib/job-types";
-import { getActiveResume } from "@/middle-service/resumes";
 import { getJobMatches } from "@/middle-service/jobs";
+import { getActiveResume } from "@/middle-service/resumes";
+import { JobCard } from "./job-card";
 
 // ─── Real API fetch ──────────────────────────────────────────────────────────
 
@@ -38,7 +37,12 @@ async function fetchRecommendedJobs(): Promise<JobMatch[]> {
 // ─── Filter state type ──────────────────────────────────────────────────────
 
 type RemoteFilter = "all" | "remote" | "hybrid" | "onsite";
-type JobTypeFilter = "all" | "full_time" | "part_time" | "contract" | "internship";
+type JobTypeFilter =
+  | "all"
+  | "full_time"
+  | "part_time"
+  | "contract"
+  | "internship";
 type ScoreFilter = "all" | "80" | "60" | "40";
 
 interface Filters {
@@ -55,6 +59,11 @@ const DEFAULT_FILTERS: Filters = {
   minScore: "all",
 };
 
+const JOB_CARD_SKELETON_KEYS = Array.from(
+  { length: 6 },
+  (_, index) => `recommended-job-skeleton-${index}`
+);
+
 function hasActiveFilters(f: Filters) {
   return (
     f.search.trim() !== "" ||
@@ -69,8 +78,8 @@ function hasActiveFilters(f: Filters) {
 function LoadingSkeleton() {
   return (
     <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
-      {Array.from({ length: 6 }).map((_, i) => (
-        <Skeleton key={i} className="h-[320px] w-full rounded-xl" />
+      {JOB_CARD_SKELETON_KEYS.map((key) => (
+        <Skeleton key={key} className="h-[320px] w-full rounded-xl" />
       ))}
     </div>
   );
@@ -78,7 +87,13 @@ function LoadingSkeleton() {
 
 // ─── Error state ─────────────────────────────────────────────────────────────
 
-function ErrorState({ message, onRetry }: { message: string; onRetry: () => void }) {
+function ErrorState({
+  message,
+  onRetry,
+}: {
+  message: string;
+  onRetry: () => void;
+}) {
   return (
     <div className="rounded-xl border p-12 text-center space-y-4">
       <div className="flex justify-center">
@@ -88,7 +103,9 @@ function ErrorState({ message, onRetry }: { message: string; onRetry: () => void
       </div>
       <div className="space-y-1">
         <h2 className="text-lg font-semibold">Failed to load job matches</h2>
-        <p className="text-sm text-muted-foreground max-w-sm mx-auto">{message}</p>
+        <p className="text-sm text-muted-foreground max-w-sm mx-auto">
+          {message}
+        </p>
       </div>
       <Button onClick={onRetry} variant="outline" size="sm">
         <RefreshCw className="size-3.5 mr-2" />
@@ -124,9 +141,12 @@ function EmptyState({ hasFilters }: { hasFilters: boolean }) {
 
 function StatsBar({ total, filtered }: { total: number; filtered: number }) {
   return (
-    <p className="text-sm text-muted-foreground" aria-live="polite" aria-atomic="true">
-      Showing{" "}
-      <span className="font-medium text-foreground">{filtered}</span>
+    <p
+      className="text-sm text-muted-foreground"
+      aria-live="polite"
+      aria-atomic="true"
+    >
+      Showing <span className="font-medium text-foreground">{filtered}</span>
       {filtered !== total && (
         <>
           {" "}
@@ -144,46 +164,47 @@ export function RecommendedJobsView() {
   const [jobs, setJobs] = useState<JobMatch[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [fetchCounter, setFetchCounter] = useState(0);
   const [filters, setFilters] = useState<Filters>(DEFAULT_FILTERS);
   // Debounce the search string so the filter memo doesn't run on every keystroke.
   const debouncedSearch = useDebounce(filters.search, 200);
 
-  // Fetch (or re-fetch on retry)
-  useEffect(() => {
-    let cancelled = false;
+  const loadJobs = useCallback(async () => {
     setLoading(true);
     setError(null);
 
-    fetchRecommendedJobs()
-      .then((data) => {
-        if (!cancelled) {
-          setJobs(data);
-          setLoading(false);
-        }
-      })
-      .catch((err: AxiosError<{ detail?: string }>) => {
-        if (!cancelled) {
-          const detail = err.response?.data?.detail;
-          let message: string;
-          if (err.response?.status === 404 && detail?.includes("not been analyzed")) {
-            message = "Run an analysis on your resume first to see job matches.";
-          } else if (err.response?.status === 404) {
-            message = "No resume found. Upload and parse a resume first.";
-          } else {
-            message = detail ?? err.message ?? "An unexpected error occurred. Please try again.";
-          }
-          setError(message);
-          setLoading(false);
-        }
-      });
+    try {
+      const data = await fetchRecommendedJobs();
+      setJobs(data);
+      setLoading(false);
+    } catch (err) {
+      const error = err as AxiosError<{ detail?: string }>;
+      const detail = error.response?.data?.detail;
+      let message: string;
+      if (
+        error.response?.status === 404 &&
+        detail?.includes("not been analyzed")
+      ) {
+        message = "Run an analysis on your resume first to see job matches.";
+      } else if (error.response?.status === 404) {
+        message = "No resume found. Upload and parse a resume first.";
+      } else {
+        message =
+          detail ??
+          error.message ??
+          "An unexpected error occurred. Please try again.";
+      }
+      setError(message);
+      setLoading(false);
+    }
+  }, []);
 
-    return () => {
-      cancelled = true;
-    };
-  }, [fetchCounter]);
+  useEffect(() => {
+    void loadJobs();
+  }, [loadJobs]);
 
-  const retry = () => setFetchCounter((n) => n + 1);
+  const retry = useCallback(() => {
+    void loadJobs();
+  }, [loadJobs]);
 
   // Client-side filtering — search uses the debounced value to avoid
   // running the filter on every keystroke.
@@ -191,17 +212,35 @@ export function RecommendedJobsView() {
     const q = debouncedSearch.trim().toLowerCase();
     return jobs.filter((m) => {
       const { job_listing: j } = m;
-      if (q && !j.job_title.toLowerCase().includes(q) && !j.company_name.toLowerCase().includes(q))
+      if (
+        q &&
+        !j.job_title.toLowerCase().includes(q) &&
+        !j.company_name.toLowerCase().includes(q)
+      )
         return false;
-      if (filters.remoteType !== "all" && j.remote_type !== filters.remoteType) return false;
-      if (filters.jobType !== "all" && j.job_type !== filters.jobType) return false;
-      if (filters.minScore !== "all" && m.match_score < parseInt(filters.minScore, 10))
+      if (filters.remoteType !== "all" && j.remote_type !== filters.remoteType)
+        return false;
+      if (filters.jobType !== "all" && j.job_type !== filters.jobType)
+        return false;
+      if (
+        filters.minScore !== "all" &&
+        m.match_score < parseInt(filters.minScore, 10)
+      )
         return false;
       return true;
     });
-  }, [jobs, debouncedSearch, filters.remoteType, filters.jobType, filters.minScore]);
+  }, [
+    jobs,
+    debouncedSearch,
+    filters.remoteType,
+    filters.jobType,
+    filters.minScore,
+  ]);
 
-  const activeFilters = hasActiveFilters({ ...filters, search: debouncedSearch });
+  const activeFilters = hasActiveFilters({
+    ...filters,
+    search: debouncedSearch,
+  });
 
   const setFilter = <K extends keyof Filters>(key: K, value: Filters[K]) =>
     setFilters((prev) => ({ ...prev, [key]: value }));
@@ -224,7 +263,12 @@ export function RecommendedJobsView() {
           </p>
         </div>
         {!loading && !error && jobs.length > 0 && (
-          <Button variant="outline" size="sm" onClick={retry} className="shrink-0">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={retry}
+            className="shrink-0"
+          >
             <RefreshCw className="size-3.5 mr-2" />
             Refresh
           </Button>
@@ -301,7 +345,12 @@ export function RecommendedJobsView() {
 
             {/* Clear filters */}
             {activeFilters && (
-              <Button variant="ghost" size="sm" onClick={clearFilters} className="gap-1.5">
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={clearFilters}
+                className="gap-1.5"
+              >
                 <X className="size-3.5" />
                 Clear filters
               </Button>
@@ -321,7 +370,6 @@ export function RecommendedJobsView() {
         <div className="space-y-4">
           <div className="flex items-center justify-between">
             <StatsBar total={jobs.length} filtered={filteredJobs.length} />
-            <Separator className="hidden" />
           </div>
           <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
             {filteredJobs.map((match) => (
