@@ -1,43 +1,48 @@
-import { NextResponse } from "next/server";
+import { type CookieOptions, createServerClient } from "@supabase/ssr";
 
 import type { NextRequest } from "next/server";
-
-import { createServerClient, type CookieOptions } from "@supabase/ssr";
+import { NextResponse } from "next/server";
 
 export async function proxy(request: NextRequest): Promise<NextResponse> {
-  let supabaseResponse = NextResponse.next({ request });
+  const supabaseResponse = NextResponse.next({ request });
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+  const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
 
-  let supabase = createServerClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-    {
-      cookies: {
-        get(name: string) {
-          return request.cookies.get(name)?.value;
-        },
-        set(name: string, value: string, options: CookieOptions) {
-          request.cookies.set(name, value);
-          supabaseResponse.cookies.set(name, value, options);
-        },
-        remove(name: string, options: CookieOptions) {
-          request.cookies.set(name, "");
-          supabaseResponse.cookies.set(name, "", options);
-        },
-      },
+  const pathname = request.nextUrl.pathname;
+
+  if (!supabaseUrl || !supabaseAnonKey) {
+    if (pathname.startsWith("/dashboard")) {
+      return NextResponse.redirect(new URL("/login", request.url));
     }
-  );
+
+    return supabaseResponse;
+  }
+
+  const supabase = createServerClient(supabaseUrl, supabaseAnonKey, {
+    cookies: {
+      get(name: string) {
+        return request.cookies.get(name)?.value;
+      },
+      set(name: string, value: string, options: CookieOptions) {
+        request.cookies.set(name, value);
+        supabaseResponse.cookies.set(name, value, options);
+      },
+      remove(name: string, options: CookieOptions) {
+        request.cookies.set(name, "");
+        supabaseResponse.cookies.set(name, "", options);
+      },
+    },
+  });
 
   const {
     data: { session },
   } = await supabase.auth.getSession();
 
-  const pathname = request.nextUrl.pathname;
-
   if (pathname === "/auth/callback") {
     return supabaseResponse;
   }
 
-  if (pathname === "/dashboard" && !session) {
+  if (pathname.startsWith("/dashboard") && !session) {
     return NextResponse.redirect(new URL("/login", request.url));
   }
 
@@ -49,5 +54,5 @@ export async function proxy(request: NextRequest): Promise<NextResponse> {
 }
 
 export const config = {
-  matcher: ["/dashboard", "/login", "/sign-up", "/auth/callback"],
+  matcher: ["/dashboard/:path*", "/login", "/sign-up", "/auth/callback"],
 };

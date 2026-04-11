@@ -3,7 +3,7 @@
 import { Eye, EyeOff } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useState, FormEvent } from "react";
+import { FormEvent, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
@@ -34,7 +34,7 @@ export default function SignupForm() {
     setErrorMessage("");
     setSuccessMessage("");
 
-    if (agreedToTerms == false) {
+    if (!agreedToTerms) {
       setErrorMessage("You must agree to the terms first when signing up");
       setIsLoading(false);
       return;
@@ -56,7 +56,9 @@ export default function SignupForm() {
         }
       }
     } catch (error) {
-      logger.error("Signup failed", { error: error instanceof Error ? error.message : "Unknown error" });
+      logger.error("Signup failed", {
+        error: error instanceof Error ? error.message : "Unknown error",
+      });
       setErrorMessage("Error occurred, check logs");
     } finally {
       setIsLoading(false);
@@ -77,108 +79,121 @@ export default function SignupForm() {
             <fieldset>
               <legend className="sr-only">Create Account</legend>
 
-            <div className="space-y-2">
-              <Label
-                htmlFor="email"
-                className="text-sm font-medium text-foreground dark:text-foreground"
-              >
-                Email address
-              </Label>
-              <Input
-                id="email"
-                type="email"
-                placeholder="john@example.com"
-                className="mt-1"
-                onChange={(e) => setEmail(e.target.value)}
-                value={currentEmail}
-              />
-            </div>
-
-            <div className="space-y-2">
-              <Label
-                htmlFor="password"
-                className="text-sm font-medium text-foreground dark:text-foreground"
-              >
-                Password
-              </Label>
-              <div className="relative">
-                <Input
-                  id="password"
-                  type={showPassword ? "text" : "password"}
-                  placeholder="**************"
-                  className="pr-10 mt-1"
-                  onChange={(e) => setPassword(e.target.value)}
-                  value={currentPassword}
-                />
-                <Button
-                  type="button"
-                  variant="ghost"
-                  size="icon"
-                  className="absolute right-0 top-0 h-full px-3 text-muted-foreground hover:bg-transparent"
-                  onClick={() => setShowPassword(!showPassword)}
-                  aria-label={showPassword ? "Hide password" : "Show password"}
-                  aria-pressed={showPassword}
+              <div className="space-y-2">
+                <Label
+                  htmlFor="email"
+                  className="text-sm font-medium text-foreground dark:text-foreground"
                 >
-                  {showPassword ? (
-                    <EyeOff className="h-4 w-4" aria-hidden="true" />
-                  ) : (
-                    <Eye className="h-4 w-4" aria-hidden="true" />
-                  )}
-                </Button>
+                  Email address
+                </Label>
+                <Input
+                  id="email"
+                  type="email"
+                  placeholder="john@example.com"
+                  className="mt-1"
+                  onChange={(e) => setEmail(e.target.value)}
+                  value={currentEmail}
+                />
               </div>
-            </div>
 
-            <div className="flex items-center space-x-2">
-              <Checkbox
-                id="terms"
-                checked={agreedToTerms}
-                onCheckedChange={(checked) =>
-                  setAgreedToTerms(checked === true)
-                }
-              />
-              <label
-                htmlFor="terms"
-                className="text-xs sm:text-sm text-muted-foreground"
-              >
-                I agree to the{" "}
-                <Link href="#" className="text-primary hover:underline">
-                  Terms
-                </Link>{" "}
-                and{" "}
-                <Link href="#" className="text-primary hover:underline">
-                  Privacy Policy
-                </Link>
-              </label>
-            </div>
-            {errorMessage && (
-              <div role="alert" aria-live="polite" aria-atomic="true" className="rounded bg-destructive/10 border border-destructive/20 p-2">
-                <p className="text-xs font-medium text-destructive">
-                  {errorMessage}
-                </p>
-              </div>
-            )}
-            {successMessage && (
-              <div role="status" aria-live="polite" aria-atomic="true" className="rounded bg-green-500/10 border border-green-500/20 p-2">
-                <p className="text-xs font-medium text-green-600">
-                  {successMessage}
-                </p>
-              </div>
-            )}
-            <Button
-              type="submit"
-              className="mt-6 w-full py-2 font-medium"
-              disabled={isLoading}
-              aria-busy={isLoading}
-            >
-              {isLoading ? (
-                <div className="flex items-center justify-center gap-2">
-                  <Spinner className="h-4 w-4" />
-                  <span>Signing up...</span>
+              <div className="space-y-2">
+                <Label
+                  htmlFor="password"
+                  className="text-sm font-medium text-foreground dark:text-foreground"
+                >
+                  Password
+                </Label>
+                <div className="relative">
+                  <Input
+                    id="password"
+                    type={showPassword ? "text" : "password"}
+                    placeholder="**************"
+                    className="pr-10 mt-1"
+                    onChange={(e) => setPassword(e.target.value)}
+                    value={currentPassword}
+                  />
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="icon"
+                    className="absolute right-0 top-0 h-full px-3 text-muted-foreground hover:bg-transparent"
+                    onClick={() => setShowPassword(!showPassword)}
+                    aria-label={
+                      showPassword ? "Hide password" : "Show password"
+                    }
+                    aria-pressed={showPassword}
+                  >
+                    {showPassword ? (
+                      <EyeOff className="h-4 w-4" aria-hidden="true" />
+                    ) : (
+                      <Eye className="h-4 w-4" aria-hidden="true" />
+                    )}
+                  </Button>
                 </div>
-              ) : (
-                "Sign up"
+              </div>
+
+              <div className="flex items-center space-x-2">
+                <Checkbox
+                  id="terms"
+                  checked={agreedToTerms}
+                  onCheckedChange={(checked) =>
+                    setAgreedToTerms(checked === true)
+                  }
+                />
+                <label
+                  htmlFor="terms"
+                  className="text-xs sm:text-sm text-muted-foreground"
+                >
+                  I agree to the{" "}
+                  <Link href="/terms" className="text-primary hover:underline">
+                    Terms
+                  </Link>{" "}
+                  and{" "}
+                  <Link
+                    href="/privacy"
+                    className="text-primary hover:underline"
+                  >
+                    Privacy Policy
+                  </Link>
+                </label>
+              </div>
+              {errorMessage && (
+                <div
+                  role="alert"
+                  aria-live="polite"
+                  aria-atomic="true"
+                  className="rounded bg-destructive/10 border border-destructive/20 p-2"
+                >
+                  <p className="text-xs font-medium text-destructive">
+                    {errorMessage}
+                  </p>
+                </div>
               )}
-            </Button>
+              {successMessage && (
+                <output
+                  aria-live="polite"
+                  className="rounded bg-green-500/10 border border-green-500/20 p-2"
+                >
+                  <p className="text-xs font-medium text-green-600">
+                    {successMessage}
+                  </p>
+                </output>
+              )}
+              <Button
+                type="submit"
+                className="mt-6 w-full py-2 font-medium"
+                disabled={isLoading}
+                aria-busy={isLoading}
+              >
+                {isLoading ? (
+                  <div className="flex items-center justify-center gap-2">
+                    <Spinner className="h-4 w-4" />
+                    <span>Signing up...</span>
+                  </div>
+                ) : (
+                  "Sign up"
+                )}
+              </Button>
             </fieldset>
           </form>
 

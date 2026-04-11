@@ -1,14 +1,14 @@
+import { BarChart3, CheckCircle2, Cpu, FileText } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
-import { Button } from "@/components/ui/button";
-import { CheckCircle2, BarChart3, FileText, Cpu } from "lucide-react";
 import CountUp from "@/components/count-up";
+import { Button } from "@/components/ui/button";
 
 const partnerLogos = [
-  { name: "Microsoft", src: "/microsoft.jpg", width: 160, height: 40 },
-  { name: "Google", src: "/google.jpg", width: 160, height: 40 },
+  { name: "Microsoft", src: "/Microsoft.jpg", width: 160, height: 40 },
+  { name: "Google", src: "/Google.jpg", width: 160, height: 40 },
   { name: "jpmorgan", src: "/jpmorgan.jpg", width: 180, height: 60 },
-  { name: "NatWest", src: "/natwest.jpg", width: 140, height: 36 },
+  { name: "NatWest", src: "/NatWest.jpg", width: 140, height: 36 },
 ];
 
 const PartnerLogos = () => (
@@ -127,7 +127,11 @@ export function HeroSection() {
                 </div>
               </div>
 
-              <svg className="absolute inset-0 w-[180%] h-[140%] -top-[20%] -left-[40%] pointer-events-none z-0 visible lg:block hidden" aria-hidden="true" role="presentation">
+              <svg
+                className="absolute inset-0 w-[180%] h-[140%] -top-[20%] -left-[40%] pointer-events-none z-0 visible lg:block hidden"
+                aria-hidden="true"
+                role="presentation"
+              >
                 <path
                   d="M 175 235 L 80 235 L 80 160"
                   fill="none"
