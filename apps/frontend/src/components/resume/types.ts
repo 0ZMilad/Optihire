@@ -45,7 +45,7 @@ export interface Skill {
   id: string;
   skillName: string;
   skillCategory: string;
-  proficiencyLevel: 'beginner' | 'intermediate' | 'advanced' | 'expert';
+  proficiencyLevel: "beginner" | "intermediate" | "advanced" | "expert";
   yearsOfExperience: number | null;
   isPrimary: boolean;
   displayOrder: number;
@@ -80,24 +80,24 @@ export interface Certification {
 export interface ResumeBuilderData {
   // Unique identifier for the resume being built
   id: string | null;
-  
+
   // Personal information
   personal: PersonalInfo;
-  
+
   // Professional summary
   summary: string;
-  
+
   // Dynamic sections
   experiences: WorkExperience[];
   education: Education[];
   skills: Skill[];
   projects: Project[];
   certifications: Certification[];
-  
+
   // Template and ordering
   templateId: string | null;
   sectionOrder: string[];
-  
+
   // Metadata
   versionName: string;
   isPrimary: boolean;
@@ -116,35 +116,28 @@ export interface ResumeDraft {
   metadata: DraftMetadata;
 }
 
-// Auto-save configuration
-export interface AutoSaveConfig {
-  enabled: boolean;
-  intervalMs: number;
-  debounceMs: number;
-}
-
 // Save status for UI feedback
-export type SaveStatus = 'idle' | 'saving' | 'saved' | 'error';
+export type SaveStatus = "idle" | "saving" | "saved" | "error";
 
 // Section types for ordering and tabs
-export type ResumeSection = 
-  | 'personal'
-  | 'summary'
-  | 'experience'
-  | 'education'
-  | 'skills'
-  | 'projects'
-  | 'certifications';
+export type ResumeSection =
+  | "personal"
+  | "summary"
+  | "experience"
+  | "education"
+  | "skills"
+  | "projects"
+  | "certifications";
 
 // Default section order
 export const DEFAULT_SECTION_ORDER: ResumeSection[] = [
-  'personal',
-  'summary',
-  'experience',
-  'education',
-  'skills',
-  'projects',
-  'certifications',
+  "personal",
+  "summary",
+  "experience",
+  "education",
+  "skills",
+  "projects",
+  "certifications",
 ];
 
 // ============================================================================
@@ -152,24 +145,24 @@ export const DEFAULT_SECTION_ORDER: ResumeSection[] = [
 // ============================================================================
 
 export const createEmptyPersonalInfo = (): PersonalInfo => ({
-  fullName: '',
-  email: '',
-  phone: '',
-  location: '',
-  linkedinUrl: '',
-  githubUrl: '',
-  portfolioUrl: '',
+  fullName: "",
+  email: "",
+  phone: "",
+  location: "",
+  linkedinUrl: "",
+  githubUrl: "",
+  portfolioUrl: "",
 });
 
 export const createEmptyExperience = (order: number = 0): WorkExperience => ({
   id: crypto.randomUUID(),
-  companyName: '',
-  jobTitle: '',
-  location: '',
-  startDate: '',
-  endDate: '',
+  companyName: "",
+  jobTitle: "",
+  location: "",
+  startDate: "",
+  endDate: "",
   isCurrent: false,
-  description: '',
+  description: "",
   achievements: [],
   skillsUsed: [],
   displayOrder: order,
@@ -177,14 +170,14 @@ export const createEmptyExperience = (order: number = 0): WorkExperience => ({
 
 export const createEmptyEducation = (order: number = 0): Education => ({
   id: crypto.randomUUID(),
-  institutionName: '',
-  degreeType: '',
-  fieldOfStudy: '',
-  location: '',
-  startDate: '',
-  endDate: '',
+  institutionName: "",
+  degreeType: "",
+  fieldOfStudy: "",
+  location: "",
+  startDate: "",
+  endDate: "",
   isCurrent: false,
-  gpa: '',
+  gpa: "",
   achievements: [],
   relevantCoursework: [],
   displayOrder: order,
@@ -192,9 +185,9 @@ export const createEmptyEducation = (order: number = 0): Education => ({
 
 export const createEmptySkill = (order: number = 0): Skill => ({
   id: crypto.randomUUID(),
-  skillName: '',
-  skillCategory: '',
-  proficiencyLevel: 'intermediate',
+  skillName: "",
+  skillCategory: "",
+  proficiencyLevel: "intermediate",
   yearsOfExperience: null,
   isPrimary: false,
   displayOrder: order,
@@ -202,13 +195,13 @@ export const createEmptySkill = (order: number = 0): Skill => ({
 
 export const createEmptyProject = (order: number = 0): Project => ({
   id: crypto.randomUUID(),
-  projectName: '',
-  role: '',
-  description: '',
+  projectName: "",
+  role: "",
+  description: "",
   technologiesUsed: [],
-  projectUrl: '',
-  startDate: '',
-  endDate: '',
+  projectUrl: "",
+  startDate: "",
+  endDate: "",
   isCurrent: false,
   achievements: [],
   displayOrder: order,
@@ -216,19 +209,19 @@ export const createEmptyProject = (order: number = 0): Project => ({
 
 export const createEmptyCertification = (order: number = 0): Certification => ({
   id: crypto.randomUUID(),
-  certificationName: '',
-  issuingOrganization: '',
-  issueDate: '',
-  expiryDate: '',
-  credentialId: '',
-  credentialUrl: '',
+  certificationName: "",
+  issuingOrganization: "",
+  issueDate: "",
+  expiryDate: "",
+  credentialId: "",
+  credentialUrl: "",
   displayOrder: order,
 });
 
 export const createEmptyResumeData = (): ResumeBuilderData => ({
   id: null,
   personal: createEmptyPersonalInfo(),
-  summary: '',
+  summary: "",
   experiences: [],
   education: [],
   skills: [],
@@ -236,6 +229,6 @@ export const createEmptyResumeData = (): ResumeBuilderData => ({
   certifications: [],
   templateId: null,
   sectionOrder: [...DEFAULT_SECTION_ORDER],
-  versionName: 'Untitled Resume',
+  versionName: "Untitled Resume",
   isPrimary: false,
 });

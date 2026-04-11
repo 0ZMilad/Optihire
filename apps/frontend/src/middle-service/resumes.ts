@@ -1,13 +1,23 @@
+import type { ResumeBuilderData } from "../components/resume/types";
 import { apiClient } from "./client";
 import { supabase } from "./supabase";
-import { ResumeParseStatusResponse, ResumeRead, ResumeListItem, ResumeComplete, ResumeUploadResponse, ResumeCreate } from "./types";
-import type { ResumeBuilderData } from "../components/resume/types";
+import {
+  ResumeComplete,
+  ResumeCreate,
+  ResumeListItem,
+  ResumeParseStatusResponse,
+  ResumeRead,
+  ResumeUploadResponse,
+} from "./types";
 
 // Transform frontend ResumeBuilderData to backend ResumeCreate format
-function transformToResumeCreate(data: ResumeBuilderData, userId: string): ResumeCreate {
+function transformToResumeCreate(
+  data: ResumeBuilderData,
+  userId: string
+): ResumeCreate {
   // Helper function to convert empty strings to null
   const emptyToNull = (value: string | undefined | null): string | null => {
-    return value && value.trim() ? value.trim() : null;
+    return value?.trim() ? value.trim() : null;
   };
 
   return {
@@ -30,7 +40,7 @@ function transformToResumeCreate(data: ResumeBuilderData, userId: string): Resum
 function transformToResumeUpdate(data: ResumeBuilderData): Partial<ResumeRead> {
   // Helper function to convert empty strings to null
   const emptyToNull = (value: string | undefined | null): string | null => {
-    return value && value.trim() ? value.trim() : null;
+    return value?.trim() ? value.trim() : null;
   };
 
   return {
@@ -61,8 +71,10 @@ export const saveResume = async (data: ResumeBuilderData) => {
 
 export const createResume = async (data: ResumeBuilderData) => {
   // Get current user from Supabase session
-  const { data: { session } } = await supabase.auth.getSession();
-  
+  const {
+    data: { session },
+  } = await supabase.auth.getSession();
+
   if (!session?.user?.id) {
     throw new Error("User not authenticated");
   }
@@ -75,86 +87,103 @@ export const createResume = async (data: ResumeBuilderData) => {
   // Transform frontend data to backend format
   const resumeCreateData = transformToResumeCreate(data, session.user.id);
 
-  const response = await apiClient.post<ResumeRead>("/api/v1/resumes", resumeCreateData);
+  const response = await apiClient.post<ResumeRead>(
+    "/api/v1/resumes",
+    resumeCreateData
+  );
   return response.data;
 };
 
 export const uploadResume = async (file: File) => {
   const formData = new FormData();
-  formData.append("file", file);   
+  formData.append("file", file);
 
-  const response = await apiClient.post<ResumeUploadResponse>("/api/v1/resumes/upload", formData, { 
-    headers: {
+  const response = await apiClient.post<ResumeUploadResponse>(
+    "/api/v1/resumes/upload",
+    formData,
+    {
+      headers: {
         "Content-Type": "multipart/form-data",
-    },
-  });
+      },
+    }
+  );
 
   return response.data;
-}
+};
 
 export const getResumeParseStatus = async (resumeId: string) => {
-  const response = await apiClient.get<ResumeParseStatusResponse>(`/api/v1/resumes/parse-status/${resumeId}`);
-  
-  return response.data;
-}
+  const response = await apiClient.get<ResumeParseStatusResponse>(
+    `/api/v1/resumes/parse-status/${resumeId}`
+  );
 
-export const getResumeData = async (resumeId: string) => {
-  const response = await apiClient.get<ResumeRead>(`/api/v1/resumes/${resumeId}`);
-  
   return response.data;
-}
+};
 
 export const getResumeCompleteData = async (resumeId: string) => {
-  const response = await apiClient.get<ResumeComplete>(`/api/v1/resumes/${resumeId}/complete`);
-  
-  return response.data;
-}
+  const response = await apiClient.get<ResumeComplete>(
+    `/api/v1/resumes/${resumeId}/complete`
+  );
 
-export const updateResume = async (resumeId: string, data: Partial<ResumeRead>) => {
-  const response = await apiClient.put<ResumeRead>(`/api/v1/resumes/${resumeId}`, data);
-  
   return response.data;
-}
+};
+
+export const updateResume = async (
+  resumeId: string,
+  data: Partial<ResumeRead>
+) => {
+  const response = await apiClient.put<ResumeRead>(
+    `/api/v1/resumes/${resumeId}`,
+    data
+  );
+
+  return response.data;
+};
 
 export const getActiveResume = async () => {
   const response = await apiClient.get<ResumeRead>(`/api/v1/resumes/active`);
   return response.data;
-}
+};
 
 export const getUserResumes = async () => {
   const response = await apiClient.get<ResumeListItem[]>(`/api/v1/resumes`);
   return response.data;
-}
+};
 
-export const deleteAllResumes = async () => {
-  const response = await apiClient.delete(`/api/v1/resumes/all`);
+export const duplicateResume = async (
+  resumeId: string,
+  newVersionName?: string
+) => {
+  const response = await apiClient.post<ResumeRead>(
+    `/api/v1/resumes/${resumeId}/duplicate`,
+    {
+      new_version_name: newVersionName,
+    }
+  );
   return response.data;
-}
-
-export const duplicateResume = async (resumeId: string, newVersionName?: string) => {
-  const response = await apiClient.post<ResumeRead>(`/api/v1/resumes/${resumeId}/duplicate`, {
-    new_version_name: newVersionName
-  });
-  return response.data;
-}
+};
 
 export const deleteResume = async (resumeId: string) => {
   const response = await apiClient.delete(`/api/v1/resumes/${resumeId}`);
   return response.data;
-}
+};
 
 /**
  * Download a resume as a generated PDF file.
  * Triggers a browser file-save dialog.
  */
-export const downloadResumePdf = async (resumeId: string, filename?: string) => {
+export const downloadResumePdf = async (
+  resumeId: string,
+  filename?: string
+) => {
   const response = await apiClient.get(`/api/v1/resumes/${resumeId}/download`, {
     responseType: "blob",
   });
 
   // Extract filename from Content-Disposition header if not provided
   if (!filename) {
-    const disposition = response.headers["content-disposition"] as string | undefined;
+    const disposition = response.headers["content-disposition"] as
+      | string
+      | undefined;
     const match = disposition?.match(/filename="?(.+?)"?$/);
     filename = match?.[1] ?? "resume.pdf";
   }
@@ -171,4 +200,4 @@ export const downloadResumePdf = async (resumeId: string, filename?: string) => 
   // Cleanup
   document.body.removeChild(link);
   URL.revokeObjectURL(url);
-}
+};

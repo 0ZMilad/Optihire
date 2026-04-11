@@ -1,36 +1,38 @@
-import { create } from 'zustand';
-import { persist, createJSONStorage } from 'zustand/middleware';
-import { useShallow } from 'zustand/react/shallow';
-import { toast } from 'sonner';
-import { createResume, saveResume } from '../middle-service/resumes';
-import { useSavedResumesStore } from './saved-resumes-store';
+import { toast } from "sonner";
+import { create } from "zustand";
+import { createJSONStorage, persist } from "zustand/middleware";
+import { useShallow } from "zustand/react/shallow";
+import { getErrorMessage, getErrorStatus } from "@/lib/error-utils";
+import { mapResumeReadToListItem } from "@/lib/resume-mappers";
 import type {
-  ResumeBuilderData,
-  PersonalInfo,
-  WorkExperience,
-  Education,
-  Skill,
-  Project,
   Certification,
-  SaveStatus,
+  Education,
+  PersonalInfo,
+  Project,
+  ResumeBuilderData,
   ResumeDraft,
-} from '../components/resume/types';
+  SaveStatus,
+  Skill,
+  WorkExperience,
+} from "../components/resume/types";
 import {
-  createEmptyResumeData,
-  createEmptyExperience,
-  createEmptyEducation,
-  createEmptySkill,
-  createEmptyProject,
   createEmptyCertification,
-} from '../components/resume/types';
+  createEmptyEducation,
+  createEmptyExperience,
+  createEmptyProject,
+  createEmptyResumeData,
+  createEmptySkill,
+} from "../components/resume/types";
+import { saveResume } from "../middle-service/resumes";
+import { useSavedResumesStore } from "./saved-resumes-store";
 
 // ============================================================================
 // Storage Keys
 // ============================================================================
 
 const STORAGE_KEYS = {
-  DRAFT: 'optihire_resume_builder_draft',
-  SETTINGS: 'optihire_resume_builder_settings',
+  DRAFT: "optihire_resume_builder_draft",
+  SETTINGS: "optihire_resume_builder_settings",
 } as const;
 
 // Current schema version for migration support
@@ -47,7 +49,6 @@ interface ResumeBuilderState {
   lastSaved: string | null;
   hasDraft: boolean;
   autoSaveEnabled: boolean;
-  autoSaveIntervalMs: number;
   activeSection: string;
   isInitialized: boolean;
 }
@@ -59,7 +60,10 @@ interface ResumeBuilderState {
 interface ResumeBuilderActions {
   initialize: () => void;
   reset: () => void;
-  updatePersonalInfo: <K extends keyof PersonalInfo>(field: K, value: PersonalInfo[K]) => void;
+  updatePersonalInfo: <K extends keyof PersonalInfo>(
+    field: K,
+    value: PersonalInfo[K]
+  ) => void;
   setPersonalInfo: (info: Partial<PersonalInfo>) => void;
   updateSummary: (summary: string) => void;
   addExperience: () => void;
@@ -90,7 +94,6 @@ interface ResumeBuilderActions {
   saveToBackend: () => Promise<void>;
   loadDraft: () => boolean;
   clearDraft: () => void;
-  markAsSaved: () => void;
   setAutoSaveEnabled: (enabled: boolean) => void;
   setActiveSection: (section: string) => void;
   loadFromData: (data: Partial<ResumeBuilderData>) => void;
@@ -109,12 +112,11 @@ export type ResumeBuilderStore = ResumeBuilderState & ResumeBuilderActions;
 const initialState: ResumeBuilderState = {
   data: createEmptyResumeData(),
   isDirty: false,
-  saveStatus: 'idle',
+  saveStatus: "idle",
   lastSaved: null,
   hasDraft: false,
   autoSaveEnabled: true,
-  autoSaveIntervalMs: 2000,
-  activeSection: 'personal',
+  activeSection: "personal",
   isInitialized: false,
 };
 
@@ -147,7 +149,7 @@ export const useResumeBuilderStore = create<ResumeBuilderStore>()(
             personal: { ...state.data.personal, [field]: value },
           },
           isDirty: true,
-          saveStatus: 'idle',
+          saveStatus: "idle",
         }));
       },
 
@@ -158,7 +160,7 @@ export const useResumeBuilderStore = create<ResumeBuilderStore>()(
             personal: { ...state.data.personal, ...info },
           },
           isDirty: true,
-          saveStatus: 'idle',
+          saveStatus: "idle",
         }));
       },
 
@@ -167,21 +169,23 @@ export const useResumeBuilderStore = create<ResumeBuilderStore>()(
         set((state) => ({
           data: { ...state.data, summary },
           isDirty: true,
-          saveStatus: 'idle',
+          saveStatus: "idle",
         }));
       },
 
       // Experiences
       addExperience: () => {
         set((state) => {
-          const newExperience = createEmptyExperience(state.data.experiences.length);
+          const newExperience = createEmptyExperience(
+            state.data.experiences.length
+          );
           return {
             data: {
               ...state.data,
               experiences: [...state.data.experiences, newExperience],
             },
             isDirty: true,
-            saveStatus: 'idle',
+            saveStatus: "idle",
           };
         });
       },
@@ -195,7 +199,7 @@ export const useResumeBuilderStore = create<ResumeBuilderStore>()(
             ),
           },
           isDirty: true,
-          saveStatus: 'idle',
+          saveStatus: "idle",
         }));
       },
 
@@ -208,13 +212,15 @@ export const useResumeBuilderStore = create<ResumeBuilderStore>()(
               .map((exp, idx) => ({ ...exp, displayOrder: idx })),
           },
           isDirty: true,
-          saveStatus: 'idle',
+          saveStatus: "idle",
         }));
       },
 
       reorderExperiences: (orderedIds) => {
         set((state) => {
-          const experienceMap = new Map(state.data.experiences.map((e) => [e.id, e]));
+          const experienceMap = new Map(
+            state.data.experiences.map((e) => [e.id, e])
+          );
           const reordered = orderedIds
             .map((id, idx) => {
               const exp = experienceMap.get(id);
@@ -224,7 +230,7 @@ export const useResumeBuilderStore = create<ResumeBuilderStore>()(
           return {
             data: { ...state.data, experiences: reordered },
             isDirty: true,
-            saveStatus: 'idle',
+            saveStatus: "idle",
           };
         });
       },
@@ -232,14 +238,16 @@ export const useResumeBuilderStore = create<ResumeBuilderStore>()(
       // Education
       addEducation: () => {
         set((state) => {
-          const newEducation = createEmptyEducation(state.data.education.length);
+          const newEducation = createEmptyEducation(
+            state.data.education.length
+          );
           return {
             data: {
               ...state.data,
               education: [...state.data.education, newEducation],
             },
             isDirty: true,
-            saveStatus: 'idle',
+            saveStatus: "idle",
           };
         });
       },
@@ -253,7 +261,7 @@ export const useResumeBuilderStore = create<ResumeBuilderStore>()(
             ),
           },
           isDirty: true,
-          saveStatus: 'idle',
+          saveStatus: "idle",
         }));
       },
 
@@ -266,13 +274,15 @@ export const useResumeBuilderStore = create<ResumeBuilderStore>()(
               .map((edu, idx) => ({ ...edu, displayOrder: idx })),
           },
           isDirty: true,
-          saveStatus: 'idle',
+          saveStatus: "idle",
         }));
       },
 
       reorderEducation: (orderedIds) => {
         set((state) => {
-          const educationMap = new Map(state.data.education.map((e) => [e.id, e]));
+          const educationMap = new Map(
+            state.data.education.map((e) => [e.id, e])
+          );
           const reordered = orderedIds
             .map((id, idx) => {
               const edu = educationMap.get(id);
@@ -282,7 +292,7 @@ export const useResumeBuilderStore = create<ResumeBuilderStore>()(
           return {
             data: { ...state.data, education: reordered },
             isDirty: true,
-            saveStatus: 'idle',
+            saveStatus: "idle",
           };
         });
       },
@@ -297,7 +307,7 @@ export const useResumeBuilderStore = create<ResumeBuilderStore>()(
               skills: [...state.data.skills, newSkill],
             },
             isDirty: true,
-            saveStatus: 'idle',
+            saveStatus: "idle",
           };
         });
       },
@@ -311,7 +321,7 @@ export const useResumeBuilderStore = create<ResumeBuilderStore>()(
             ),
           },
           isDirty: true,
-          saveStatus: 'idle',
+          saveStatus: "idle",
         }));
       },
 
@@ -324,7 +334,7 @@ export const useResumeBuilderStore = create<ResumeBuilderStore>()(
               .map((skill, idx) => ({ ...skill, displayOrder: idx })),
           },
           isDirty: true,
-          saveStatus: 'idle',
+          saveStatus: "idle",
         }));
       },
 
@@ -340,7 +350,7 @@ export const useResumeBuilderStore = create<ResumeBuilderStore>()(
           return {
             data: { ...state.data, skills: reordered },
             isDirty: true,
-            saveStatus: 'idle',
+            saveStatus: "idle",
           };
         });
       },
@@ -355,7 +365,7 @@ export const useResumeBuilderStore = create<ResumeBuilderStore>()(
               projects: [...state.data.projects, newProject],
             },
             isDirty: true,
-            saveStatus: 'idle',
+            saveStatus: "idle",
           };
         });
       },
@@ -369,7 +379,7 @@ export const useResumeBuilderStore = create<ResumeBuilderStore>()(
             ),
           },
           isDirty: true,
-          saveStatus: 'idle',
+          saveStatus: "idle",
         }));
       },
 
@@ -382,7 +392,7 @@ export const useResumeBuilderStore = create<ResumeBuilderStore>()(
               .map((project, idx) => ({ ...project, displayOrder: idx })),
           },
           isDirty: true,
-          saveStatus: 'idle',
+          saveStatus: "idle",
         }));
       },
 
@@ -398,7 +408,7 @@ export const useResumeBuilderStore = create<ResumeBuilderStore>()(
           return {
             data: { ...state.data, projects: reordered },
             isDirty: true,
-            saveStatus: 'idle',
+            saveStatus: "idle",
           };
         });
       },
@@ -406,14 +416,16 @@ export const useResumeBuilderStore = create<ResumeBuilderStore>()(
       // Certifications
       addCertification: () => {
         set((state) => {
-          const newCert = createEmptyCertification(state.data.certifications.length);
+          const newCert = createEmptyCertification(
+            state.data.certifications.length
+          );
           return {
             data: {
               ...state.data,
               certifications: [...state.data.certifications, newCert],
             },
             isDirty: true,
-            saveStatus: 'idle',
+            saveStatus: "idle",
           };
         });
       },
@@ -427,7 +439,7 @@ export const useResumeBuilderStore = create<ResumeBuilderStore>()(
             ),
           },
           isDirty: true,
-          saveStatus: 'idle',
+          saveStatus: "idle",
         }));
       },
 
@@ -440,13 +452,15 @@ export const useResumeBuilderStore = create<ResumeBuilderStore>()(
               .map((cert, idx) => ({ ...cert, displayOrder: idx })),
           },
           isDirty: true,
-          saveStatus: 'idle',
+          saveStatus: "idle",
         }));
       },
 
       reorderCertifications: (orderedIds) => {
         set((state) => {
-          const certMap = new Map(state.data.certifications.map((c) => [c.id, c]));
+          const certMap = new Map(
+            state.data.certifications.map((c) => [c.id, c])
+          );
           const reordered = orderedIds
             .map((id, idx) => {
               const cert = certMap.get(id);
@@ -456,7 +470,7 @@ export const useResumeBuilderStore = create<ResumeBuilderStore>()(
           return {
             data: { ...state.data, certifications: reordered },
             isDirty: true,
-            saveStatus: 'idle',
+            saveStatus: "idle",
           };
         });
       },
@@ -466,7 +480,7 @@ export const useResumeBuilderStore = create<ResumeBuilderStore>()(
         set((state) => ({
           data: { ...state.data, sectionOrder },
           isDirty: true,
-          saveStatus: 'idle',
+          saveStatus: "idle",
         }));
       },
 
@@ -475,7 +489,7 @@ export const useResumeBuilderStore = create<ResumeBuilderStore>()(
         set((state) => ({
           data: { ...state.data, templateId },
           isDirty: true,
-          saveStatus: 'idle',
+          saveStatus: "idle",
         }));
       },
 
@@ -484,7 +498,7 @@ export const useResumeBuilderStore = create<ResumeBuilderStore>()(
         set((state) => ({
           data: { ...state.data, versionName: name },
           isDirty: true,
-          saveStatus: 'idle',
+          saveStatus: "idle",
         }));
       },
 
@@ -492,14 +506,14 @@ export const useResumeBuilderStore = create<ResumeBuilderStore>()(
         set((state) => ({
           data: { ...state.data, isPrimary },
           isDirty: true,
-          saveStatus: 'idle',
+          saveStatus: "idle",
         }));
       },
 
       // Draft Management
       saveDraft: () => {
         const state = get();
-        set({ saveStatus: 'saving' });
+        set({ saveStatus: "saving" });
 
         try {
           const draftData: ResumeDraft = {
@@ -513,36 +527,36 @@ export const useResumeBuilderStore = create<ResumeBuilderStore>()(
           localStorage.setItem(STORAGE_KEYS.DRAFT, JSON.stringify(draftData));
           set({
             isDirty: false,
-            saveStatus: 'saved',
+            saveStatus: "saved",
             lastSaved: draftData.metadata.lastSaved,
             hasDraft: true,
           });
         } catch (error) {
-          console.error('Failed to save draft:', error);
-          set({ saveStatus: 'error' });
+          console.error("Failed to save draft:", error);
+          set({ saveStatus: "error" });
         }
       },
 
       // Save to Backend
       saveToBackend: async () => {
         const state = get();
-        
+
         // Validation: Check required fields
         if (!state.data.versionName?.trim()) {
-          toast.error('Please enter a version name for your resume');
+          toast.error("Please enter a version name for your resume");
           return;
         }
 
         if (!state.data.personal.fullName?.trim()) {
-          toast.error('Please enter your full name');
+          toast.error("Please enter your full name");
           return;
         }
 
-        set({ saveStatus: 'saving' });
+        set({ saveStatus: "saving" });
 
         try {
           const savedResume = await saveResume(state.data);
-          
+
           // Update the local data with the resume ID (for new resumes) or keep existing ID
           set((prevState) => ({
             data: {
@@ -550,7 +564,7 @@ export const useResumeBuilderStore = create<ResumeBuilderStore>()(
               id: savedResume.id,
             },
             isDirty: false,
-            saveStatus: 'saved',
+            saveStatus: "saved",
             lastSaved: new Date().toISOString(),
           }));
 
@@ -558,44 +572,43 @@ export const useResumeBuilderStore = create<ResumeBuilderStore>()(
           if (!state.data.id) {
             // This was a new resume creation - add to saved resumes store
             const savedResumesStore = useSavedResumesStore.getState();
-            savedResumesStore.addNewResume({
-              id: savedResume.id,
-              user_id: savedResume.user_id,
-              version_name: savedResume.version_name,
-              template_id: savedResume.template_id,
-              is_primary: savedResume.is_primary,
-              full_name: savedResume.full_name,
-              email: savedResume.email,
-              phone: savedResume.phone,
-              location: savedResume.location,
-              professional_summary: savedResume.professional_summary,
-              processing_status: savedResume.processing_status,
-              created_at: savedResume.created_at,
-              updated_at: savedResume.updated_at,
-            });
-            toast.success(`Resume "${state.data.versionName}" created successfully!`);
+            savedResumesStore.addNewResume(
+              mapResumeReadToListItem(savedResume)
+            );
+            toast.success(
+              `Resume "${state.data.versionName}" created successfully!`
+            );
           } else {
             // This was an update - refresh the saved resumes list to reflect changes
             const savedResumesStore = useSavedResumesStore.getState();
             savedResumesStore.refreshResumes();
-            toast.success(`Resume "${state.data.versionName}" updated successfully!`);
+            toast.success(
+              `Resume "${state.data.versionName}" updated successfully!`
+            );
           }
-          
+
           // Clear the draft since it's now saved to backend
           localStorage.removeItem(STORAGE_KEYS.DRAFT);
-          
-        } catch (error: any) {
-          console.error('Failed to save resume to backend:', error);
-          set({ saveStatus: 'error' });
-          
-          if (error.response?.status === 409) {
-            toast.error('A resume with this version name already exists. Please choose a different name.');
-          } else if (error.response?.status === 403) {
-            toast.error('You are not authorized to perform this action.');
-          } else if (error.message === 'User not authenticated') {
-            toast.error('Please log in to save your resume.');
+        } catch (error) {
+          console.error("Failed to save resume to backend:", error);
+          set({ saveStatus: "error" });
+
+          const status = getErrorStatus(error);
+          const message = getErrorMessage(
+            error,
+            "Failed to save resume. Please try again."
+          );
+
+          if (status === 409) {
+            toast.error(
+              "A resume with this version name already exists. Please choose a different name."
+            );
+          } else if (status === 403) {
+            toast.error("You are not authorized to perform this action.");
+          } else if (message === "User not authenticated") {
+            toast.error("Please log in to save your resume.");
           } else {
-            toast.error('Failed to save resume. Please try again.');
+            toast.error(message);
           }
         }
       },
@@ -607,19 +620,19 @@ export const useResumeBuilderStore = create<ResumeBuilderStore>()(
 
           const parsed: ResumeDraft = JSON.parse(stored);
           if (parsed.metadata.version !== SCHEMA_VERSION) {
-            console.warn('Draft version mismatch, migration may be needed');
+            console.warn("Draft version mismatch, migration may be needed");
           }
 
           set({
             data: parsed.data,
             lastSaved: parsed.metadata.lastSaved,
             isDirty: false,
-            saveStatus: 'saved',
+            saveStatus: "saved",
             hasDraft: true,
           });
           return true;
         } catch (error) {
-          console.error('Failed to load draft:', error);
+          console.error("Failed to load draft:", error);
           return false;
         }
       },
@@ -629,16 +642,8 @@ export const useResumeBuilderStore = create<ResumeBuilderStore>()(
           localStorage.removeItem(STORAGE_KEYS.DRAFT);
           set({ hasDraft: false, lastSaved: null });
         } catch (error) {
-          console.error('Failed to clear draft:', error);
+          console.error("Failed to clear draft:", error);
         }
-      },
-
-      markAsSaved: () => {
-        set({
-          isDirty: false,
-          saveStatus: 'saved',
-          lastSaved: new Date().toISOString(),
-        });
       },
 
       // Auto-save Settings
@@ -657,7 +662,7 @@ export const useResumeBuilderStore = create<ResumeBuilderStore>()(
         set({
           data: { ...baseData, ...data },
           isDirty: false,
-          saveStatus: 'idle',
+          saveStatus: "idle",
         });
       },
     }),
@@ -677,18 +682,27 @@ export const useResumeBuilderStore = create<ResumeBuilderStore>()(
 // ============================================================================
 
 export const useResumeData = () => useResumeBuilderStore((state) => state.data);
-export const usePersonalInfo = () => useResumeBuilderStore((state) => state.data.personal);
-export const useSummary = () => useResumeBuilderStore((state) => state.data.summary);
-export const useExperiences = () => useResumeBuilderStore((state) => state.data.experiences);
-export const useEducation = () => useResumeBuilderStore((state) => state.data.education);
-export const useSkills = () => useResumeBuilderStore((state) => state.data.skills);
-export const useProjects = () => useResumeBuilderStore((state) => state.data.projects);
-export const useCertifications = () => useResumeBuilderStore((state) => state.data.certifications);
-export const useSaveStatus = () => useResumeBuilderStore(
-  useShallow((state) => ({
-    isDirty: state.isDirty,
-    saveStatus: state.saveStatus,
-    lastSaved: state.lastSaved,
-  }))
-);
-export const useAutoSaveEnabled = () => useResumeBuilderStore((state) => state.autoSaveEnabled);
+export const usePersonalInfo = () =>
+  useResumeBuilderStore((state) => state.data.personal);
+export const useSummary = () =>
+  useResumeBuilderStore((state) => state.data.summary);
+export const useExperiences = () =>
+  useResumeBuilderStore((state) => state.data.experiences);
+export const useEducation = () =>
+  useResumeBuilderStore((state) => state.data.education);
+export const useSkills = () =>
+  useResumeBuilderStore((state) => state.data.skills);
+export const useProjects = () =>
+  useResumeBuilderStore((state) => state.data.projects);
+export const useCertifications = () =>
+  useResumeBuilderStore((state) => state.data.certifications);
+export const useSaveStatus = () =>
+  useResumeBuilderStore(
+    useShallow((state) => ({
+      isDirty: state.isDirty,
+      saveStatus: state.saveStatus,
+      lastSaved: state.lastSaved,
+    }))
+  );
+export const useAutoSaveEnabled = () =>
+  useResumeBuilderStore((state) => state.autoSaveEnabled);
