@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from "react";
+import { RESUME_POLLING } from "@/lib/constants";
 import { getResumeParseStatus } from "@/middle-service/resumes";
 import { ResumeParseStatusResponse } from "@/middle-service/types";
-import { RESUME_POLLING } from "@/lib/constants";
 
 interface PollingOptions {
   onComplete?: (resumeId: string) => void;
@@ -15,17 +15,17 @@ export const useResumePolling = (
   options: PollingOptions = {}
 ) => {
   // Use state for data so UI updates when status message changes
-  const [statusData, setStatusData] = useState<ResumeParseStatusResponse | null>(null);
-  const [isPolling, setIsPolling] = useState<boolean>(false);
-  
+  const [statusData, setStatusData] =
+    useState<ResumeParseStatusResponse | null>(null);
+
   // Use ref for counters to avoid dependency loop in useEffect
   const attemptCount = useRef<number>(0);
 
-  const { 
-    onComplete, 
-    onError, 
-    interval = RESUME_POLLING.INTERVAL, 
-    maxAttempts = RESUME_POLLING.MAX_ATTEMPTS 
+  const {
+    onComplete,
+    onError,
+    interval = RESUME_POLLING.INTERVAL,
+    maxAttempts = RESUME_POLLING.MAX_ATTEMPTS,
   } = options;
 
   // Use refs for callbacks to avoid dependency loops
@@ -40,61 +40,61 @@ export const useResumePolling = (
   useEffect(() => {
     // 1. Don't poll if no ID provided
     if (!resumeId) {
-      setIsPolling(false);
       setStatusData(null);
       attemptCount.current = 0;
       return;
     }
 
-    setIsPolling(true);
     attemptCount.current = 0;
     setStatusData(null);
     let timerId: NodeJS.Timeout | null = null;
-    let isCancelled = false; 
+    let isCancelled = false;
 
     const poll = async () => {
-      if (isCancelled) return; 
+      if (isCancelled) return;
 
       try {
         attemptCount.current += 1;
 
         const data = await getResumeParseStatus(resumeId);
-        
-        if (isCancelled) return; 
+
+        if (isCancelled) return;
         setStatusData(data);
 
         // CASE: Completed
         if (data.status === "Completed") {
-          setIsPolling(false);
-          if (onCompleteRef.current && !isCancelled) onCompleteRef.current(resumeId);
-          return; 
+          if (onCompleteRef.current && !isCancelled)
+            onCompleteRef.current(resumeId);
+          return;
         }
 
         // CASE: Failed
         if (data.status === "Failed") {
-          setIsPolling(false);
-          if (onErrorRef.current && !isCancelled) onErrorRef.current(data.error_details || "Parsing failed");
+          if (onErrorRef.current && !isCancelled)
+            onErrorRef.current(data.error_details || "Parsing failed");
           return;
         }
 
         // CASE: Timeout
         if (attemptCount.current >= maxAttempts) {
-          setIsPolling(false);
-          if (onErrorRef.current && !isCancelled) onErrorRef.current("Operation timed out");
+          if (onErrorRef.current && !isCancelled)
+            onErrorRef.current("Operation timed out");
           return;
         }
 
         // CASE: Pending/Processing - Schedule next poll with exponential backoff
         if (!isCancelled) {
-          const backoff = Math.min(interval * Math.pow(2, attemptCount.current - 1), 16000);
+          const backoff = Math.min(
+            interval * 2 ** (attemptCount.current - 1),
+            16000
+          );
           const jitter = Math.random() * 0.1 * backoff;
           timerId = setTimeout(poll, backoff + jitter);
         }
-
-      } catch (error) {
+      } catch {
         if (!isCancelled) {
-          setIsPolling(false);
-          if (onErrorRef.current) onErrorRef.current("Network error during polling");
+          if (onErrorRef.current)
+            onErrorRef.current("Network error during polling");
         }
       }
     };
@@ -107,8 +107,7 @@ export const useResumePolling = (
       isCancelled = true;
       if (timerId) clearTimeout(timerId);
     };
+  }, [resumeId, interval, maxAttempts]);
 
-  }, [resumeId, interval, maxAttempts]); 
-
-  return { statusData, isPolling };
+  return { statusData };
 };
