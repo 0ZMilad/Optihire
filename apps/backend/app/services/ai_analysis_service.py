@@ -117,17 +117,6 @@ def _build_provider_configs() -> list[LLMProviderConfig]:
     """Build the ordered list of providers to try for AI enhancement."""
     providers: list[LLMProviderConfig] = []
 
-    primary_model = _as_clean_string(settings.LLM_PROVIDER)
-    primary_key = _as_clean_string(settings.LITELLM_API_KEY)
-    if primary_model and primary_key:
-        providers.append(
-            LLMProviderConfig(
-                model=primary_model,
-                api_key=primary_key,
-                provider_label=_provider_label_for_model(primary_model),
-            )
-        )
-
     openrouter_key = _as_clean_string(settings.OPENROUTER_API_KEY)
     openrouter_models = _parse_model_candidates(_as_clean_string(settings.OPENROUTER_MODELS))
 
@@ -152,6 +141,20 @@ def _build_provider_configs() -> list[LLMProviderConfig]:
                 for provider in providers
             ):
                 providers.append(fallback)
+
+    primary_model = _as_clean_string(settings.LLM_PROVIDER)
+    primary_key = _as_clean_string(settings.LITELLM_API_KEY)
+    if primary_model and primary_key:
+        primary = LLMProviderConfig(
+            model=primary_model,
+            api_key=primary_key,
+            provider_label=_provider_label_for_model(primary_model),
+        )
+        if all(
+            provider.model != primary.model or provider.api_key != primary.api_key
+            for provider in providers
+        ):
+            providers.append(primary)
 
     return providers
 
@@ -981,7 +984,7 @@ def enhance_analysis(
             target_role=job_title,
         )
 
-        # 3. Try the primary provider first, then fall back to OpenRouter if configured.
+        # 3. Try providers in configured order (OpenRouter-first when available).
         for index, provider in enumerate(providers):
             enhancement = _run_provider_attempt(
                 provider=provider,

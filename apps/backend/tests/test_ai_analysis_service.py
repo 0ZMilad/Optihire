@@ -434,7 +434,7 @@ class TestEnhanceAnalysis:
     @patch("app.services.ai_analysis_service.litellm")
     @patch("app.services.ai_analysis_service._check_rate_limit", return_value=True)
     @patch("app.services.ai_analysis_service.settings")
-    def test_falls_back_to_openrouter_when_primary_provider_fails(
+    def test_prefers_openrouter_when_both_primary_and_openrouter_are_configured(
         self,
         mock_settings,
         mock_rate,
@@ -455,7 +455,6 @@ class TestEnhanceAnalysis:
         mock_response = MagicMock()
         mock_response.choices = [mock_choice]
         mock_litellm.completion.side_effect = [
-            Exception("Gemini quota exceeded"),
             mock_response,
             mock_response,
         ]
@@ -475,21 +474,19 @@ class TestEnhanceAnalysis:
         assert enhancement is not None
         assert enhancement["provider_label"] == "OpenRouter"
         assert enhancement["provider_model"] == "openrouter/openai/gpt-4o-mini"
-        assert mock_litellm.completion.call_count == 3
+        assert mock_litellm.completion.call_count == 2
 
         first_call = mock_litellm.completion.call_args_list[0].kwargs
-        assert first_call["model"] == "gemini/gemini-2.5-flash"
-        assert first_call["api_key"] == "gemini-key"
+        assert first_call["model"] == "openrouter/openai/gpt-4o-mini"
+        assert first_call["api_key"] == "openrouter-key"
+        assert first_call["extra_headers"] == {
+            "HTTP-Referer": "https://optihire.example",
+            "X-OpenRouter-Title": "OptiHire",
+        }
 
         second_call = mock_litellm.completion.call_args_list[1].kwargs
         assert second_call["model"] == "openrouter/openai/gpt-4o-mini"
         assert second_call["api_key"] == "openrouter-key"
-        assert second_call["extra_headers"] == {
-            "HTTP-Referer": "https://optihire.example",
-            "X-OpenRouter-Title": "OptiHire",
-        }
-        third_call = mock_litellm.completion.call_args_list[2].kwargs
-        assert third_call["model"] == "openrouter/openai/gpt-4o-mini"
 
     @patch("app.services.ai_analysis_service.litellm")
     @patch("app.services.ai_analysis_service._check_rate_limit", return_value=True)
@@ -519,7 +516,6 @@ class TestEnhanceAnalysis:
         mock_response = MagicMock()
         mock_response.choices = [mock_choice]
         mock_litellm.completion.side_effect = [
-            Exception("Primary provider down"),
             Exception("OpenRouter model 1 overloaded"),
             Exception("OpenRouter model 2 timed out"),
             mock_response,
@@ -541,23 +537,23 @@ class TestEnhanceAnalysis:
         assert enhancement is not None
         assert enhancement["provider_label"] == "OpenRouter"
         assert enhancement["provider_model"] == "openrouter/google/gemini-2.5-flash"
-        assert mock_litellm.completion.call_count == 5
+        assert mock_litellm.completion.call_count == 4
 
         first_call = mock_litellm.completion.call_args_list[0].kwargs
-        assert first_call["model"] == "gemini/gemini-2.5-flash"
+        assert first_call["model"] == "openrouter/openai/gpt-4o-mini"
 
         second_call = mock_litellm.completion.call_args_list[1].kwargs
-        assert second_call["model"] == "openrouter/openai/gpt-4o-mini"
+        assert second_call["model"] == "openrouter/anthropic/claude-3.5-sonnet"
 
         third_call = mock_litellm.completion.call_args_list[2].kwargs
-        assert third_call["model"] == "openrouter/anthropic/claude-3.5-sonnet"
+        assert third_call["model"] == "openrouter/google/gemini-2.5-flash"
 
         fourth_call = mock_litellm.completion.call_args_list[3].kwargs
         assert fourth_call["model"] == "openrouter/google/gemini-2.5-flash"
         assert fourth_call["api_key"] == "openrouter-key"
         assert fourth_call["extra_headers"] == {
             "HTTP-Referer": "https://optihire.example",
-            "X-OpenRouter-Title": "OptiHire",
+            "X-OpenRouter-Title": "Optihire",
         }
 
     @patch("app.services.ai_analysis_service.litellm")
