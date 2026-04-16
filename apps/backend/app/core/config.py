@@ -20,6 +20,10 @@ class Settings(BaseSettings):
     AI_ENHANCE_ENABLED: bool = False
     LLM_PROVIDER: str = "gemini/gemini-2.5-flash"
     LITELLM_API_KEY: str = ""
+    OPENROUTER_MODELS: str = ""
+    OPENROUTER_API_KEY: str = ""
+    OPENROUTER_SITE_URL: str = ""
+    OPENROUTER_APP_NAME: str = "OptiHire"
     LITELLM_TEMPERATURE: float = 0.3
     LITELLM_MAX_TOKENS: int = 4000
     MAX_AI_CALLS_PER_DAY: int = 10
@@ -60,6 +64,7 @@ class Settings(BaseSettings):
     model_config = {
         "env_file": ".env",
         "case_sensitive": True,
+        "extra": "ignore",
     }
 
 

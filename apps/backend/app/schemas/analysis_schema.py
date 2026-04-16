@@ -46,6 +46,8 @@ class AIEnhancementPayload(BaseModel):
     bullet_rewrites: list[BulletRewrite] = Field(default_factory=list)
     keyword_context_tips: list[KeywordContextTip] = Field(default_factory=list)
     role_fit_summary: str = Field(..., description="A 2-3 sentence qualitative analysis of candidate fit.")
+    provider_label: str | None = Field(default=None, description="Human-readable name of the provider used to generate the response.")
+    provider_model: str | None = Field(default=None, description="Model identifier used to generate the response.")
 
 
 # ===== AUDIT REQUEST =====

@@ -30,8 +30,8 @@ export function Header() {
           <Image
             src="/OptiHire.png"
             alt="Optihire Logo"
-            width={50}
-            height={50}
+            width={160}
+            height={160}
             className="h-8 w-auto"
             priority
           />

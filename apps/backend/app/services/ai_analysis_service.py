@@ -14,6 +14,7 @@ from __future__ import annotations
 import json
 import logging
 import re
+from dataclasses import dataclass
 from datetime import date, datetime, timezone
 from typing import Any
 from uuid import UUID
@@ -51,6 +52,108 @@ _MAX_SECTION_FEEDBACK = 4
 
 # Matches an optional ```json ... ``` wrapper that some models emit
 _CODE_FENCE_RE = re.compile(r"```(?:json)?\s*(.*?)\s*```", re.DOTALL)
+
+
+@dataclass(frozen=True)
+class LLMProviderConfig:
+    """Resolved configuration for a single LLM provider attempt."""
+
+    model: str
+    api_key: str
+    provider_label: str
+    extra_headers: dict[str, str] | None = None
+
+
+def _as_clean_string(value: Any) -> str:
+    """Return a stripped string setting value, ignoring mocked/non-string values."""
+    return value.strip() if isinstance(value, str) else ""
+
+
+def _provider_label_for_model(model: str) -> str:
+    """Map a model identifier to a user-facing provider label."""
+    normalized = model.casefold()
+
+    if normalized.startswith("openrouter/"):
+        return "OpenRouter"
+    if normalized.startswith("gemini"):
+        return "Gemini"
+    if normalized.startswith("gemini/") or "/gemini" in normalized:
+        return "Gemini"
+    if normalized.startswith("gpt-") or normalized.startswith("o1") or normalized.startswith("o3"):
+        return "OpenAI"
+    if normalized.startswith("openai/"):
+        return "OpenAI"
+    if normalized.startswith("claude"):
+        return "Anthropic"
+    if normalized.startswith("anthropic/"):
+        return "Anthropic"
+
+    provider = normalized.split("/", maxsplit=1)[0].strip()
+    return provider.title() if provider else "AI"
+
+
+def _parse_model_candidates(raw_value: Any) -> list[str]:
+    """Parse comma/newline-separated model identifiers into a clean unique list."""
+    if not isinstance(raw_value, str):
+        return []
+
+    candidates: list[str] = []
+    seen: set[str] = set()
+    normalized_input = raw_value.replace("\r", "\n").replace(";", "\n").replace(",", "\n")
+    for raw_model in normalized_input.split("\n"):
+        model = raw_model.strip()
+        if not model:
+            continue
+        dedupe_key = model.casefold()
+        if dedupe_key in seen:
+            continue
+        candidates.append(model)
+        seen.add(dedupe_key)
+
+    return candidates
+
+
+def _build_provider_configs() -> list[LLMProviderConfig]:
+    """Build the ordered list of providers to try for AI enhancement."""
+    providers: list[LLMProviderConfig] = []
+
+    primary_model = _as_clean_string(settings.LLM_PROVIDER)
+    primary_key = _as_clean_string(settings.LITELLM_API_KEY)
+    if primary_model and primary_key:
+        providers.append(
+            LLMProviderConfig(
+                model=primary_model,
+                api_key=primary_key,
+                provider_label=_provider_label_for_model(primary_model),
+            )
+        )
+
+    openrouter_key = _as_clean_string(settings.OPENROUTER_API_KEY)
+    openrouter_models = _parse_model_candidates(_as_clean_string(settings.OPENROUTER_MODELS))
+
+    if openrouter_models and openrouter_key:
+        openrouter_headers: dict[str, str] = {}
+        site_url = _as_clean_string(settings.OPENROUTER_SITE_URL)
+        app_name = _as_clean_string(settings.OPENROUTER_APP_NAME)
+        if site_url:
+            openrouter_headers["HTTP-Referer"] = site_url
+        if app_name:
+            openrouter_headers["X-OpenRouter-Title"] = app_name
+
+        for openrouter_model in openrouter_models:
+            fallback = LLMProviderConfig(
+                model=openrouter_model,
+                api_key=openrouter_key,
+                provider_label="OpenRouter",
+                extra_headers=openrouter_headers or None,
+            )
+            if all(
+                provider.model != fallback.model or provider.api_key != fallback.api_key
+                for provider in providers
+            ):
+                providers.append(fallback)
+
+    return providers
 
 
 def _clean_string_list(values: Any) -> list[str]:
@@ -459,40 +562,6 @@ def _sanitize_llm_response(
     parsed["role_fit_summary"] = role_fit_summary
 
     return parsed
-    raw_bullets = parsed.get("bullet_rewrites")
-    if isinstance(raw_bullets, list):
-        complete = [
-            b for b in raw_bullets
-            if isinstance(b, dict)
-            and b.get("original")
-            and b.get("rewritten")
-            and b.get("rationale")
-        ]
-        if len(complete) < len(raw_bullets):
-            logger.warning(
-                "Dropped %d incomplete bullet_rewrite(s) from LLM response",
-                len(raw_bullets) - len(complete),
-            )
-        parsed["bullet_rewrites"] = complete
-        if len(complete) < 4:
-            logger.warning(
-                "Only %d complete bullet_rewrite(s) after filtering — below minimum of 4",
-                len(complete),
-            )
-
-    # Ensure keyword_context_tips is always a list
-    if not isinstance(parsed.get("keyword_context_tips"), list):
-        parsed["keyword_context_tips"] = []
-
-    # Provide a fallback for the required role_fit_summary when truncated
-    if not parsed.get("role_fit_summary"):
-        logger.warning("LLM response missing role_fit_summary — using fallback")
-        parsed["role_fit_summary"] = (
-            "The AI summary was unavailable for this analysis. "
-            "Please re-run the audit to generate a complete result."
-        )
-
-    return parsed
 
 
 def _extract_json(content: str) -> Any:
@@ -697,6 +766,118 @@ def _build_retry_messages(
     return messages
 
 
+def _run_provider_attempt(
+    *,
+    provider: LLMProviderConfig,
+    messages: list[dict[str, str]],
+    heuristic_result: AnalysisResult,
+    target_role: str | None,
+) -> dict[str, Any] | None:
+    """Call one provider with an internal schema-compliance retry."""
+    parsed: dict[str, Any] | None = None
+    retry_messages = messages
+
+    for attempt in range(2):
+        logger.info(
+            "Calling %s model %s for AI enhancement (attempt %d)",
+            provider.provider_label,
+            provider.model,
+            attempt + 1,
+        )
+
+        try:
+            response = litellm.completion(
+                model=provider.model,
+                api_key=provider.api_key,
+                messages=retry_messages,
+                temperature=settings.LITELLM_TEMPERATURE,
+                max_tokens=settings.LITELLM_MAX_TOKENS,
+                timeout=30,
+                extra_headers=provider.extra_headers,
+            )
+        except Exception as exc:
+            logger.warning(
+                "%s request failed on attempt %d: %s: %s",
+                provider.provider_label,
+                attempt + 1,
+                type(exc).__name__,
+                exc,
+            )
+            return None
+
+        content = _coerce_message_content(response.choices[0].message.content)
+        if not content:
+            logger.warning(
+                "%s returned empty content on attempt %d",
+                provider.provider_label,
+                attempt + 1,
+            )
+            if attempt == 0:
+                retry_messages = _build_retry_messages(
+                    messages,
+                    prior_content=None,
+                    retry_reason="The previous response was empty.",
+                )
+                continue
+            return None
+
+        try:
+            candidate = _extract_json(content)
+        except json.JSONDecodeError as exc:
+            logger.warning(
+                "%s returned invalid JSON on attempt %d: %s",
+                provider.provider_label,
+                attempt + 1,
+                exc,
+            )
+            if attempt == 0:
+                retry_messages = _build_retry_messages(
+                    messages,
+                    prior_content=content,
+                    retry_reason="The previous response was not valid JSON.",
+                )
+                continue
+            return None
+
+        if attempt == 0 and _response_needs_retry(candidate):
+            logger.warning(
+                "%s response was incomplete on first attempt; requesting a retry",
+                provider.provider_label,
+            )
+            retry_messages = _build_retry_messages(
+                messages,
+                prior_content=content,
+                retry_reason=(
+                    "The previous response omitted required fields or returned too few items."
+                ),
+            )
+            continue
+
+        parsed = candidate
+        break
+
+    if parsed is None:
+        return None
+
+    parsed = _sanitize_llm_response(
+        parsed,
+        heuristic_result=heuristic_result,
+        target_role=target_role,
+    )
+    parsed["provider_label"] = provider.provider_label
+    parsed["provider_model"] = provider.model
+
+    payload = AIEnhancementPayload.model_validate(parsed)
+    logger.info(
+        "AI enhancement complete via %s (%s) — %d rewrites, %d tips",
+        provider.provider_label,
+        provider.model,
+        len(payload.bullet_rewrites),
+        len(payload.keyword_context_tips),
+    )
+    return payload.model_dump()
+
+
 # ---------------------------------------------------------------------------
 # Rate limiting (simple daily cap)
 # ---------------------------------------------------------------------------
@@ -746,9 +927,12 @@ def enhance_analysis(
         logger.info("AI enhancement disabled globally (AI_ENHANCE_ENABLED=False)")
         return None
 
-    # --- Guard: API key configured ---
-    if not settings.LITELLM_API_KEY:
-        logger.warning("AI enhancement skipped — LITELLM_API_KEY not configured")
+    providers = _build_provider_configs()
+    if not providers:
+        logger.warning(
+            "AI enhancement skipped — no LLM providers configured. "
+            "Set LITELLM_API_KEY for the primary model and/or OPENROUTER_API_KEY + OPENROUTER_MODELS for fallback."
+        )
         return None
 
     # --- Guard: rate limit ---
@@ -797,88 +981,34 @@ def enhance_analysis(
             target_role=job_title,
         )
 
-        parsed: dict[str, Any] | None = None
-        retry_messages = messages
-
-        # 3. Call LLM via litellm, retrying once if the first response is thin.
-        for attempt in range(2):
-            logger.info(
-                "Calling LLM (%s) for AI enhancement (attempt %d)",
-                settings.LLM_PROVIDER,
-                attempt + 1,
+        # 3. Try the primary provider first, then fall back to OpenRouter if configured.
+        for index, provider in enumerate(providers):
+            enhancement = _run_provider_attempt(
+                provider=provider,
+                messages=messages,
+                heuristic_result=heuristic_result,
+                target_role=job_title,
             )
-            response = litellm.completion(
-                model=settings.LLM_PROVIDER,
-                api_key=settings.LITELLM_API_KEY,
-                messages=retry_messages,
-                temperature=settings.LITELLM_TEMPERATURE,
-                max_tokens=settings.LITELLM_MAX_TOKENS,
-                timeout=30,
-            )
+            if enhancement is not None:
+                logger.info(
+                    "AI enhancement succeeded via %s (%s)",
+                    provider.provider_label,
+                    provider.model,
+                )
+                return enhancement
 
-            content = _coerce_message_content(response.choices[0].message.content)
-            if not content:
-                logger.warning("LLM returned empty content on attempt %d", attempt + 1)
-                if attempt == 0:
-                    retry_messages = _build_retry_messages(
-                        messages,
-                        prior_content=None,
-                        retry_reason="The previous response was empty.",
-                    )
-                    continue
-                return None
-
-            try:
-                candidate = _extract_json(content)
-            except json.JSONDecodeError as exc:
+            if index < len(providers) - 1:
+                next_provider = providers[index + 1]
                 logger.warning(
-                    "LLM returned invalid JSON on attempt %d: %s",
-                    attempt + 1,
-                    exc,
+                    "Falling back from %s (%s) to %s (%s) for AI enhancement",
+                    provider.provider_label,
+                    provider.model,
+                    next_provider.provider_label,
+                    next_provider.model,
                 )
-                if attempt == 0:
-                    retry_messages = _build_retry_messages(
-                        messages,
-                        prior_content=content,
-                        retry_reason="The previous response was not valid JSON.",
-                    )
-                    continue
-                raise
 
-            if attempt == 0 and _response_needs_retry(candidate):
-                logger.warning(
-                    "LLM response was incomplete on first attempt; requesting a retry"
-                )
-                retry_messages = _build_retry_messages(
-                    messages,
-                    prior_content=content,
-                    retry_reason=(
-                        "The previous response omitted required fields or returned too few items."
-                    ),
-                )
-                continue
-
-            parsed = candidate
-            break
-
-        if parsed is None:
-            return None
-
-        # 4b. Sanitise: drop structurally-incomplete items, then top up with heuristics.
-        parsed = _sanitize_llm_response(
-            parsed,
-            heuristic_result=heuristic_result,
-            target_role=job_title,
-        )
-
-        # 5. Validate against Pydantic schema
-        payload = AIEnhancementPayload.model_validate(parsed)
-        logger.info(
-            "AI enhancement complete — %d rewrites, %d tips",
-            len(payload.bullet_rewrites),
-            len(payload.keyword_context_tips),
-        )
-        return payload.model_dump()
+        logger.warning("AI enhancement failed across all configured providers")
+        return None
 
     except json.JSONDecodeError as exc:
         logger.error("LLM returned invalid JSON: %s", exc)

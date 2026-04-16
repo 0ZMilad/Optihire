@@ -85,6 +85,8 @@ export interface AIEnhancementPayload {
   bullet_rewrites: BulletRewrite[];
   keyword_context_tips: KeywordContextTip[];
   role_fit_summary: string;
+  provider_label?: string | null;
+  provider_model?: string | null;
 }
 
 export interface AuditResult {

@@ -426,8 +426,139 @@ class TestEnhanceAnalysis:
         assert "bullet_rewrites" in enhancement
         assert "keyword_context_tips" in enhancement
         assert "role_fit_summary" in enhancement
+        assert enhancement["provider_label"] == "OpenAI"
+        assert enhancement["provider_model"] == "gpt-4o"
         assert len(enhancement["bullet_rewrites"]) == 1
         assert enhancement["bullet_rewrites"][0]["original"] == "Built APIs"
+
+    @patch("app.services.ai_analysis_service.litellm")
+    @patch("app.services.ai_analysis_service._check_rate_limit", return_value=True)
+    @patch("app.services.ai_analysis_service.settings")
+    def test_falls_back_to_openrouter_when_primary_provider_fails(
+        self,
+        mock_settings,
+        mock_rate,
+        mock_litellm,
+    ):
+        mock_settings.AI_ENHANCE_ENABLED = True
+        mock_settings.LLM_PROVIDER = "gemini/gemini-2.5-flash"
+        mock_settings.LITELLM_API_KEY = "gemini-key"
+        mock_settings.OPENROUTER_MODELS = "openrouter/openai/gpt-4o-mini"
+        mock_settings.OPENROUTER_API_KEY = "openrouter-key"
+        mock_settings.OPENROUTER_SITE_URL = "https://optihire.example"
+        mock_settings.OPENROUTER_APP_NAME = "OptiHire"
+        mock_settings.LITELLM_TEMPERATURE = 0.3
+        mock_settings.LITELLM_MAX_TOKENS = 2000
+
+        mock_choice = MagicMock()
+        mock_choice.message.content = json.dumps(_VALID_LLM_RESPONSE)
+        mock_response = MagicMock()
+        mock_response.choices = [mock_choice]
+        mock_litellm.completion.side_effect = [
+            Exception("Gemini quota exceeded"),
+            mock_response,
+            mock_response,
+        ]
+
+        db = MagicMock()
+        resume = _make_resume()
+        result = _make_heuristic_result()
+
+        enhancement = enhance_analysis(
+            user_id=resume.user_id,
+            resume=resume,
+            job_description_text="Looking for a Senior Python Dev with K8s.",
+            heuristic_result=result,
+            db=db,
+        )
+
+        assert enhancement is not None
+        assert enhancement["provider_label"] == "OpenRouter"
+        assert enhancement["provider_model"] == "openrouter/openai/gpt-4o-mini"
+        assert mock_litellm.completion.call_count == 3
+
+        first_call = mock_litellm.completion.call_args_list[0].kwargs
+        assert first_call["model"] == "gemini/gemini-2.5-flash"
+        assert first_call["api_key"] == "gemini-key"
+
+        second_call = mock_litellm.completion.call_args_list[1].kwargs
+        assert second_call["model"] == "openrouter/openai/gpt-4o-mini"
+        assert second_call["api_key"] == "openrouter-key"
+        assert second_call["extra_headers"] == {
+            "HTTP-Referer": "https://optihire.example",
+            "X-OpenRouter-Title": "OptiHire",
+        }
+        third_call = mock_litellm.completion.call_args_list[2].kwargs
+        assert third_call["model"] == "openrouter/openai/gpt-4o-mini"
+
+    @patch("app.services.ai_analysis_service.litellm")
+    @patch("app.services.ai_analysis_service._check_rate_limit", return_value=True)
+    @patch("app.services.ai_analysis_service.settings")
+    def test_tries_multiple_openrouter_models_in_order_until_success(
+        self,
+        mock_settings,
+        mock_rate,
+        mock_litellm,
+    ):
+        mock_settings.AI_ENHANCE_ENABLED = True
+        mock_settings.LLM_PROVIDER = "gemini/gemini-2.5-flash"
+        mock_settings.LITELLM_API_KEY = "gemini-key"
+        mock_settings.OPENROUTER_MODELS = (
+            "openrouter/openai/gpt-4o-mini,"
+            "openrouter/anthropic/claude-3.5-sonnet,"
+            "openrouter/google/gemini-2.5-flash"
+        )
+        mock_settings.OPENROUTER_API_KEY = "openrouter-key"
+        mock_settings.OPENROUTER_SITE_URL = "https://optihire.example"
+        mock_settings.OPENROUTER_APP_NAME = "OptiHire"
+        mock_settings.LITELLM_TEMPERATURE = 0.3
+        mock_settings.LITELLM_MAX_TOKENS = 2000
+
+        mock_choice = MagicMock()
+        mock_choice.message.content = json.dumps(_VALID_LLM_RESPONSE)
+        mock_response = MagicMock()
+        mock_response.choices = [mock_choice]
+        mock_litellm.completion.side_effect = [
+            Exception("Primary provider down"),
+            Exception("OpenRouter model 1 overloaded"),
+            Exception("OpenRouter model 2 timed out"),
+            mock_response,
+            mock_response,
+        ]
+
+        db = MagicMock()
+        resume = _make_resume()
+        result = _make_heuristic_result()
+
+        enhancement = enhance_analysis(
+            user_id=resume.user_id,
+            resume=resume,
+            job_description_text="Looking for a Senior Python Dev with K8s.",
+            heuristic_result=result,
+            db=db,
+        )
+
+        assert enhancement is not None
+        assert enhancement["provider_label"] == "OpenRouter"
+        assert enhancement["provider_model"] == "openrouter/google/gemini-2.5-flash"
+        assert mock_litellm.completion.call_count == 5
+
+        first_call = mock_litellm.completion.call_args_list[0].kwargs
+        assert first_call["model"] == "gemini/gemini-2.5-flash"
+
+        second_call = mock_litellm.completion.call_args_list[1].kwargs
+        assert second_call["model"] == "openrouter/openai/gpt-4o-mini"
+
+        third_call = mock_litellm.completion.call_args_list[2].kwargs
+        assert third_call["model"] == "openrouter/anthropic/claude-3.5-sonnet"
+
+        fourth_call = mock_litellm.completion.call_args_list[3].kwargs
+        assert fourth_call["model"] == "openrouter/google/gemini-2.5-flash"
+        assert fourth_call["api_key"] == "openrouter-key"
+        assert fourth_call["extra_headers"] == {
+            "HTTP-Referer": "https://optihire.example",
+            "X-OpenRouter-Title": "OptiHire",
+        }
 
     @patch("app.services.ai_analysis_service.litellm")
     @patch("app.services.ai_analysis_service._check_rate_limit", return_value=True)
