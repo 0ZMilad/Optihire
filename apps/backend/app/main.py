@@ -120,3 +120,12 @@ def read_root():
         response["docs"] = "/docs"
         response["redoc"] = "/redoc"
     return response
+
+
+@app.get("/health")
+def health_check():
+    """Public liveness endpoint used by tests and simple deployment probes."""
+    return {
+        "status": "healthy",
+        "service": "Optihire Backend",
+    }

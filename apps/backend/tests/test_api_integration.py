@@ -9,7 +9,7 @@ from datetime import datetime, timezone, timedelta
 from decimal import Decimal
 from typing import Generator
 from unittest.mock import patch, MagicMock
-from uuid import uuid4
+from uuid import UUID, uuid4
 
 from fastapi import status
 from fastapi.testclient import TestClient
@@ -121,8 +121,13 @@ class TestRootEndpoints:
         data = response.json()
         assert data["message"] == "Welcome to Optihire API"
         assert data["version"] == "1.0.0"
-        assert data["docs"] == "/docs"
-        assert data["redoc"] == "/redoc"
+        assert data["health"] == "/api/v1/system/health"
+        if settings.DOCS_ENABLED:
+            assert data["docs"] == "/docs"
+            assert data["redoc"] == "/redoc"
+        else:
+            assert "docs" not in data
+            assert "redoc" not in data
     
     def test_health_endpoint(self, client: TestClient):
         """Test the health endpoint returns healthy status."""
@@ -196,7 +201,7 @@ class TestUserAPI:
         # Create user keyed by Supabase ID (JWT sub)
         user = User(
             id=uuid4(),
-            supabase_user_id=test_user_id,
+            supabase_user_id=UUID(test_user_id),
             email="profile@example.com",
             full_name="Profile User",
             is_active=True,
@@ -229,7 +234,7 @@ class TestUserAPI:
         """Test updating current profile by Supabase ID from JWT sub."""
         user = User(
             id=uuid4(),
-            supabase_user_id=test_user_id,
+            supabase_user_id=UUID(test_user_id),
             email="before@example.com",
             full_name="Before Name",
             is_active=True,

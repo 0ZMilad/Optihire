@@ -7,10 +7,11 @@ from decimal import Decimal
 from uuid import UUID, uuid4
 
 from pydantic import EmailStr
-from sqlalchemy import ARRAY, String, UniqueConstraint, func
-from sqlalchemy.dialects.postgresql import JSONB
+from sqlalchemy import UniqueConstraint, func
 from sqlalchemy.dialects.postgresql import UUID as PGUUID
 from sqlmodel import Column, Field, SQLModel
+
+from app.models.sql_types import JSONB_COMPAT, STRING_LIST_COMPAT
 
 
 class UserBase(SQLModel):
@@ -28,11 +29,11 @@ class UserBase(SQLModel):
     portfolio_url: str | None = Field(default=None, max_length=255)
     preferred_roles: list[str] = Field(
         default_factory=list,
-        sa_column=Column(ARRAY(String), nullable=True, server_default="{}"),
+        sa_column=Column(STRING_LIST_COMPAT, nullable=True),
     )
     preferred_locations: list[str] = Field(
         default_factory=list,
-        sa_column=Column(ARRAY(String), nullable=True, server_default="{}"),
+        sa_column=Column(STRING_LIST_COMPAT, nullable=True),
     )
     preferred_salary_min: int | None = Field(default=None, ge=0)
     preferred_salary_max: int | None = Field(default=None, ge=0)
@@ -73,9 +74,7 @@ class UserOnboardingProgress(SQLModel, table=True):
     __tablename__ = "user_onboarding_progress"
 
     user_id: UUID = Field(sa_column=Column(PGUUID(as_uuid=True), primary_key=True))
-    data: dict = Field(
-        sa_column=Column("data", JSONB, nullable=False)
-    )  # JSONB in PostgreSQL
+    data: dict = Field(sa_column=Column("data", JSONB_COMPAT, nullable=False))
     updated_at: datetime = Field(
         default_factory=lambda: datetime.now(timezone.utc),
         sa_column_kwargs={"server_default": func.now(), "onupdate": func.now()},

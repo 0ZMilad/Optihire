@@ -6,10 +6,11 @@ from datetime import date, datetime, timezone
 from decimal import Decimal
 from uuid import UUID, uuid4
 
-from sqlalchemy import ARRAY, Index, String, Text, UniqueConstraint, func
-from sqlalchemy.dialects.postgresql import JSONB
+from sqlalchemy import Index, Text, UniqueConstraint, func
 from sqlalchemy.dialects.postgresql import UUID as PGUUID
 from sqlmodel import Column, Field, SQLModel
+
+from app.models.sql_types import JSONB_COMPAT, STRING_LIST_COMPAT
 
 
 class ResumeTemplate(SQLModel, table=True):
@@ -59,7 +60,7 @@ class Resume(SQLModel, table=True):
         default=None, sa_column=Column(PGUUID(as_uuid=True), nullable=True)
     )
     is_primary: bool = Field(default=False)
-    section_order: dict | None = Field(default=None, sa_column=Column(JSONB))
+    section_order: dict | None = Field(default=None, sa_column=Column(JSONB_COMPAT))
     content_hash: str | None = Field(default=None, max_length=64)
     file_path: str | None = Field(default=None, max_length=500)
     file_url: str | None = Field(default=None, max_length=500)
@@ -106,10 +107,10 @@ class ResumeExperience(SQLModel, table=True):
     is_current: bool = Field(default=False)
     description: str | None = Field(default=None, sa_column=Column(Text))
     achievements: list[str] = Field(
-        default_factory=list, sa_column=Column(ARRAY(String), server_default="{}")
+        default_factory=list, sa_column=Column(STRING_LIST_COMPAT)
     )
     skills_used: list[str] = Field(
-        default_factory=list, sa_column=Column(ARRAY(String), server_default="{}")
+        default_factory=list, sa_column=Column(STRING_LIST_COMPAT)
     )
     display_order: int = Field(default=0, nullable=False)
     created_at: datetime = Field(
@@ -143,10 +144,10 @@ class ResumeEducation(SQLModel, table=True):
     is_current: bool = Field(default=False)
     gpa: Decimal | None = Field(default=None, max_digits=3, decimal_places=2)
     achievements: list[str] = Field(
-        default_factory=list, sa_column=Column(ARRAY(String), server_default="{}")
+        default_factory=list, sa_column=Column(STRING_LIST_COMPAT)
     )
     relevant_coursework: list[str] = Field(
-        default_factory=list, sa_column=Column(ARRAY(String), server_default="{}")
+        default_factory=list, sa_column=Column(STRING_LIST_COMPAT)
     )
     display_order: int = Field(default=0, nullable=False)
     created_at: datetime = Field(
@@ -229,14 +230,14 @@ class ResumeProject(SQLModel, table=True):
     role: str | None = Field(default=None, max_length=100)
     description: str | None = Field(default=None, sa_column=Column(Text))
     technologies_used: list[str] = Field(
-        default_factory=list, sa_column=Column(ARRAY(String), server_default="{}")
+        default_factory=list, sa_column=Column(STRING_LIST_COMPAT)
     )
     project_url: str | None = Field(default=None, max_length=500)
     start_date: date | None = Field(default=None)
     end_date: date | None = Field(default=None)
     is_current: bool = Field(default=False)
     achievements: list[str] = Field(
-        default_factory=list, sa_column=Column(ARRAY(String), server_default="{}")
+        default_factory=list, sa_column=Column(STRING_LIST_COMPAT)
     )
     display_order: int = Field(default=0, nullable=False)
     created_at: datetime = Field(
@@ -263,7 +264,7 @@ class ResumeCustomSection(SQLModel, table=True):
     )
     section_title: str = Field(max_length=100, nullable=False)
     section_type: str | None = Field(default=None, max_length=50)
-    content: dict = Field(sa_column=Column(JSONB, nullable=False))
+    content: dict = Field(sa_column=Column(JSONB_COMPAT, nullable=False))
     display_order: int = Field(default=0, nullable=False)
     created_at: datetime = Field(
         default_factory=lambda: datetime.now(timezone.utc), sa_column_kwargs={"server_default": func.now()}

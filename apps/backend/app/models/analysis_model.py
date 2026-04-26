@@ -7,17 +7,16 @@ from decimal import Decimal
 from uuid import UUID, uuid4
 
 from sqlalchemy import (
-    ARRAY,
     CheckConstraint,
     Index,
-    String,
     Text,
     UniqueConstraint,
     func,
 )
-from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.dialects.postgresql import UUID as PGUUID
 from sqlmodel import Column, Field, SQLModel
+
+from app.models.sql_types import JSONB_COMPAT, STRING_LIST_COMPAT
 
 
 class JobDescription(SQLModel, table=True):
@@ -38,7 +37,7 @@ class JobDescription(SQLModel, table=True):
     snippet: str | None = Field(default=None, max_length=300)
     requirements: str | None = Field(default=None, sa_column=Column(Text))
     extracted_keywords: list[str] = Field(
-        default_factory=list, sa_column=Column(ARRAY(String), server_default="{}")
+        default_factory=list, sa_column=Column(STRING_LIST_COMPAT)
     )
     jd_hash: str | None = Field(default=None, max_length=64)
     created_at: datetime = Field(
@@ -96,10 +95,10 @@ class AnalysisResult(SQLModel, table=True):
     formatting_score: int = Field(nullable=False)
     section_score: int = Field(nullable=False)
     matched_keywords: list[str] = Field(
-        default_factory=list, sa_column=Column(ARRAY(String), server_default="{}")
+        default_factory=list, sa_column=Column(STRING_LIST_COMPAT)
     )
     missing_keywords: list[str] = Field(
-        default_factory=list, sa_column=Column(ARRAY(String), server_default="{}")
+        default_factory=list, sa_column=Column(STRING_LIST_COMPAT)
     )
     keyword_density: Decimal | None = Field(
         default=None, max_digits=6, decimal_places=3
@@ -113,8 +112,10 @@ class AnalysisResult(SQLModel, table=True):
     has_bullet_points: bool = Field(default=False)
     has_action_verbs: bool = Field(default=False)
     is_scannable: bool = Field(default=False)
-    suggestions_payload: dict | None = Field(default=None, sa_column=Column(JSONB))
-    ai_enhancement: dict | None = Field(default=None, sa_column=Column(JSONB))
+    suggestions_payload: dict | None = Field(
+        default=None, sa_column=Column(JSONB_COMPAT)
+    )
+    ai_enhancement: dict | None = Field(default=None, sa_column=Column(JSONB_COMPAT))
     skills_version: str | None = Field(default=None, max_length=20)
     keywords_rules_version: str | None = Field(default=None, max_length=20)
     analysis_version: str = Field(default="1.0", max_length=20, nullable=False)
@@ -151,7 +152,7 @@ class Suggestion(SQLModel, table=True):
     impact_level: str = Field(max_length=10, nullable=False)
     state: str = Field(max_length=20, nullable=False, default="suggested")
     rules_version: str = Field(max_length=20, nullable=False)
-    context: dict | None = Field(default=None, sa_column=Column(JSONB))
+    context: dict | None = Field(default=None, sa_column=Column(JSONB_COMPAT))
     created_at: datetime = Field(
         default_factory=lambda: datetime.now(timezone.utc), sa_column_kwargs={"server_default": func.now()}
     )
@@ -174,7 +175,7 @@ class SuggestionInteraction(SQLModel, table=True):
         sa_column=Column(PGUUID(as_uuid=True), nullable=False, index=True)
     )
     action: str = Field(max_length=20, nullable=False)
-    details: dict | None = Field(default=None, sa_column=Column(JSONB))
+    details: dict | None = Field(default=None, sa_column=Column(JSONB_COMPAT))
     created_at: datetime = Field(
         default_factory=lambda: datetime.now(timezone.utc), sa_column_kwargs={"server_default": func.now()}
     )

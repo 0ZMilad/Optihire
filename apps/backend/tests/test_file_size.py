@@ -15,7 +15,7 @@ class TestFileSizeValidation:
         oversized_content = b"x" * (MAX_FILE_SIZE_BYTES + 1)
         
         # Mock the Supabase client download to return oversized content
-        with patch("app.services.resume_service._get_supabase_client") as mock_client:
+        with patch("app.services.resume_service.get_supabase_client") as mock_client:
             mock_storage = MagicMock()
             mock_storage.from_().download.return_value = oversized_content
             mock_client.return_value.storage = mock_storage
@@ -30,7 +30,7 @@ class TestFileSizeValidation:
         valid_content = b"x" * (MAX_FILE_SIZE_BYTES - 1000)
         
         # Mock the Supabase client download
-        with patch("app.services.resume_service._get_supabase_client") as mock_client:
+        with patch("app.services.resume_service.get_supabase_client") as mock_client:
             mock_storage = MagicMock()
             mock_storage.from_().download.return_value = valid_content
             mock_client.return_value.storage = mock_storage
@@ -46,7 +46,7 @@ class TestFileSizeValidation:
         exact_size_content = b"x" * MAX_FILE_SIZE_BYTES
         
         # Mock the Supabase client download
-        with patch("app.services.resume_service._get_supabase_client") as mock_client:
+        with patch("app.services.resume_service.get_supabase_client") as mock_client:
             mock_storage = MagicMock()
             mock_storage.from_().download.return_value = exact_size_content
             mock_client.return_value.storage = mock_storage

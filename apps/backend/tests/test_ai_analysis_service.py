@@ -553,7 +553,7 @@ class TestEnhanceAnalysis:
         assert fourth_call["api_key"] == "openrouter-key"
         assert fourth_call["extra_headers"] == {
             "HTTP-Referer": "https://optihire.example",
-            "X-OpenRouter-Title": "Optihire",
+            "X-OpenRouter-Title": mock_settings.OPENROUTER_APP_NAME,
         }
 
     @patch("app.services.ai_analysis_service.litellm")
