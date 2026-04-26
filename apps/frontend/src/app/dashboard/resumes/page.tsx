@@ -105,7 +105,7 @@ const ResumeCard = memo(function ResumeCard({
                   <MoreVertical className="size-4" />
                 </Button>
               </DropdownMenuTrigger>
-              <DropdownMenuContent align="end">
+              <DropdownMenuContent align="end" sideOffset={0}>
                 <DropdownMenuItem onClick={() => onDuplicate(resume.id)}>
                   <Copy className="mr-2 size-4" />
                   Duplicate
