@@ -21,6 +21,19 @@
   --color-chart-3: var(--chart-3);
   --color-chart-2: var(--chart-2);
   --color-chart-1: var(--chart-1);
+  --color-score-strong: var(--score-strong);
+  --color-score-good: var(--score-good);
+  --color-score-fair: var(--score-fair);
+  --color-score-weak: var(--score-weak);
+  --color-status-not-applied: var(--status-not-applied);
+  --color-status-applied: var(--status-applied);
+  --color-status-interviewing: var(--status-interviewing);
+  --color-status-offer: var(--status-offer);
+  --color-status-rejected: var(--status-rejected);
+  --color-ai-enhancement: var(--ai-enhancement);
+  --color-freshness-current: var(--freshness-current);
+  --color-freshness-stale: var(--freshness-stale);
+  --color-freshness-unknown: var(--freshness-unknown);
   --color-ring: var(--ring);
   --color-input: var(--input);
   --color-border: var(--border);
@@ -48,13 +61,23 @@
   --animate-float-delayed: float 5s ease-in-out infinite 1s;
 
   @keyframes scan {
-    0%, 100% { transform: translateY(-100%); }
-    50% { transform: translateY(400%); }
+    0%,
+    100% {
+      transform: translateY(-100%);
+    }
+    50% {
+      transform: translateY(400%);
+    }
   }
 
   @keyframes float {
-    0%, 100% { transform: translateY(0); }
-    50% { transform: translateY(-10px); }
+    0%,
+    100% {
+      transform: translateY(0);
+    }
+    50% {
+      transform: translateY(-10px);
+    }
   }
 }
 
@@ -93,6 +116,19 @@
   --sidebar-ring: oklch(0 0 0);
   --brand-primary: oklch(0.6 0.2 30);
   --brand-primary-foreground: oklch(1 0 0);
+  --score-strong: oklch(0.508 0.118 165.612);
+  --score-good: oklch(0.511 0.096 186.391);
+  --score-fair: oklch(0.554 0.135 66.442);
+  --score-weak: oklch(0.505 0.213 27.518);
+  --status-not-applied: oklch(0.446 0.043 257.281);
+  --status-applied: oklch(0.488 0.243 264.376);
+  --status-interviewing: oklch(0.554 0.135 66.442);
+  --status-offer: oklch(0.508 0.118 165.612);
+  --status-rejected: oklch(0.505 0.213 27.518);
+  --ai-enhancement: oklch(0.541 0.281 293.009);
+  --freshness-current: oklch(0.508 0.118 165.612);
+  --freshness-stale: oklch(0.554 0.135 66.442);
+  --freshness-unknown: oklch(0.446 0.043 257.281);
 }
 
 .dark {
@@ -129,6 +165,19 @@
   --sidebar-ring: oklch(1 0 0);
   --brand-primary: oklch(0.6 0.2 30);
   --brand-primary-foreground: oklch(1 0 0);
+  --score-strong: oklch(0.696 0.17 162.48);
+  --score-good: oklch(0.704 0.14 182.503);
+  --score-fair: oklch(0.769 0.188 70.08);
+  --score-weak: oklch(0.704 0.191 22.216);
+  --status-not-applied: oklch(0.704 0.04 256.788);
+  --status-applied: oklch(0.623 0.214 259.815);
+  --status-interviewing: oklch(0.769 0.188 70.08);
+  --status-offer: oklch(0.696 0.17 162.48);
+  --status-rejected: oklch(0.704 0.191 22.216);
+  --ai-enhancement: oklch(0.702 0.183 293.541);
+  --freshness-current: oklch(0.696 0.17 162.48);
+  --freshness-stale: oklch(0.769 0.188 70.08);
+  --freshness-unknown: oklch(0.704 0.04 256.788);
 }
 
 @layer base {
@@ -140,7 +189,6 @@
   }
   body {
     @apply bg-background text-foreground;
-    zoom: 0.9;
     overflow-x: hidden;
   }
 }
@@ -200,13 +248,26 @@
     padding-right: clamp(1rem, 3vw, 3rem);
   }
 }
-
-
-
 ::-webkit-scrollbar {
-  width: 0;
-  height: 0;
+  width: 0.625rem;
+  height: 0.625rem;
+}
+
+::-webkit-scrollbar-track {
   background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: color-mix(in oklch, var(--muted-foreground) 35%, transparent);
+  border: 0.1875rem solid transparent;
+  border-radius: 999px;
+  background-clip: padding-box;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: color-mix(in oklch, var(--muted-foreground) 55%, transparent);
+  border: 0.1875rem solid transparent;
+  background-clip: padding-box;
 }
 
 @media (min-width: 1920px) {
