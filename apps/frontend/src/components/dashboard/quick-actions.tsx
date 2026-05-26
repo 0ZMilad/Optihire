@@ -1,37 +1,65 @@
-import { memo } from "react";
+import { ClipboardCheck, FileText, FolderOpen } from "lucide-react";
 import Link from "next/link";
+import { memo } from "react";
 
 interface QuickActionsProps {
   className?: string;
 }
 
 export default memo(function QuickActions({ className }: QuickActionsProps) {
+  const actions = [
+    {
+      href: "/dashboard/resumes",
+      label: "Resume builder",
+      description: "Create, edit, and download resume versions.",
+      icon: FileText,
+      ariaLabel: "Open Resume Builder",
+    },
+    {
+      href: "/dashboard/audit",
+      label: "ATS audit",
+      description: "Compare a resume against a job description.",
+      icon: ClipboardCheck,
+      ariaLabel: "Open ATS Audit",
+    },
+    {
+      href: "/dashboard/jobs",
+      label: "Job matches",
+      description: "Review curated roles and update application status.",
+      icon: FolderOpen,
+      ariaLabel: "Open Job Matches",
+    },
+  ];
+
   return (
-    <section className={`grid gap-6 sm:grid-cols-3 ${className || ""}`}>
-      <Link
-        href="/dashboard/resumes"
-        className="border rounded-xl p-6 transition-colors hover:bg-muted/40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-        aria-label="Open Resume Builder"
-      >
-        <p className="font-medium">Resume builder</p>
-        <p className="text-sm text-muted-foreground">Tabbed editor with live preview.</p>
-      </Link>
-      <Link
-        href="/dashboard/audit"
-        className="border rounded-xl p-6 transition-colors hover:bg-muted/40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-        aria-label="Open Analysis / ATS scoring"
-      >
-        <p className="font-medium">ATS scoring</p>
-        <p className="text-sm text-muted-foreground">Analyze against a job description.</p>
-      </Link>
-      <Link
-        href="/dashboard/jobs"
-        className="border rounded-xl p-6 transition-colors hover:bg-muted/40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-        aria-label="Open Applications Tracker"
-      >
-        <p className="font-medium">Applications</p>
-        <p className="text-sm text-muted-foreground">Track status in table or board.</p>
-      </Link>
+    <section className={`space-y-3 ${className || ""}`}>
+      <div>
+        <h2 className="text-base font-semibold">Core workflows</h2>
+        <p className="text-sm text-muted-foreground">
+          Move from resume readiness to audit insight to job-match review.
+        </p>
+      </div>
+      <div className="grid gap-4 md:grid-cols-3">
+        {actions.map((action) => {
+          const Icon = action.icon;
+          return (
+            <Link
+              key={action.href}
+              href={action.href}
+              className="group rounded-lg border bg-card p-5 transition-colors hover:bg-muted/35 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+              aria-label={action.ariaLabel}
+            >
+              <span className="flex size-10 items-center justify-center rounded-lg bg-muted text-muted-foreground transition-colors group-hover:text-foreground">
+                <Icon className="size-5" aria-hidden />
+              </span>
+              <p className="mt-4 font-medium">{action.label}</p>
+              <p className="mt-1 text-sm leading-6 text-muted-foreground">
+                {action.description}
+              </p>
+            </Link>
+          );
+        })}
+      </div>
     </section>
   );
 });

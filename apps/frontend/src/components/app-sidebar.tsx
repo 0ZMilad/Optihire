@@ -42,7 +42,7 @@ const navItems = [
   { title: "Dashboard", url: "/dashboard", icon: LayoutDashboard },
   { title: "Resumes", url: "/dashboard/resumes", icon: FileText },
   { title: "ATS Audit", url: "/dashboard/audit", icon: ClipboardCheck },
-  { title: "Jobs", url: "/dashboard/jobs", icon: FolderOpen },
+  { title: "Job Matches", url: "/dashboard/jobs", icon: FolderOpen },
   { title: "Settings", url: "/dashboard/settings", icon: Settings },
 ];
 
