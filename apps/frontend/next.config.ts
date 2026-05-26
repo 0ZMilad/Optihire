@@ -3,7 +3,10 @@ import type { NextConfig } from "next";
 
 const localNetworkOrigins = Object.values(networkInterfaces())
   .flat()
-  .filter((network) => network?.family === "IPv4" && !network.internal)
+  .filter(
+    (network): network is NonNullable<typeof network> =>
+      network?.family === "IPv4" && !network.internal
+  )
   .map((network) => network.address);
 
 const nextConfig: NextConfig = {
