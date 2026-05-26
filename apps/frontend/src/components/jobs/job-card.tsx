@@ -1,56 +1,32 @@
 "use client";
 
-import { memo, useCallback, useMemo, useState } from "react";
 import {
-  MapPin,
-  PoundSterling,
-  ExternalLink,
   Building2,
   Clock,
-  Minus,
-  CheckCircle2,
-  Trophy,
-  XCircle,
+  ExternalLink,
+  MapPin,
+  PoundSterling,
 } from "lucide-react";
+import { memo, useMemo } from "react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import type { ApplicationStatus, JobMatch } from "@/lib/job-types";
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
+  getScoreBadgeClass,
+  getScoreBarClass,
+  getScoreDescription,
+  getScoreTierLabel,
+} from "@/lib/score-utils";
 import { cn } from "@/lib/utils";
-import { toast } from "sonner";
-import { updateApplicationStatus } from "@/middle-service/jobs";
-import type { JobMatch, ApplicationStatus } from "@/lib/job-types";
+import { JobStatusSelect } from "./job-status-select";
 
-// ─── Score helpers ───────────────────────────────────────────────────────────
-
-function scoreBarColor(score: number) {
-  if (score >= 80) return "bg-emerald-600";
-  if (score >= 50) return "bg-amber-500";
-  return "bg-red-500";
+interface JobCardProps {
+  match: JobMatch;
+  onStatusChange: (
+    matchId: string,
+    status: ApplicationStatus
+  ) => void | Promise<void>;
 }
-
-function scoreBgColor(score: number) {
-  if (score >= 80) return "bg-emerald-50 text-emerald-700 border-emerald-200";
-  if (score >= 50) return "bg-amber-50 text-amber-700 border-amber-200";
-  return "bg-red-50 text-red-700 border-red-200";
-}
-
-function formatSalary(min: number | null, max: number | null, currency: string): string {
-  if (!min && !max) return "Not disclosed";
-  const symbols: Record<string, string> = { USD: "$", GBP: "\u00a3", EUR: "\u20ac" };
-  const sym = symbols[currency] ?? currency + "\u00a0";
-  const fmt = (n: number) => `${sym}${n >= 1000 ? `${Math.round(n / 1000)}k` : n}`;
-  if (min && max) return `${fmt(min)} \u2013 ${fmt(max)}`;
-  if (min) return `From ${fmt(min)}`;
-  return `Up to ${fmt(max!)}`;
-}
-
-// ─── Label maps ─────────────────────────────────────────────────────────────
 
 const REMOTE_TYPE_LABELS: Record<string, string> = {
   remote: "Remote",
@@ -76,135 +52,94 @@ const EXP_LEVEL_LABELS: Record<string, string> = {
 
 const SKILLS_VISIBLE = 5;
 
-// ─── Application status config ───────────────────────────────────────────────
-// Each entry has a distinct icon (no ambiguous double-dot), color-coded trigger,
-// and icon color. "offer" uses purple to stand out from the green match score.
-
-type StatusEntry = {
-  label: string;
-  triggerClass: string;
-  Icon: React.ElementType;
-  iconClass: string;
-};
-
-const STATUS_CONFIG: Record<ApplicationStatus, StatusEntry> = {
-  not_applied: {
-    label: "Not Applied",
-    triggerClass: "text-muted-foreground border-muted-foreground/30 bg-muted/30 hover:bg-muted/50",
-    Icon: Minus,
-    iconClass: "text-muted-foreground",
-  },
-  applied: {
-    label: "Applied",
-    triggerClass: "text-blue-700 border-blue-200 bg-blue-50 hover:bg-blue-100",
-    Icon: CheckCircle2,
-    iconClass: "text-blue-500",
-  },
-  interviewing: {
-    label: "Interviewing",
-    triggerClass: "text-amber-700 border-amber-200 bg-amber-50 hover:bg-amber-100",
-    Icon: Clock,
-    iconClass: "text-amber-500",
-  },
-  offer: {
-    label: "Offer Received",
-    triggerClass: "text-purple-700 border-purple-200 bg-purple-50 hover:bg-purple-100",
-    Icon: Trophy,
-    iconClass: "text-purple-500",
-  },
-  rejected: {
-    label: "Rejected",
-    triggerClass: "text-red-700 border-red-200 bg-red-50 hover:bg-red-100",
-    Icon: XCircle,
-    iconClass: "text-red-500",
-  },
-};
-
-// Hoisted outside component — STATUS_CONFIG is static so this never changes
-const STATUS_ENTRIES = Object.entries(STATUS_CONFIG) as [ApplicationStatus, StatusEntry][];
-
-// ─── Component ───────────────────────────────────────────────────────────────
-
-interface JobCardProps {
-  match: JobMatch;
+function formatCurrency(value: number, currency: string) {
+  try {
+    return new Intl.NumberFormat("en-GB", {
+      style: "currency",
+      currency: currency || "GBP",
+      maximumFractionDigits: 0,
+      notation: value >= 10_000 ? "compact" : "standard",
+    }).format(value);
+  } catch {
+    return `${currency || ""} ${value.toLocaleString("en-GB")}`.trim();
+  }
 }
 
-function JobCardInner({ match }: JobCardProps) {
-  const [status, setStatus] = useState<ApplicationStatus>(match.application_status);
+function formatSalary(
+  min: number | null,
+  max: number | null,
+  currency: string
+) {
+  if (min == null && max == null) return "Not disclosed";
+  if (min != null && max != null) {
+    return `${formatCurrency(min, currency)} - ${formatCurrency(max, currency)}`;
+  }
+  if (min != null) return `From ${formatCurrency(min, currency)}`;
+  return `Up to ${formatCurrency(max as number, currency)}`;
+}
+
+function formatPostedDate(value: string | null) {
+  if (!value) return null;
+
+  return new Date(value).toLocaleDateString("en-GB", {
+    day: "numeric",
+    month: "short",
+  });
+}
+
+function JobCardInner({ match, onStatusChange }: JobCardProps) {
   const { job_listing: job } = match;
 
-  const { visibleMatched, extraMatched, visibleMissing, extraMissing } = useMemo(() => ({
-    visibleMatched: match.matched_skills.slice(0, SKILLS_VISIBLE),
-    extraMatched: Math.max(0, match.matched_skills.length - SKILLS_VISIBLE),
-    visibleMissing: match.missing_skills.slice(0, SKILLS_VISIBLE),
-    extraMissing: Math.max(0, match.missing_skills.length - SKILLS_VISIBLE),
-  }), [match.matched_skills, match.missing_skills]);
+  const { visibleMatched, extraMatched, visibleMissing, extraMissing } =
+    useMemo(
+      () => ({
+        visibleMatched: match.matched_skills.slice(0, SKILLS_VISIBLE),
+        extraMatched: Math.max(0, match.matched_skills.length - SKILLS_VISIBLE),
+        visibleMissing: match.missing_skills.slice(0, SKILLS_VISIBLE),
+        extraMissing: Math.max(0, match.missing_skills.length - SKILLS_VISIBLE),
+      }),
+      [match.matched_skills, match.missing_skills]
+    );
 
   const postedLabel = useMemo(
-    () =>
-      job.posted_date
-        ? new Date(job.posted_date).toLocaleDateString("en-US", {
-            month: "short",
-            day: "numeric",
-          })
-        : null,
+    () => formatPostedDate(job.posted_date),
     [job.posted_date]
   );
 
-  const handleStatusChange = useCallback(
-    async (next: ApplicationStatus) => {
-      const prev = status;
-      setStatus(next);
-      try {
-        await updateApplicationStatus(match.id, next);
-        if (next !== "not_applied") {
-          toast.success(`Status: ${STATUS_CONFIG[next].label}`, {
-            description: `${job.job_title} at ${job.company_name}`,
-          });
-        }
-      } catch {
-        setStatus(prev);
-        toast.error("Failed to update application status. Please try again.");
-      }
-    },
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    [match.id, status, job.job_title, job.company_name]
-  );
-
-  const statusCfg = STATUS_CONFIG[status];
+  const scoreLabel = `${getScoreTierLabel(match.match_score)} match, ${match.match_score} percent`;
 
   return (
-    <div className="rounded-xl border bg-card p-6 flex flex-col gap-4 hover:shadow-md transition-shadow">
-      {/* ── Top row: company + score badge ──────────────────────────────── */}
+    <article className="flex min-h-full flex-col gap-4 rounded-lg border bg-card p-5 shadow-xs transition-shadow hover:shadow-sm">
       <div className="flex items-start justify-between gap-3">
-        <div className="flex items-start gap-3 min-w-0">
-          <div className="flex items-center justify-center size-10 rounded-lg bg-muted text-muted-foreground shrink-0">
-            <Building2 className="size-5" />
+        <div className="flex min-w-0 items-start gap-3">
+          <div className="flex size-10 shrink-0 items-center justify-center rounded-lg bg-muted text-muted-foreground">
+            <Building2 className="size-5" aria-hidden />
           </div>
           <div className="min-w-0">
-            <p className="text-xs text-muted-foreground font-medium truncate">
+            <p className="truncate text-xs font-medium text-muted-foreground">
               {job.company_name}
             </p>
-            <h3 className="text-base font-semibold leading-snug">{job.job_title}</h3>
+            <h3 className="text-base font-semibold leading-snug">
+              {job.job_title}
+            </h3>
           </div>
         </div>
 
-        {/* Single source of truth for the score number */}
         <span
           className={cn(
-            "shrink-0 text-xs font-semibold px-2.5 py-1 rounded-lg border",
-            scoreBgColor(match.match_score)
+            "shrink-0 rounded-md border px-2.5 py-1 text-xs font-semibold",
+            getScoreBadgeClass(match.match_score)
           )}
+          title={scoreLabel}
         >
-          {match.match_score}% match
+          {match.match_score}% {getScoreTierLabel(match.match_score)}
         </span>
       </div>
 
-      {/* ── Meta chips ──────────────────────────────────────────────────── */}
       <div className="flex flex-wrap gap-1.5">
         {job.location && (
           <Badge variant="secondary" className="gap-1 font-normal">
-            <MapPin className="size-3" />
+            <MapPin className="size-3" aria-hidden />
             {job.location}
           </Badge>
         )}
@@ -225,30 +160,40 @@ function JobCardInner({ match }: JobCardProps) {
         )}
         {postedLabel && (
           <Badge variant="secondary" className="gap-1 font-normal">
-            <Clock className="size-3" />
+            <Clock className="size-3" aria-hidden />
             {postedLabel}
           </Badge>
         )}
       </div>
 
-      {/* ── Salary ──────────────────────────────────────────────────────── */}
       <div className="flex items-center gap-1.5 text-sm text-muted-foreground">
-        <PoundSterling className="size-4 shrink-0" />
-        <span>{formatSalary(job.salary_min, job.salary_max, job.salary_currency)}</span>
+        <PoundSterling className="size-4 shrink-0" aria-hidden />
+        <span>
+          {formatSalary(job.salary_min, job.salary_max, job.salary_currency)}
+        </span>
       </div>
 
-      {/* ── Match strength bar (score % removed — badge above is the source) */}
       <div className="space-y-1">
-        <span className="text-xs text-muted-foreground">Match strength</span>
-        <div className="h-1.5 rounded-full bg-muted overflow-hidden">
+        <div className="flex items-center justify-between gap-3 text-xs">
+          <span className="text-muted-foreground">Match strength</span>
+          <span className="font-medium">
+            {getScoreDescription(match.match_score)}
+          </span>
+        </div>
+        <div
+          className="h-1.5 overflow-hidden rounded-full bg-muted"
+          aria-hidden
+        >
           <div
-            className={cn("h-full rounded-full transition-all", scoreBarColor(match.match_score))}
+            className={cn(
+              "h-full rounded-full transition-all",
+              getScoreBarClass(match.match_score)
+            )}
             style={{ width: `${match.match_score}%` }}
           />
         </div>
       </div>
 
-      {/* ── Skills ──────────────────────────────────────────────────────── */}
       {(match.matched_skills.length > 0 || match.missing_skills.length > 0) && (
         <div className="space-y-2">
           {match.matched_skills.length > 0 && (
@@ -256,7 +201,7 @@ function JobCardInner({ match }: JobCardProps) {
               {visibleMatched.map((skill) => (
                 <span
                   key={skill}
-                  className="inline-flex items-center rounded-md bg-emerald-50 px-2 py-0.5 text-xs font-medium text-emerald-700 ring-1 ring-inset ring-emerald-200"
+                  className="inline-flex items-center rounded-md bg-score-strong/10 px-2 py-0.5 text-xs font-medium text-score-strong ring-1 ring-inset ring-score-strong/20"
                 >
                   {skill}
                 </span>
@@ -273,7 +218,7 @@ function JobCardInner({ match }: JobCardProps) {
               {visibleMissing.map((skill) => (
                 <span
                   key={skill}
-                  className="inline-flex items-center rounded-md bg-red-50 px-2 py-0.5 text-xs font-medium text-red-600 ring-1 ring-inset ring-red-200"
+                  className="inline-flex items-center rounded-md bg-score-weak/10 px-2 py-0.5 text-xs font-medium text-score-weak ring-1 ring-inset ring-score-weak/20"
                 >
                   {skill}
                 </span>
@@ -288,63 +233,43 @@ function JobCardInner({ match }: JobCardProps) {
         </div>
       )}
 
-      {/* ── Footer ──────────────────────────────────────────────────────── */}
-      <div className="flex items-center gap-2 pt-1 mt-auto">
-        <Select
-          value={status}
-          onValueChange={(v) => handleStatusChange(v as ApplicationStatus)}
-        >
-          <SelectTrigger
-            className={cn(
-              "h-9 text-xs font-medium border rounded-lg px-3 flex-1",
-              statusCfg.triggerClass
-            )}
-          >
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent>
-            {STATUS_ENTRIES.map(
-              ([value, cfg]) => {
-                const ItemIcon = cfg.Icon;
-                return (
-                  <SelectItem key={value} value={value} textValue={cfg.label} className="text-xs">
-                    <div className="flex items-center gap-2">
-                      <ItemIcon className={cn("size-3.5 shrink-0", cfg.iconClass)} />
-                      {cfg.label}
-                    </div>
-                  </SelectItem>
-                );
-              }
-            )}
-          </SelectContent>
-        </Select>
+      <div className="mt-auto flex flex-col gap-2 pt-1 sm:flex-row sm:items-center">
+        <JobStatusSelect
+          status={match.application_status}
+          onChange={(status) => onStatusChange(match.id, status)}
+          ariaLabel={`Application status for ${job.job_title} at ${job.company_name}`}
+          className="w-full sm:flex-1"
+        />
 
-        {/* Apply Now (first visit) → View Job (already actioned) */}
-        {job.external_url && (
-          status === "not_applied" ? (
+        {job.external_url &&
+          (match.application_status === "not_applied" ? (
             <Button
-              variant="default"
               size="sm"
               className="shrink-0"
               onClick={() => {
-                window.open(job.external_url!, "_blank", "noopener,noreferrer");
-                handleStatusChange("applied");
+                if (!job.external_url) return;
+                window.open(job.external_url, "_blank", "noopener,noreferrer");
+                void onStatusChange(match.id, "applied");
               }}
             >
-              <ExternalLink className="size-3.5 mr-1.5" />
-              Apply Now
+              <ExternalLink className="mr-1.5 size-3.5" aria-hidden />
+              Apply now
             </Button>
           ) : (
             <Button variant="outline" size="sm" asChild className="shrink-0">
-              <a href={job.external_url} target="_blank" rel="noopener noreferrer">
-                <ExternalLink className="size-3.5 mr-1.5" />
-                View Job
+              <a
+                href={job.external_url}
+                target="_blank"
+                rel="noopener noreferrer"
+                aria-label={`View ${job.job_title} at ${job.company_name}`}
+              >
+                <ExternalLink className="mr-1.5 size-3.5" aria-hidden />
+                View job
               </a>
             </Button>
-          )
-        )}
+          ))}
       </div>
-    </div>
+    </article>
   );
 }
 
