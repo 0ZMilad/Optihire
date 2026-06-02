@@ -79,7 +79,12 @@ export function ScoreRing({
       role="img"
     >
       <div className="relative" style={{ width: size, height: size }}>
-        <svg width={size} height={size} className="rotate-[-90deg]">
+        <svg
+          aria-hidden="true"
+          width={size}
+          height={size}
+          className="rotate-[-90deg]"
+        >
           <circle
             cx={size / 2}
             cy={size / 2}

@@ -44,7 +44,7 @@ export const AuthProvider = ({ children }: PropsWithChildren) => {
 
   const value = useMemo(
     () => ({ session: currentSession, user: currentUser, isLoading }),
-    [currentSession, currentUser, isLoading],
+    [currentSession, currentUser, isLoading]
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

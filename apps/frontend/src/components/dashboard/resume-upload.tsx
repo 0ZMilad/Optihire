@@ -26,7 +26,7 @@ export default memo(function ResumeUpload({
   onFileChange,
   onUploadClick,
   onReviewClick,
-  statusMessage,
+  statusMessage: _statusMessage,
 }: ResumeUploadProps) {
   if (appState === "PROCESSING") {
     return (

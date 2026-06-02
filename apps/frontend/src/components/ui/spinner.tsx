@@ -5,6 +5,7 @@ interface SpinnerProps {
 export function Spinner({ className = "h-5 w-5" }: SpinnerProps) {
   return (
     <svg
+      aria-hidden="true"
       className={`animate-spin ${className}`}
       xmlns="http://www.w3.org/2000/svg"
       fill="none"

@@ -1,8 +1,14 @@
 "use client";
 
-import { ChevronDown, FileText, ClipboardCheck, TrendingUp, Briefcase } from "lucide-react";
-import { useSavedResumes } from "@/stores/saved-resumes-store";
+import {
+  Briefcase,
+  ChevronDown,
+  ClipboardCheck,
+  FileText,
+  TrendingUp,
+} from "lucide-react";
 import { useAuditHistory } from "@/stores/audit-history-store";
+import { useSavedResumes } from "@/stores/saved-resumes-store";
 
 interface QuickStatsGridProps {
   className?: string;
@@ -48,7 +54,10 @@ export default function QuickStatsGrid({
       <div className="rounded-xl border p-6 hover:bg-muted/40 transition-colors">
         <div className="flex items-center justify-between">
           <span className="text-sm text-muted-foreground">ATS Audits</span>
-          <ClipboardCheck className="size-4 text-muted-foreground" aria-hidden />
+          <ClipboardCheck
+            className="size-4 text-muted-foreground"
+            aria-hidden
+          />
         </div>
         <div className="mt-2">
           <span className="text-2xl font-semibold">
@@ -83,7 +92,9 @@ export default function QuickStatsGrid({
         }`}
       >
         <div className="flex items-center justify-between">
-          <span className="text-sm text-muted-foreground">Latest ATS Score</span>
+          <span className="text-sm text-muted-foreground">
+            Latest ATS Score
+          </span>
           <div className="flex items-center gap-1.5">
             <TrendingUp className="size-4 text-muted-foreground" aria-hidden />
             {onToggleATS && (

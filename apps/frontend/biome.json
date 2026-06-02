@@ -22,12 +22,15 @@
       "recommended": true,
       "suspicious": {
         "noUnknownAtRules": "off",
-        "noExplicitAny": "warn"
+        "noExplicitAny": "warn",
+        "noArrayIndexKey": "warn",
+        "noDocumentCookie": "warn"
       },
       "style": {
         "noNamespace": "off",
         "useImportType": "off",
-        "useConst": "error"
+        "useConst": "error",
+        "noNonNullAssertion": "warn"
       },
       "correctness": {
         "noUnusedVariables": "warn",
@@ -37,7 +40,10 @@
       "a11y": {
         "useKeyWithClickEvents": "warn",
         "useAltText": "warn",
-        "useValidAnchor": "off"
+        "useValidAnchor": "off",
+        "useButtonType": "warn",
+        "noLabelWithoutControl": "warn",
+        "useSemanticElements": "warn"
       }
     }
   },

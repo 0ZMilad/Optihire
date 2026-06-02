@@ -56,7 +56,7 @@ function formatSalary(
     `${sym}${n >= 1000 ? `${Math.round(n / 1000)}k` : n}`;
   if (min && max) return `${fmt(min)} \u2013 ${fmt(max)}`;
   if (min) return `From ${fmt(min)}`;
-  return `Up to ${fmt(max!)}`;
+  return `Up to ${fmt(max ?? 0)}`;
 }
 
 // ─── Label maps ─────────────────────────────────────────────────────────────
@@ -360,7 +360,11 @@ function JobCardInner({ match }: JobCardProps) {
               size="sm"
               className="shrink-0"
               onClick={() => {
-                window.open(job.external_url!, "_blank", "noopener,noreferrer");
+                window.open(
+                  job.external_url ?? "",
+                  "_blank",
+                  "noopener,noreferrer"
+                );
                 handleStatusChange("applied");
               }}
             >

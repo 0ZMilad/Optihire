@@ -139,6 +139,7 @@ export function AuditHistorySidebar({
                 const isActive = item.id === activeResultId;
                 return (
                   <button
+                    type="button"
                     key={item.id}
                     title={`Score ${item.overall_score} — ${formatDate(item.analyzed_at)}`}
                     onClick={() => onSelect(item)}
@@ -216,6 +217,7 @@ export function AuditHistorySidebar({
                     >
                       {/* Clickable content area */}
                       <button
+                        type="button"
                         onClick={() => onSelect(item)}
                         className="w-full text-left p-3 pr-8 focus:outline-none focus-visible:ring-2 focus-visible:ring-ring rounded-lg"
                       >
@@ -255,6 +257,7 @@ export function AuditHistorySidebar({
 
                       {/* Delete button — shown on hover */}
                       <button
+                        type="button"
                         onClick={(e) => handleDelete(e, item.id)}
                         disabled={isDeleting}
                         aria-label="Delete audit result"

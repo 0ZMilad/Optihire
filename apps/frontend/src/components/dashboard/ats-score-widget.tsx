@@ -96,6 +96,7 @@ export default function ATSScoreWidget({ className }: ATSScoreWidgetProps) {
         </div>
         {!loading && (
           <button
+            type="button"
             onClick={fetchLatest}
             className="text-muted-foreground hover:text-foreground transition-colors"
             aria-label="Refresh ATS score"
@@ -150,7 +151,6 @@ export default function ATSScoreWidget({ className }: ATSScoreWidgetProps) {
           <div className="mt-3 flex items-baseline gap-2">
             <span
               className={`text-3xl font-semibold tabular-nums ${scoreColor(result.overall_score)}`}
-              aria-label={`Overall ATS score: ${result.overall_score} out of 100`}
             >
               {result.overall_score}
             </span>

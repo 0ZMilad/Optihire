@@ -43,22 +43,10 @@ class Logger {
   private static instance: Logger;
   private sessionId: string;
   private userId: string | null = null;
-  private isOnline: boolean =
-    typeof navigator !== "undefined" ? navigator.onLine : true;
   private isDev: boolean = process.env.NODE_ENV === "development";
 
   private constructor() {
     this.sessionId = this.getOrCreateSessionId();
-
-    if (typeof window !== "undefined") {
-      window.addEventListener("online", () => {
-        this.isOnline = true;
-      });
-
-      window.addEventListener("offline", () => {
-        this.isOnline = false;
-      });
-    }
   }
 
   /**
