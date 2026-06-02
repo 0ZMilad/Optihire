@@ -19,7 +19,6 @@ from datetime import date, datetime, timezone
 from typing import Any
 from uuid import UUID
 
-import litellm
 from json_repair import repair_json
 from pydantic import ValidationError
 from sqlmodel import Session, func, select
@@ -30,6 +29,23 @@ from app.models.resume_model import Resume
 from app.schemas.analysis_schema import AIEnhancementPayload
 
 logger = logging.getLogger("optihire.ai_analysis")
+
+# Lazy-loaded — stays None until first AI call; patchable by tests
+litellm: Any | None = None
+
+
+def _get_litellm() -> Any | None:
+    """Import litellm only when AI enhancement is actually requested."""
+    global litellm
+    if litellm is not None:
+        return litellm
+    try:
+        import litellm as _litellm
+        litellm = _litellm
+        return litellm
+    except Exception as exc:
+        logger.warning("litellm import failed — AI enhancement unavailable: %s", exc)
+        return None
 
 # ---------------------------------------------------------------------------
 # Constants
@@ -777,6 +793,9 @@ def _run_provider_attempt(
     target_role: str | None,
 ) -> dict[str, Any] | None:
     """Call one provider with an internal schema-compliance retry."""
+    if _get_litellm() is None:
+        return None
+
     parsed: dict[str, Any] | None = None
     retry_messages = messages
 
