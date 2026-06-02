@@ -2,6 +2,7 @@
 
 import dynamic from "next/dynamic";
 import { useCallback, useEffect, useRef, useState } from "react";
+import { useAuth } from "@/components/auth-provider";
 import { DashboardUI } from "@/components/dashboard";
 import { DashboardHeader } from "@/components/dashboard-header";
 import { Main } from "@/components/main";
@@ -28,6 +29,7 @@ import { updateResume } from "@/middle-service/resumes";
 import { ResumeComplete } from "@/middle-service/types";
 
 export default function DashboardPage() {
+  const { isLoading } = useAuth();
   const {
     appState,
     parsedResumeData,
@@ -85,6 +87,10 @@ export default function DashboardPage() {
   );
 
   const handleUploadClick = useCallback(() => inputRef.current?.click(), []);
+
+  if (isLoading) {
+    return null;
+  }
 
   return (
     <>
