@@ -187,20 +187,9 @@ export default function DashboardWidgets({ className }: DashboardWidgetsProps) {
           </Button>
         </div>
         {showActivity && (
-          <ul className="mt-3 space-y-2 text-sm">
-            <li className="flex items-center justify-between">
-              <span>Submitted to Acme Corp</span>
-              <span className="text-xs text-muted-foreground">2h ago</span>
-            </li>
-            <li className="flex items-center justify-between">
-              <span>Updated resume summary</span>
-              <span className="text-xs text-muted-foreground">1d ago</span>
-            </li>
-            <li className="flex items-center justify-between">
-              <span>Interview scheduled</span>
-              <span className="text-xs text-muted-foreground">Mon</span>
-            </li>
-          </ul>
+          <p className="mt-3 text-sm text-muted-foreground">
+            Your recent resume and audit activity will appear here.
+          </p>
         )}
       </div>
     </section>
