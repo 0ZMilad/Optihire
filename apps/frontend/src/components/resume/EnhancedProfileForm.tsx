@@ -1,12 +1,16 @@
 "use client";
 
-import { useCallback, memo } from "react";
+import { memo, useCallback } from "react";
 import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
-import { useResumeBuilderStore, usePersonalInfo, useSummary } from "@/stores/resume-builder-store";
-import type { PersonalInfo } from "./types";
+import { Textarea } from "@/components/ui/textarea";
 import { cn } from "@/lib/utils";
+import {
+  usePersonalInfo,
+  useResumeBuilderStore,
+  useSummary,
+} from "@/stores/resume-builder-store";
+import type { PersonalInfo } from "./types";
 
 interface EnhancedProfileFormProps {
   className?: string;
@@ -16,15 +20,22 @@ interface EnhancedProfileFormProps {
 const PHONE_PATTERN = "^[+]?[(]?[0-9]{1,4}[)]?[-\\s./0-9]*$";
 const URL_PATTERN = "^https?://.*";
 
-export default memo(function EnhancedProfileForm({ className }: EnhancedProfileFormProps) {
+export default memo(function EnhancedProfileForm({
+  className,
+}: EnhancedProfileFormProps) {
   const personal = usePersonalInfo();
   const summary = useSummary();
-  const updatePersonalInfo = useResumeBuilderStore((state) => state.updatePersonalInfo);
+  const updatePersonalInfo = useResumeBuilderStore(
+    (state) => state.updatePersonalInfo
+  );
   const updateSummary = useResumeBuilderStore((state) => state.updateSummary);
 
-  const handlePersonalChange = useCallback(<K extends keyof PersonalInfo>(field: K, value: string) => {
-    updatePersonalInfo(field, value);
-  }, [updatePersonalInfo]);
+  const handlePersonalChange = useCallback(
+    <K extends keyof PersonalInfo>(field: K, value: string) => {
+      updatePersonalInfo(field, value);
+    },
+    [updatePersonalInfo]
+  );
 
   return (
     <div className={className}>
@@ -41,12 +52,13 @@ export default memo(function EnhancedProfileForm({ className }: EnhancedProfileF
               minLength={2}
               maxLength={100}
               value={personal.fullName}
-              onChange={(e) => handlePersonalChange('fullName', e.target.value)}
+              onChange={(e) => handlePersonalChange("fullName", e.target.value)}
               placeholder="John Doe"
               aria-describedby="fullName-hint"
             />
             <p id="fullName-hint" className="text-xs text-muted-foreground">
-              Required. Your professional name as it should appear on the resume.
+              Required. Your professional name as it should appear on the
+              resume.
             </p>
           </div>
           <div className="space-y-2">
@@ -58,7 +70,7 @@ export default memo(function EnhancedProfileForm({ className }: EnhancedProfileF
               type="email"
               required
               value={personal.email}
-              onChange={(e) => handlePersonalChange('email', e.target.value)}
+              onChange={(e) => handlePersonalChange("email", e.target.value)}
               placeholder="john@example.com"
               aria-describedby="email-hint"
             />
@@ -76,7 +88,7 @@ export default memo(function EnhancedProfileForm({ className }: EnhancedProfileF
               type="tel"
               pattern={PHONE_PATTERN}
               value={personal.phone}
-              onChange={(e) => handlePersonalChange('phone', e.target.value)}
+              onChange={(e) => handlePersonalChange("phone", e.target.value)}
               placeholder="+1 (555) 123-4567"
               aria-describedby="phone-hint"
             />
@@ -90,7 +102,7 @@ export default memo(function EnhancedProfileForm({ className }: EnhancedProfileF
               id="location"
               maxLength={100}
               value={personal.location}
-              onChange={(e) => handlePersonalChange('location', e.target.value)}
+              onChange={(e) => handlePersonalChange("location", e.target.value)}
               placeholder="San Francisco, CA"
             />
           </div>
@@ -98,7 +110,9 @@ export default memo(function EnhancedProfileForm({ className }: EnhancedProfileF
 
         {/* Links */}
         <div className="pt-2">
-          <h3 className="text-sm font-medium text-muted-foreground mb-3">Links</h3>
+          <h3 className="text-sm font-medium text-muted-foreground mb-3">
+            Links
+          </h3>
           <div className="grid gap-4 sm:grid-cols-2">
             <div className="space-y-2">
               <Label htmlFor="linkedinUrl">LinkedIn</Label>
@@ -107,7 +121,9 @@ export default memo(function EnhancedProfileForm({ className }: EnhancedProfileF
                 type="url"
                 pattern={URL_PATTERN}
                 value={personal.linkedinUrl}
-                onChange={(e) => handlePersonalChange('linkedinUrl', e.target.value)}
+                onChange={(e) =>
+                  handlePersonalChange("linkedinUrl", e.target.value)
+                }
                 placeholder="https://linkedin.com/in/johndoe"
                 aria-describedby="linkedin-hint"
               />
@@ -122,7 +138,9 @@ export default memo(function EnhancedProfileForm({ className }: EnhancedProfileF
                 type="url"
                 pattern={URL_PATTERN}
                 value={personal.githubUrl}
-                onChange={(e) => handlePersonalChange('githubUrl', e.target.value)}
+                onChange={(e) =>
+                  handlePersonalChange("githubUrl", e.target.value)
+                }
                 placeholder="https://github.com/johndoe"
               />
             </div>
@@ -134,7 +152,9 @@ export default memo(function EnhancedProfileForm({ className }: EnhancedProfileF
               type="url"
               pattern={URL_PATTERN}
               value={personal.portfolioUrl}
-              onChange={(e) => handlePersonalChange('portfolioUrl', e.target.value)}
+              onChange={(e) =>
+                handlePersonalChange("portfolioUrl", e.target.value)
+              }
               placeholder="https://johndoe.com"
             />
           </div>
@@ -152,13 +172,18 @@ export default memo(function EnhancedProfileForm({ className }: EnhancedProfileF
             rows={5}
             aria-describedby="summary-hint"
           />
-          <p id="summary-hint" className={cn(
-            "text-xs",
-            summary.length > 450 ? "text-amber-600" : "text-muted-foreground",
-            summary.length >= 500 && "text-destructive"
-          )}>
+          <p
+            id="summary-hint"
+            className={cn(
+              "text-xs",
+              summary.length > 450 ? "text-amber-600" : "text-muted-foreground",
+              summary.length >= 500 && "text-destructive"
+            )}
+          >
             {summary.length}/500 characters
-            {summary.length > 450 && summary.length < 500 && " - approaching limit"}
+            {summary.length > 450 &&
+              summary.length < 500 &&
+              " - approaching limit"}
             {summary.length >= 500 && " - limit reached"}
           </p>
         </div>

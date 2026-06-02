@@ -1,4 +1,4 @@
-import { FileText, Target, BarChart3, Lock } from "lucide-react";
+import { BarChart3, FileText, Lock, Target } from "lucide-react";
 import Image from "next/image";
 
 const features = [
@@ -80,8 +80,12 @@ export function FeaturesSection() {
                   <Lock className="w-5 h-5 text-muted-foreground" />
                 </div>
                 <div>
-                  <div className="text-sm font-medium text-foreground">Privacy First</div>
-                  <div className="text-xs text-muted-foreground">Your data is yours. 256-bit Encryption.</div>
+                  <div className="text-sm font-medium text-foreground">
+                    Privacy First
+                  </div>
+                  <div className="text-xs text-muted-foreground">
+                    Your data is yours. 256-bit Encryption.
+                  </div>
                 </div>
               </div>
               <div className="bg-emerald-50 dark:bg-emerald-950/30 text-emerald-600 dark:text-emerald-400 px-2 py-1 rounded-md text-[10px] font-bold uppercase tracking-wider shrink-0">
@@ -99,8 +103,9 @@ export function FeaturesSection() {
                 Supercharge your job search
               </p>
               <p className="mt-6 text-lg leading-8 text-muted-foreground">
-                Optihire gives you the tools to stand out in a crowded job market.
-                From resume optimisation to application tracking, we've got you covered.
+                Optihire gives you the tools to stand out in a crowded job
+                market. From resume optimisation to application tracking, we've
+                got you covered.
               </p>
             </div>
 

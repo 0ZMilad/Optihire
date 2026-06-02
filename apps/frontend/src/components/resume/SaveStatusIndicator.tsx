@@ -1,9 +1,7 @@
 "use client";
 
-import { useEffect, useState, useCallback, useMemo } from "react";
-import { Check, Cloud, CloudOff, Loader2, AlertCircle } from "lucide-react";
-import { cn } from "@/lib/utils";
-import { useSaveStatus, useAutoSaveEnabled, useResumeBuilderStore } from "@/stores/resume-builder-store";
+import { AlertCircle, Check, Cloud, CloudOff, Loader2 } from "lucide-react";
+import { useCallback, useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import {
   Tooltip,
@@ -11,21 +9,29 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
+import { cn } from "@/lib/utils";
+import {
+  useAutoSaveEnabled,
+  useResumeBuilderStore,
+  useSaveStatus,
+} from "@/stores/resume-builder-store";
 
 interface SaveStatusIndicatorProps {
   className?: string;
   showAutoSaveToggle?: boolean;
 }
 
-export default function SaveStatusIndicator({ 
+export default function SaveStatusIndicator({
   className,
   showAutoSaveToggle = true,
 }: SaveStatusIndicatorProps) {
   const { isDirty, saveStatus, lastSaved } = useSaveStatus();
   const autoSaveEnabled = useAutoSaveEnabled();
-  const setAutoSaveEnabled = useResumeBuilderStore((state) => state.setAutoSaveEnabled);
+  const setAutoSaveEnabled = useResumeBuilderStore(
+    (state) => state.setAutoSaveEnabled
+  );
   const saveDraft = useResumeBuilderStore((state) => state.saveDraft);
-  
+
   const [formattedTime, setFormattedTime] = useState<string | null>(null);
 
   // Memoized handlers
@@ -58,7 +64,9 @@ export default function SaveStatusIndicator({
       } else if (diffMins < 60) {
         setFormattedTime(`${diffMins}m ago`);
       } else {
-        setFormattedTime(date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }));
+        setFormattedTime(
+          date.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })
+        );
       }
     };
 
@@ -68,26 +76,27 @@ export default function SaveStatusIndicator({
   }, [lastSaved]);
 
   const getStatusIcon = () => {
-    if (saveStatus === 'saving') {
+    if (saveStatus === "saving") {
       return <Loader2 className="size-4 animate-spin text-muted-foreground" />;
     }
-    if (saveStatus === 'error') {
+    if (saveStatus === "error") {
       return <AlertCircle className="size-4 text-destructive" />;
     }
     if (isDirty) {
       return <Cloud className="size-4 text-muted-foreground" />;
     }
-    if (saveStatus === 'saved') {
+    if (saveStatus === "saved") {
       return <Check className="size-4 text-green-600" />;
     }
     return <Cloud className="size-4 text-muted-foreground" />;
   };
 
   const getStatusText = () => {
-    if (saveStatus === 'saving') return "Saving...";
-    if (saveStatus === 'error') return "Save failed";
+    if (saveStatus === "saving") return "Saving...";
+    if (saveStatus === "error") return "Save failed";
     if (isDirty) return "Unsaved changes";
-    if (saveStatus === 'saved' && formattedTime) return `Saved ${formattedTime}`;
+    if (saveStatus === "saved" && formattedTime)
+      return `Saved ${formattedTime}`;
     return "All changes saved";
   };
 
@@ -115,7 +124,7 @@ export default function SaveStatusIndicator({
           variant="ghost"
           size="sm"
           onClick={handleSaveNow}
-          disabled={saveStatus === 'saving'}
+          disabled={saveStatus === "saving"}
           className="h-7 px-2"
         >
           Save now
@@ -144,7 +153,9 @@ export default function SaveStatusIndicator({
               </Button>
             </TooltipTrigger>
             <TooltipContent>
-              <p>{autoSaveEnabled ? "Disable auto-save" : "Enable auto-save"}</p>
+              <p>
+                {autoSaveEnabled ? "Disable auto-save" : "Enable auto-save"}
+              </p>
             </TooltipContent>
           </Tooltip>
         </TooltipProvider>

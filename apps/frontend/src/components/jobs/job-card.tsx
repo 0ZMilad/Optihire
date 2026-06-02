@@ -1,17 +1,18 @@
 "use client";
 
-import { memo, useCallback, useMemo, useState } from "react";
 import {
-  MapPin,
-  PoundSterling,
-  ExternalLink,
   Building2,
-  Clock,
-  Minus,
   CheckCircle2,
+  Clock,
+  ExternalLink,
+  MapPin,
+  Minus,
+  PoundSterling,
   Trophy,
   XCircle,
 } from "lucide-react";
+import { memo, useCallback, useMemo, useState } from "react";
+import { toast } from "sonner";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -21,10 +22,9 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import type { ApplicationStatus, JobMatch } from "@/lib/job-types";
 import { cn } from "@/lib/utils";
-import { toast } from "sonner";
 import { updateApplicationStatus } from "@/middle-service/jobs";
-import type { JobMatch, ApplicationStatus } from "@/lib/job-types";
 
 // ─── Score helpers ───────────────────────────────────────────────────────────
 
@@ -40,11 +40,20 @@ function scoreBgColor(score: number) {
   return "bg-red-50 text-red-700 border-red-200";
 }
 
-function formatSalary(min: number | null, max: number | null, currency: string): string {
+function formatSalary(
+  min: number | null,
+  max: number | null,
+  currency: string
+): string {
   if (!min && !max) return "Not disclosed";
-  const symbols: Record<string, string> = { USD: "$", GBP: "\u00a3", EUR: "\u20ac" };
-  const sym = symbols[currency] ?? currency + "\u00a0";
-  const fmt = (n: number) => `${sym}${n >= 1000 ? `${Math.round(n / 1000)}k` : n}`;
+  const symbols: Record<string, string> = {
+    USD: "$",
+    GBP: "\u00a3",
+    EUR: "\u20ac",
+  };
+  const sym = symbols[currency] ?? `${currency}\u00a0`;
+  const fmt = (n: number) =>
+    `${sym}${n >= 1000 ? `${Math.round(n / 1000)}k` : n}`;
   if (min && max) return `${fmt(min)} \u2013 ${fmt(max)}`;
   if (min) return `From ${fmt(min)}`;
   return `Up to ${fmt(max!)}`;
@@ -90,7 +99,8 @@ type StatusEntry = {
 const STATUS_CONFIG: Record<ApplicationStatus, StatusEntry> = {
   not_applied: {
     label: "Not Applied",
-    triggerClass: "text-muted-foreground border-muted-foreground/30 bg-muted/30 hover:bg-muted/50",
+    triggerClass:
+      "text-muted-foreground border-muted-foreground/30 bg-muted/30 hover:bg-muted/50",
     Icon: Minus,
     iconClass: "text-muted-foreground",
   },
@@ -102,13 +112,15 @@ const STATUS_CONFIG: Record<ApplicationStatus, StatusEntry> = {
   },
   interviewing: {
     label: "Interviewing",
-    triggerClass: "text-amber-700 border-amber-200 bg-amber-50 hover:bg-amber-100",
+    triggerClass:
+      "text-amber-700 border-amber-200 bg-amber-50 hover:bg-amber-100",
     Icon: Clock,
     iconClass: "text-amber-500",
   },
   offer: {
     label: "Offer Received",
-    triggerClass: "text-purple-700 border-purple-200 bg-purple-50 hover:bg-purple-100",
+    triggerClass:
+      "text-purple-700 border-purple-200 bg-purple-50 hover:bg-purple-100",
     Icon: Trophy,
     iconClass: "text-purple-500",
   },
@@ -121,7 +133,10 @@ const STATUS_CONFIG: Record<ApplicationStatus, StatusEntry> = {
 };
 
 // Hoisted outside component — STATUS_CONFIG is static so this never changes
-const STATUS_ENTRIES = Object.entries(STATUS_CONFIG) as [ApplicationStatus, StatusEntry][];
+const STATUS_ENTRIES = Object.entries(STATUS_CONFIG) as [
+  ApplicationStatus,
+  StatusEntry,
+][];
 
 // ─── Component ───────────────────────────────────────────────────────────────
 
@@ -130,15 +145,21 @@ interface JobCardProps {
 }
 
 function JobCardInner({ match }: JobCardProps) {
-  const [status, setStatus] = useState<ApplicationStatus>(match.application_status);
+  const [status, setStatus] = useState<ApplicationStatus>(
+    match.application_status
+  );
   const { job_listing: job } = match;
 
-  const { visibleMatched, extraMatched, visibleMissing, extraMissing } = useMemo(() => ({
-    visibleMatched: match.matched_skills.slice(0, SKILLS_VISIBLE),
-    extraMatched: Math.max(0, match.matched_skills.length - SKILLS_VISIBLE),
-    visibleMissing: match.missing_skills.slice(0, SKILLS_VISIBLE),
-    extraMissing: Math.max(0, match.missing_skills.length - SKILLS_VISIBLE),
-  }), [match.matched_skills, match.missing_skills]);
+  const { visibleMatched, extraMatched, visibleMissing, extraMissing } =
+    useMemo(
+      () => ({
+        visibleMatched: match.matched_skills.slice(0, SKILLS_VISIBLE),
+        extraMatched: Math.max(0, match.matched_skills.length - SKILLS_VISIBLE),
+        visibleMissing: match.missing_skills.slice(0, SKILLS_VISIBLE),
+        extraMissing: Math.max(0, match.missing_skills.length - SKILLS_VISIBLE),
+      }),
+      [match.matched_skills, match.missing_skills]
+    );
 
   const postedLabel = useMemo(
     () =>
@@ -185,7 +206,9 @@ function JobCardInner({ match }: JobCardProps) {
             <p className="text-xs text-muted-foreground font-medium truncate">
               {job.company_name}
             </p>
-            <h3 className="text-base font-semibold leading-snug">{job.job_title}</h3>
+            <h3 className="text-base font-semibold leading-snug">
+              {job.job_title}
+            </h3>
           </div>
         </div>
 
@@ -234,7 +257,9 @@ function JobCardInner({ match }: JobCardProps) {
       {/* ── Salary ──────────────────────────────────────────────────────── */}
       <div className="flex items-center gap-1.5 text-sm text-muted-foreground">
         <PoundSterling className="size-4 shrink-0" />
-        <span>{formatSalary(job.salary_min, job.salary_max, job.salary_currency)}</span>
+        <span>
+          {formatSalary(job.salary_min, job.salary_max, job.salary_currency)}
+        </span>
       </div>
 
       {/* ── Match strength bar (score % removed — badge above is the source) */}
@@ -242,7 +267,10 @@ function JobCardInner({ match }: JobCardProps) {
         <span className="text-xs text-muted-foreground">Match strength</span>
         <div className="h-1.5 rounded-full bg-muted overflow-hidden">
           <div
-            className={cn("h-full rounded-full transition-all", scoreBarColor(match.match_score))}
+            className={cn(
+              "h-full rounded-full transition-all",
+              scoreBarColor(match.match_score)
+            )}
             style={{ width: `${match.match_score}%` }}
           />
         </div>
@@ -303,25 +331,30 @@ function JobCardInner({ match }: JobCardProps) {
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
-            {STATUS_ENTRIES.map(
-              ([value, cfg]) => {
-                const ItemIcon = cfg.Icon;
-                return (
-                  <SelectItem key={value} value={value} textValue={cfg.label} className="text-xs">
-                    <div className="flex items-center gap-2">
-                      <ItemIcon className={cn("size-3.5 shrink-0", cfg.iconClass)} />
-                      {cfg.label}
-                    </div>
-                  </SelectItem>
-                );
-              }
-            )}
+            {STATUS_ENTRIES.map(([value, cfg]) => {
+              const ItemIcon = cfg.Icon;
+              return (
+                <SelectItem
+                  key={value}
+                  value={value}
+                  textValue={cfg.label}
+                  className="text-xs"
+                >
+                  <div className="flex items-center gap-2">
+                    <ItemIcon
+                      className={cn("size-3.5 shrink-0", cfg.iconClass)}
+                    />
+                    {cfg.label}
+                  </div>
+                </SelectItem>
+              );
+            })}
           </SelectContent>
         </Select>
 
         {/* Apply Now (first visit) → View Job (already actioned) */}
-        {job.external_url && (
-          status === "not_applied" ? (
+        {job.external_url &&
+          (status === "not_applied" ? (
             <Button
               variant="default"
               size="sm"
@@ -336,13 +369,16 @@ function JobCardInner({ match }: JobCardProps) {
             </Button>
           ) : (
             <Button variant="outline" size="sm" asChild className="shrink-0">
-              <a href={job.external_url} target="_blank" rel="noopener noreferrer">
+              <a
+                href={job.external_url}
+                target="_blank"
+                rel="noopener noreferrer"
+              >
                 <ExternalLink className="size-3.5 mr-1.5" />
                 View Job
               </a>
             </Button>
-          )
-        )}
+          ))}
       </div>
     </div>
   );

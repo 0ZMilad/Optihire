@@ -1,7 +1,7 @@
 "use client";
 
-import { cn } from "@/lib/utils";
 import { CheckCircle2, XCircle } from "lucide-react";
+import { cn } from "@/lib/utils";
 
 interface ChecklistItem {
   label: string;
@@ -16,7 +16,9 @@ interface FormattingChecklistProps {
 export function FormattingChecklist({ items }: FormattingChecklistProps) {
   return (
     <div className="rounded-xl border bg-card p-5">
-      <h3 className="font-semibold mb-4">Formatting &amp; Structure Checklist</h3>
+      <h3 className="font-semibold mb-4">
+        Formatting &amp; Structure Checklist
+      </h3>
       <div className="grid gap-3 sm:grid-cols-2">
         {items.map((item) => (
           <div
@@ -32,12 +34,7 @@ export function FormattingChecklist({ items }: FormattingChecklistProps) {
               <XCircle className="size-4 mt-0.5 shrink-0 text-red-700/70" />
             )}
             <div className="flex flex-col">
-              <span
-                className={cn(
-                  "font-medium",
-                  "text-foreground"
-                )}
-              >
+              <span className={cn("font-medium", "text-foreground")}>
                 {item.label}
               </span>
               {!item.passed && item.fixHint && (

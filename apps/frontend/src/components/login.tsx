@@ -2,13 +2,12 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { FormEvent, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Spinner } from "@/components/ui/spinner";
 import { logger } from "@/lib/logger";
-
-import { FormEvent, useState } from "react";
 import { authService } from "@/middle-service/supabase";
 
 export default function Login() {
@@ -37,7 +36,9 @@ export default function Login() {
         router.refresh();
       }
     } catch (error) {
-      logger.error("Login failed", { error: error instanceof Error ? error.message : "Unknown error" });
+      logger.error("Login failed", {
+        error: error instanceof Error ? error.message : "Unknown error",
+      });
       setErrorMessage("Error occurred, check logs");
     } finally {
       setIsLoading(false);
@@ -53,70 +54,72 @@ export default function Login() {
           <p className="text-center text-sm text-muted-foreground dark:text-muted-foreground">
             Enter your credentials to access your account.
           </p>
-          <form
-            className="mt-6 space-y-4"
-            onSubmit={handleLogin}
-          >
+          <form className="mt-6 space-y-4" onSubmit={handleLogin}>
             <fieldset>
               <legend className="sr-only">Account Login</legend>
-            <div>
-              <Label
-                htmlFor="email-login-03"
-                className="text-sm font-medium text-foreground dark:text-foreground"
-              >
-                Email
-              </Label>
-              <Input
-                type="email"
-                id="email-login-03"
-                name="email-login-03"
-                autoComplete="email"
-                placeholder="Milad.@example.com"
-                className="mt-2"
-                onChange={(e) => setEmail(e.target.value)}
-                value={currentEmail}
-              />
-            </div>
-            <div>
-              <Label
-                htmlFor="password-login-03"
-                className="text-sm font-medium text-foreground dark:text-foreground"
-              >
-                Password
-              </Label>
-              <Input
-                type="password"
-                id="password-login-03"
-                name="password-login-03"
-                autoComplete="password"
-                placeholder="**************"
-                className="mt-2"
-                onChange={(e) => setPassword(e.target.value)}
-                value={currentPassword}
-              />
-            </div>
-            {errorMessage && (
-              <div role="alert" aria-live="polite" aria-atomic="true" className="rounded bg-destructive/10 border border-destructive/20 p-2">
-                <p className="text-xs font-medium text-destructive">
-                  {errorMessage}
-                </p>
+              <div>
+                <Label
+                  htmlFor="email-login-03"
+                  className="text-sm font-medium text-foreground dark:text-foreground"
+                >
+                  Email
+                </Label>
+                <Input
+                  type="email"
+                  id="email-login-03"
+                  name="email-login-03"
+                  autoComplete="email"
+                  placeholder="Milad.@example.com"
+                  className="mt-2"
+                  onChange={(e) => setEmail(e.target.value)}
+                  value={currentEmail}
+                />
               </div>
-            )}
-            <Button
-              type="submit"
-              className="mt-4 w-full py-2 font-medium"
-              disabled={isLoading}
-              aria-busy={isLoading}
-            >
-              {isLoading ? (
-                <div className="flex items-center justify-center gap-2">
-                  <Spinner className="h-4 w-4" />
-                  <span>Signing in...</span>
+              <div>
+                <Label
+                  htmlFor="password-login-03"
+                  className="text-sm font-medium text-foreground dark:text-foreground"
+                >
+                  Password
+                </Label>
+                <Input
+                  type="password"
+                  id="password-login-03"
+                  name="password-login-03"
+                  autoComplete="password"
+                  placeholder="**************"
+                  className="mt-2"
+                  onChange={(e) => setPassword(e.target.value)}
+                  value={currentPassword}
+                />
+              </div>
+              {errorMessage && (
+                <div
+                  role="alert"
+                  aria-live="polite"
+                  aria-atomic="true"
+                  className="rounded bg-destructive/10 border border-destructive/20 p-2"
+                >
+                  <p className="text-xs font-medium text-destructive">
+                    {errorMessage}
+                  </p>
                 </div>
-              ) : (
-                "Sign In"
               )}
-            </Button>
+              <Button
+                type="submit"
+                className="mt-4 w-full py-2 font-medium"
+                disabled={isLoading}
+                aria-busy={isLoading}
+              >
+                {isLoading ? (
+                  <div className="flex items-center justify-center gap-2">
+                    <Spinner className="h-4 w-4" />
+                    <span>Signing in...</span>
+                  </div>
+                ) : (
+                  "Sign In"
+                )}
+              </Button>
             </fieldset>
           </form>
           <div className="mt-6 space-y-3">

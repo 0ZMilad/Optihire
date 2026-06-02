@@ -1,8 +1,9 @@
 "use client";
 
+import { ClipboardPaste, FileText, Loader2 } from "lucide-react";
 import { useCallback, useMemo, useState } from "react";
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Textarea } from "@/components/ui/textarea";
 import {
   Select,
   SelectContent,
@@ -10,8 +11,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Badge } from "@/components/ui/badge";
-import { FileText, Loader2, ClipboardPaste } from "lucide-react";
+import { Textarea } from "@/components/ui/textarea";
 import { cn, sanitizeText } from "@/lib/utils";
 import type { ResumeListItem } from "@/middle-service/types";
 
@@ -39,9 +39,17 @@ export function AuditInputView({
   }, [jobDescription]);
 
   const charCount = jobDescription.length;
-  const selectedResume = useMemo(() => resumes.find((r) => r.id === selectedResumeId), [resumes, selectedResumeId]);
-  const isResumeReady = !selectedResume || selectedResume.processing_status === "Completed";
-  const isValid = wordCount >= MIN_WORDS && charCount <= MAX_CHARS && selectedResumeId !== "" && isResumeReady;
+  const selectedResume = useMemo(
+    () => resumes.find((r) => r.id === selectedResumeId),
+    [resumes, selectedResumeId]
+  );
+  const isResumeReady =
+    !selectedResume || selectedResume.processing_status === "Completed";
+  const isValid =
+    wordCount >= MIN_WORDS &&
+    charCount <= MAX_CHARS &&
+    selectedResumeId !== "" &&
+    isResumeReady;
   const progressPercent = Math.min((wordCount / MIN_WORDS) * 100, 100);
 
   const handlePaste = useCallback(async () => {
@@ -54,16 +62,23 @@ export function AuditInputView({
   return (
     <div className="mx-auto w-full max-w-[800px] space-y-6">
       <div className="space-y-2">
-        <h1 className="text-2xl font-bold tracking-tight">New Application Audit</h1>
+        <h1 className="text-2xl font-bold tracking-tight">
+          New Application Audit
+        </h1>
         <p className="text-muted-foreground text-sm">
           Paste a job description to see how well your resume matches the role.
         </p>
       </div>
 
       <div className="space-y-2">
-        <label id="resume-select-label" className="text-sm font-medium">Resume to audit</label>
+        <label id="resume-select-label" className="text-sm font-medium">
+          Resume to audit
+        </label>
         <Select value={selectedResumeId} onValueChange={setSelectedResumeId}>
-          <SelectTrigger className="w-full" aria-labelledby="resume-select-label">
+          <SelectTrigger
+            className="w-full"
+            aria-labelledby="resume-select-label"
+          >
             <SelectValue placeholder="Select a resume…" />
           </SelectTrigger>
           <SelectContent>
@@ -73,7 +88,9 @@ export function AuditInputView({
                   <FileText className="size-3.5 text-muted-foreground" />
                   <span>{r.version_name}</span>
                   {r.full_name && (
-                    <span className="text-muted-foreground text-xs">— {r.full_name}</span>
+                    <span className="text-muted-foreground text-xs">
+                      — {r.full_name}
+                    </span>
                   )}
                   {r.processing_status !== "Completed" && (
                     <Badge
@@ -103,12 +120,14 @@ export function AuditInputView({
       )}
 
       {selectedResume && selectedResume.processing_status !== "Completed" && (
-        <p className={cn(
-          "text-sm",
-          selectedResume.processing_status === "Failed"
-            ? "text-red-600"
-            : "text-amber-600"
-        )}>
+        <p
+          className={cn(
+            "text-sm",
+            selectedResume.processing_status === "Failed"
+              ? "text-red-600"
+              : "text-amber-600"
+          )}
+        >
           {selectedResume.processing_status === "Failed"
             ? "This resume failed to process. Please re-upload it before running an audit."
             : `This resume is still being processed (${selectedResume.processing_status.toLowerCase()}). Please wait until parsing is complete before running an audit.`}
@@ -174,7 +193,8 @@ export function AuditInputView({
                   : "text-muted-foreground"
               )}
             >
-              {charCount.toLocaleString()} / {MAX_CHARS.toLocaleString()} characters
+              {charCount.toLocaleString()} / {MAX_CHARS.toLocaleString()}{" "}
+              characters
             </span>
           </div>
           {wordCount > 0 && wordCount < MIN_WORDS && (
@@ -183,9 +203,7 @@ export function AuditInputView({
             </span>
           )}
           {charCount > MAX_CHARS * 0.9 && charCount <= MAX_CHARS && (
-            <span className="text-amber-500">
-              Approaching character limit
-            </span>
+            <span className="text-amber-500">Approaching character limit</span>
           )}
         </div>
       </div>

@@ -1,9 +1,9 @@
 "use client";
 
+import { CheckCircle, Loader2, Upload } from "lucide-react";
 import { memo } from "react";
-import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { Upload, Loader2, CheckCircle } from "lucide-react";
+import { Input } from "@/components/ui/input";
 
 interface ResumeUploadProps {
   className?: string;
@@ -17,16 +17,16 @@ interface ResumeUploadProps {
   statusMessage?: string;
 }
 
-export default memo(function ResumeUpload({ 
-  className, 
-  appState, 
-  fileName, 
-  inputRef, 
-  error, 
-  onFileChange, 
+export default memo(function ResumeUpload({
+  className,
+  appState,
+  fileName,
+  inputRef,
+  error,
+  onFileChange,
   onUploadClick,
   onReviewClick,
-  statusMessage 
+  statusMessage,
 }: ResumeUploadProps) {
   if (appState === "PROCESSING") {
     return (
@@ -35,7 +35,9 @@ export default memo(function ResumeUpload({
           <Loader2 className="size-4 animate-spin text-muted-foreground" />
           <div>
             <p className="text-sm font-medium">Analysing Your Resume</p>
-            <p className="text-xs text-muted-foreground">Please wait while we extract your information...</p>
+            <p className="text-xs text-muted-foreground">
+              Please wait while we extract your information...
+            </p>
           </div>
         </div>
       </section>
@@ -49,8 +51,12 @@ export default memo(function ResumeUpload({
           <div className="flex items-center gap-3">
             <CheckCircle className="size-4 text-emerald-600" />
             <div>
-              <p className="text-sm font-medium">Resume processed successfully!</p>
-              <p className="text-xs text-muted-foreground">Ready for review and editing</p>
+              <p className="text-sm font-medium">
+                Resume processed successfully!
+              </p>
+              <p className="text-xs text-muted-foreground">
+                Ready for review and editing
+              </p>
             </div>
           </div>
           {onReviewClick && (
@@ -69,13 +75,22 @@ export default memo(function ResumeUpload({
         role="button"
         tabIndex={0}
         onClick={onUploadClick}
-        onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onUploadClick(); } }}
+        onKeyDown={(e) => {
+          if (e.key === "Enter" || e.key === " ") {
+            e.preventDefault();
+            onUploadClick();
+          }
+        }}
         className="border rounded-xl p-6 sm:p-8 grid place-items-center text-center hover:bg-muted/40 transition-colors cursor-pointer"
         aria-label="Upload resume"
       >
         <Upload className="size-6 text-muted-foreground" aria-hidden />
-        <p className="mt-3 font-medium">{fileName ? fileName : "Drop a PDF/DOCX here or click to upload"}</p>
-        <p className="text-sm text-muted-foreground">We accept PDF or DOCX up to 5MB.</p>
+        <p className="mt-3 font-medium">
+          {fileName ? fileName : "Drop a PDF/DOCX here or click to upload"}
+        </p>
+        <p className="text-sm text-muted-foreground">
+          We accept PDF or DOCX up to 5MB.
+        </p>
         {error && <p className="mt-2 text-sm text-destructive">{error}</p>}
         <Input
           ref={inputRef}

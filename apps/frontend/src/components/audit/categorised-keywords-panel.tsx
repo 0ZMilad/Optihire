@@ -1,8 +1,15 @@
 "use client";
 
-import { cn } from "@/lib/utils";
+import {
+  AlertTriangle,
+  Award,
+  Brain,
+  CheckCircle2,
+  User,
+  Wrench,
+} from "lucide-react";
 import { Badge } from "@/components/ui/badge";
-import { AlertTriangle, CheckCircle2, Wrench, Award, Brain, User } from "lucide-react";
+import { cn } from "@/lib/utils";
 import type { CategorisedKeywords as CategorisedKeywordsType } from "@/middle-service/audit";
 
 interface CategorisedKeywordsPanelProps {
@@ -11,7 +18,12 @@ interface CategorisedKeywordsPanelProps {
 
 const CATEGORY_META: Record<
   keyof CategorisedKeywordsType,
-  { label: string; icon: React.ReactNode; matchColor: string; missColor: string }
+  {
+    label: string;
+    icon: React.ReactNode;
+    matchColor: string;
+    missColor: string;
+  }
 > = {
   tool: {
     label: "Tools & Technologies",
@@ -51,7 +63,8 @@ function CategoryRow({
 
   if (total === 0) return null;
 
-  const matchRate = total > 0 ? Math.round((data.matched.length / total) * 100) : 0;
+  const matchRate =
+    total > 0 ? Math.round((data.matched.length / total) * 100) : 0;
 
   return (
     <div className="space-y-2.5">
@@ -72,7 +85,7 @@ function CategoryRow({
                   ? "bg-emerald-700"
                   : matchRate >= 40
                     ? "bg-amber-700"
-                    : "bg-red-700",
+                    : "bg-red-700"
               )}
               style={{ width: `${matchRate}%` }}
             />
@@ -118,7 +131,7 @@ export function CategorisedKeywordsPanel({
 
   const activeCategories = order.filter(
     (key) =>
-      categories[key].matched.length > 0 || categories[key].missing.length > 0,
+      categories[key].matched.length > 0 || categories[key].missing.length > 0
   );
 
   return (

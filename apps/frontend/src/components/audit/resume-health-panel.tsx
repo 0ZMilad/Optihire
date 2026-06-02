@@ -1,20 +1,22 @@
 "use client";
 
-import { cn } from "@/lib/utils";
 import {
-  FileText,
   AlertCircle,
-  CheckCircle2,
   Ban,
+  CheckCircle2,
+  FileText,
   Hash,
   List,
-  TrendingUp,
   TrendingDown,
+  TrendingUp,
   Zap,
 } from "lucide-react";
-import type { ImpactAnalysis } from "@/middle-service/audit";
-import type { ResumeMetrics } from "@/middle-service/audit";
-import type { RepetitionFlag } from "@/middle-service/audit";
+import { cn } from "@/lib/utils";
+import type {
+  ImpactAnalysis,
+  RepetitionFlag,
+  ResumeMetrics,
+} from "@/middle-service/audit";
 
 interface ResumeHealthPanelProps {
   impact: ImpactAnalysis | null;
@@ -116,7 +118,9 @@ export function ResumeHealthPanel({
               <Zap className="size-4 text-muted-foreground" />
               <h3 className="font-semibold">Impact & Achievements</h3>
             </div>
-            <span className={cn("text-lg font-bold tabular-nums", impactTierColor)}>
+            <span
+              className={cn("text-lg font-bold tabular-nums", impactTierColor)}
+            >
               {impact.score}
             </span>
           </div>
@@ -127,7 +131,7 @@ export function ResumeHealthPanel({
               <div
                 className={cn(
                   "h-full rounded-full transition-all duration-700 ease-out",
-                  impactTierBg,
+                  impactTierBg
                 )}
                 style={{ width: `${impact.score}%` }}
               />
@@ -177,12 +181,14 @@ export function ResumeHealthPanel({
                   key={i}
                   className={cn(
                     "flex items-start gap-2 text-xs rounded-lg px-3 py-2",
-                    tip.toLowerCase().includes("keep it up") || tip.toLowerCase().includes("strong")
+                    tip.toLowerCase().includes("keep it up") ||
+                      tip.toLowerCase().includes("strong")
                       ? "bg-muted/40 border-l-2 border-l-emerald-700/60 text-foreground pl-3"
-                      : "bg-muted/40 border-l-2 border-l-amber-700/60 text-foreground pl-3",
+                      : "bg-muted/40 border-l-2 border-l-amber-700/60 text-foreground pl-3"
                   )}
                 >
-                  {tip.toLowerCase().includes("keep it up") || tip.toLowerCase().includes("strong") ? (
+                  {tip.toLowerCase().includes("keep it up") ||
+                  tip.toLowerCase().includes("strong") ? (
                     <TrendingUp className="size-3.5 mt-0.5 shrink-0" />
                   ) : (
                     <TrendingDown className="size-3.5 mt-0.5 shrink-0" />
@@ -226,8 +232,8 @@ export function ResumeHealthPanel({
             />
             <MetricTile
               label="Length"
-              value={verdict!.label}
-              icon={verdict!.icon}
+              value={verdict?.label ?? "—"}
+              icon={verdict?.icon}
             />
             <MetricTile
               label="Sections"

@@ -1,5 +1,5 @@
-import { memo } from "react";
 import Link from "next/link";
+import { memo } from "react";
 
 interface QuickActionsProps {
   className?: string;
@@ -14,7 +14,9 @@ export default memo(function QuickActions({ className }: QuickActionsProps) {
         aria-label="Open Resume Builder"
       >
         <p className="font-medium">Resume builder</p>
-        <p className="text-sm text-muted-foreground">Tabbed editor with live preview.</p>
+        <p className="text-sm text-muted-foreground">
+          Tabbed editor with live preview.
+        </p>
       </Link>
       <Link
         href="/dashboard/audit"
@@ -22,7 +24,9 @@ export default memo(function QuickActions({ className }: QuickActionsProps) {
         aria-label="Open Analysis / ATS scoring"
       >
         <p className="font-medium">ATS scoring</p>
-        <p className="text-sm text-muted-foreground">Analyze against a job description.</p>
+        <p className="text-sm text-muted-foreground">
+          Analyze against a job description.
+        </p>
       </Link>
       <Link
         href="/dashboard/jobs"
@@ -30,7 +34,9 @@ export default memo(function QuickActions({ className }: QuickActionsProps) {
         aria-label="Open Applications Tracker"
       >
         <p className="font-medium">Applications</p>
-        <p className="text-sm text-muted-foreground">Track status in table or board.</p>
+        <p className="text-sm text-muted-foreground">
+          Track status in table or board.
+        </p>
       </Link>
     </section>
   );

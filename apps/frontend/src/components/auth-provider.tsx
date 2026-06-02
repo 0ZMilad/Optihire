@@ -1,14 +1,14 @@
 "use client";
 
+import type { Session, User } from "@supabase/supabase-js";
 import {
   createContext,
   PropsWithChildren,
-  useState,
-  useEffect,
   useContext,
+  useEffect,
   useMemo,
+  useState,
 } from "react";
-import type { Session, User } from "@supabase/supabase-js";
 import { authService } from "@/middle-service/supabase";
 
 interface AuthContextType {
@@ -45,11 +45,7 @@ export const AuthProvider = ({ children }: PropsWithChildren) => {
     [currentSession, currentUser]
   );
 
-  return (
-    <AuthContext.Provider value={value}>
-      {children}
-    </AuthContext.Provider>
-  );
+  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 };
 
 export function useAuth() {

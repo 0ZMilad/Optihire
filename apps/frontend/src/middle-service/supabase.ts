@@ -17,9 +17,9 @@ const getRedirectUrl = () => {
     return "http://localhost:3000/auth/callback";
   }
 
-   const siteUrl = process.env.NEXT_PUBLIC_SITE_URL?.replace(/\/$/, "") || "";
-  
-   return `${siteUrl}/auth/callback`;
+  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL?.replace(/\/$/, "") || "";
+
+  return `${siteUrl}/auth/callback`;
 };
 
 export const supabase = createBrowserClient(supabaseUrl, supabaseAnonKey);
@@ -91,7 +91,7 @@ export const authService = {
    */
   resetPassword: async (email: string) => {
     const { data, error } = await supabase.auth.resetPasswordForEmail(email, {
-        redirectTo: getRedirectUrl(),
+      redirectTo: getRedirectUrl(),
     });
     return { data, error };
   },

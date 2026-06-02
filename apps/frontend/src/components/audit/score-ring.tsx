@@ -1,7 +1,7 @@
 "use client";
 
-import { cn } from "@/lib/utils";
 import { useEffect, useState } from "react";
+import { cn } from "@/lib/utils";
 
 interface ScoreRingProps {
   score: number;
@@ -12,9 +12,26 @@ interface ScoreRingProps {
 }
 
 function getScoreTier(score: number) {
-  if (score >= 80) return { label: "Highly Competitive", color: "text-emerald-600", stroke: "stroke-emerald-500", bg: "bg-emerald-50 dark:bg-emerald-950/30" };
-  if (score >= 50) return { label: "Needs Tailoring", color: "text-amber-600", stroke: "stroke-amber-500", bg: "bg-amber-50 dark:bg-amber-950/30" };
-  return { label: "Major Gaps", color: "text-red-600", stroke: "stroke-red-500", bg: "bg-red-50 dark:bg-red-950/30" };
+  if (score >= 80)
+    return {
+      label: "Highly Competitive",
+      color: "text-emerald-600",
+      stroke: "stroke-emerald-500",
+      bg: "bg-emerald-50 dark:bg-emerald-950/30",
+    };
+  if (score >= 50)
+    return {
+      label: "Needs Tailoring",
+      color: "text-amber-600",
+      stroke: "stroke-amber-500",
+      bg: "bg-amber-50 dark:bg-amber-950/30",
+    };
+  return {
+    label: "Major Gaps",
+    color: "text-red-600",
+    stroke: "stroke-red-500",
+    bg: "bg-red-50 dark:bg-red-950/30",
+  };
 }
 
 export function ScoreRing({
@@ -45,7 +62,7 @@ export function ScoreRing({
     function animate(now: number) {
       const elapsed = now - start;
       const progress = Math.min(elapsed / duration, 1);
-      const eased = 1 - Math.pow(1 - progress, 3);
+      const eased = 1 - (1 - progress) ** 3;
       setAnimatedScore(Math.round(eased * score));
       if (progress < 1) requestAnimationFrame(animate);
     }
@@ -62,11 +79,7 @@ export function ScoreRing({
       role="img"
     >
       <div className="relative" style={{ width: size, height: size }}>
-        <svg
-          width={size}
-          height={size}
-          className="rotate-[-90deg]"
-        >
+        <svg width={size} height={size} className="rotate-[-90deg]">
           <circle
             cx={size / 2}
             cy={size / 2}
@@ -85,23 +98,37 @@ export function ScoreRing({
             strokeLinecap="round"
             strokeDasharray={circumference}
             strokeDashoffset={offset}
-            className={cn("transition-[stroke-dashoffset] duration-300 ease-out", tier.stroke)}
+            className={cn(
+              "transition-[stroke-dashoffset] duration-300 ease-out",
+              tier.stroke
+            )}
           />
         </svg>
         <div className="absolute inset-0 flex flex-col items-center justify-center">
-          <span className={cn("text-4xl font-bold tabular-nums tracking-tight", tier.color)}>
+          <span
+            className={cn(
+              "text-4xl font-bold tabular-nums tracking-tight",
+              tier.color
+            )}
+          >
             {animatedScore}
           </span>
-          <span className="text-xs text-muted-foreground font-medium">/ 100</span>
+          <span className="text-xs text-muted-foreground font-medium">
+            / 100
+          </span>
         </div>
       </div>
       {showLabel && (
-        <span className={cn("text-sm font-semibold px-3 py-1 rounded-full", tier.bg, tier.color)}>
+        <span
+          className={cn(
+            "text-sm font-semibold px-3 py-1 rounded-full",
+            tier.bg,
+            tier.color
+          )}
+        >
           {tier.label}
         </span>
       )}
     </div>
   );
 }
-
-

@@ -1,26 +1,33 @@
 "use client";
 
-import { useState, useCallback } from "react";
+import dynamic from "next/dynamic";
+import { useCallback, useState } from "react";
+import { AuditHistorySidebar } from "@/components/audit/audit-history-sidebar";
+import { AuditInputView } from "@/components/audit/audit-input-view";
 import { DashboardHeader } from "@/components/dashboard-header";
 import { Main } from "@/components/main";
-import { AuditInputView } from "@/components/audit/audit-input-view";
-import { AuditHistorySidebar } from "@/components/audit/audit-history-sidebar";
-import dynamic from "next/dynamic";
 
 // Lazy-load the heavy results view — only fetched after audit completes
 const AuditResultsView = dynamic(
-  () => import("@/components/audit/audit-results-view").then((m) => m.AuditResultsView),
+  () =>
+    import("@/components/audit/audit-results-view").then(
+      (m) => m.AuditResultsView
+    ),
   { ssr: false }
 );
 
-import { Skeleton } from "@/components/ui/skeleton";
-import { runAudit, getAuditResult, deleteAuditResult } from "@/middle-service/audit";
-import type { AuditResult, AuditContext } from "@/middle-service/audit";
-import { useSavedResumes } from "@/stores/saved-resumes-store";
-import { useAuditHistory } from "@/stores/audit-history-store";
-import { toast } from "sonner";
-import { logger } from "@/lib/logger";
 import axios from "axios";
+import { toast } from "sonner";
+import { Skeleton } from "@/components/ui/skeleton";
+import { logger } from "@/lib/logger";
+import type { AuditContext, AuditResult } from "@/middle-service/audit";
+import {
+  deleteAuditResult,
+  getAuditResult,
+  runAudit,
+} from "@/middle-service/audit";
+import { useAuditHistory } from "@/stores/audit-history-store";
+import { useSavedResumes } from "@/stores/saved-resumes-store";
 
 type ViewState = "input" | "loading" | "results";
 
@@ -28,7 +35,12 @@ export default function AuditPage() {
   const [viewState, setViewState] = useState<ViewState>("input");
   // Use the cached store instead of a fresh API call — avoids duplicate fetch
   const { resumes, isLoading: resumesLoading } = useSavedResumes();
-  const { history, isLoading: historyLoading, prependResult, removeResult } = useAuditHistory();
+  const {
+    history,
+    isLoading: historyLoading,
+    prependResult,
+    removeResult,
+  } = useAuditHistory();
   const [auditLoading, setAuditLoading] = useState(false);
   const [result, setResult] = useState<AuditResult | null>(null);
   const [context, setContext] = useState<AuditContext | null>(null);
@@ -73,7 +85,8 @@ export default function AuditPage() {
             setViewState("input");
             return;
           }
-          logStatus = String(err.response?.status ?? err.code ?? "") || undefined;
+          logStatus =
+            String(err.response?.status ?? err.code ?? "") || undefined;
           const raw = err.response?.data?.detail;
           const detail =
             typeof raw === "string" && raw
@@ -85,7 +98,12 @@ export default function AuditPage() {
                 : "";
           if (detail) userMessage = detail;
           // Use || (not ??) so empty strings are skipped
-          logError = detail || err.message || err.code || `HTTP ${err.response?.status}` || "Axios error";
+          logError =
+            detail ||
+            err.message ||
+            err.code ||
+            `HTTP ${err.response?.status}` ||
+            "Axios error";
         } else if (err instanceof Error) {
           logError = err.message || err.name || "Error";
         } else if (typeof err === "string") {
@@ -106,7 +124,7 @@ export default function AuditPage() {
         setAuditLoading(false);
       }
     },
-    [resumes],
+    [resumes, prependResult]
   );
 
   const handleRunAnother = useCallback(() => {
@@ -131,7 +149,7 @@ export default function AuditPage() {
         toast.error("Failed to load audit result.");
       }
     },
-    [resumes],
+    [resumes]
   );
 
   const handleDeleteHistory = useCallback(
@@ -149,7 +167,7 @@ export default function AuditPage() {
         toast.error("Failed to delete audit result.");
       }
     },
-    [result, removeResult],
+    [result, removeResult]
   );
 
   return (

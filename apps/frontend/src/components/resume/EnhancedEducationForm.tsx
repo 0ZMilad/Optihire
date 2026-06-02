@@ -1,16 +1,26 @@
 "use client";
 
+import {
+  ChevronDown,
+  ChevronUp,
+  GraduationCap,
+  GripVertical,
+  Plus,
+  Trash2,
+} from "lucide-react";
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
-import { Label } from "@/components/ui/label";
-import { Checkbox } from "@/components/ui/checkbox";
 import { Card, CardContent } from "@/components/ui/card";
-import { Plus, Trash2, GripVertical, ChevronDown, ChevronUp, GraduationCap } from "lucide-react";
-import { useResumeBuilderStore, useEducation } from "@/stores/resume-builder-store";
-import type { Education } from "./types";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
 import { cn } from "@/lib/utils";
+import {
+  useEducation,
+  useResumeBuilderStore,
+} from "@/stores/resume-builder-store";
+import type { Education } from "./types";
 
 interface EnhancedEducationFormProps {
   className?: string;
@@ -48,7 +58,9 @@ function EducationCard({
               <span className="font-medium truncate">
                 {education.degreeType && education.fieldOfStudy
                   ? `${education.degreeType} in ${education.fieldOfStudy}`
-                  : education.degreeType || education.fieldOfStudy || "New Education"}
+                  : education.degreeType ||
+                    education.fieldOfStudy ||
+                    "New Education"}
               </span>
             </div>
             {education.institutionName && (
@@ -58,7 +70,8 @@ function EducationCard({
             )}
             {(education.startDate || education.isCurrent) && (
               <p className="text-xs text-muted-foreground">
-                {education.startDate} — {education.isCurrent ? "Present" : education.endDate}
+                {education.startDate} —{" "}
+                {education.isCurrent ? "Present" : education.endDate}
               </p>
             )}
           </div>
@@ -98,7 +111,9 @@ function EducationCard({
                 minLength={2}
                 maxLength={150}
                 value={education.institutionName}
-                onChange={(e) => onUpdate(education.id, { institutionName: e.target.value })}
+                onChange={(e) =>
+                  onUpdate(education.id, { institutionName: e.target.value })
+                }
                 placeholder="Stanford University"
               />
             </div>
@@ -113,7 +128,9 @@ function EducationCard({
                   minLength={2}
                   maxLength={100}
                   value={education.degreeType}
-                  onChange={(e) => onUpdate(education.id, { degreeType: e.target.value })}
+                  onChange={(e) =>
+                    onUpdate(education.id, { degreeType: e.target.value })
+                  }
                   placeholder="Bachelor of Science"
                 />
               </div>
@@ -126,7 +143,9 @@ function EducationCard({
                   minLength={2}
                   maxLength={100}
                   value={education.fieldOfStudy}
-                  onChange={(e) => onUpdate(education.id, { fieldOfStudy: e.target.value })}
+                  onChange={(e) =>
+                    onUpdate(education.id, { fieldOfStudy: e.target.value })
+                  }
                   placeholder="Computer Science"
                 />
               </div>
@@ -137,7 +156,9 @@ function EducationCard({
               <Input
                 maxLength={100}
                 value={education.location}
-                onChange={(e) => onUpdate(education.id, { location: e.target.value })}
+                onChange={(e) =>
+                  onUpdate(education.id, { location: e.target.value })
+                }
                 placeholder="Stanford, CA"
               />
             </div>
@@ -148,7 +169,9 @@ function EducationCard({
                 <Input
                   type="month"
                   value={education.startDate}
-                  onChange={(e) => onUpdate(education.id, { startDate: e.target.value })}
+                  onChange={(e) =>
+                    onUpdate(education.id, { startDate: e.target.value })
+                  }
                 />
               </div>
               <div className="space-y-2">
@@ -156,7 +179,9 @@ function EducationCard({
                 <Input
                   type="month"
                   value={education.endDate}
-                  onChange={(e) => onUpdate(education.id, { endDate: e.target.value })}
+                  onChange={(e) =>
+                    onUpdate(education.id, { endDate: e.target.value })
+                  }
                   disabled={education.isCurrent}
                 />
               </div>
@@ -188,7 +213,9 @@ function EducationCard({
                   maxLength={20}
                   pattern="^[0-9./ ]+$"
                   value={education.gpa}
-                  onChange={(e) => onUpdate(education.id, { gpa: e.target.value })}
+                  onChange={(e) =>
+                    onUpdate(education.id, { gpa: e.target.value })
+                  }
                   placeholder="3.8 / 4.0"
                 />
               </div>
@@ -217,12 +244,17 @@ function EducationCard({
                 value={education.relevantCoursework.join(", ")}
                 onChange={(e) =>
                   onUpdate(education.id, {
-                    relevantCoursework: e.target.value.split(",").map((s) => s.trim()).filter(Boolean),
+                    relevantCoursework: e.target.value
+                      .split(",")
+                      .map((s) => s.trim())
+                      .filter(Boolean),
                   })
                 }
                 placeholder="Data Structures, Algorithms, Machine Learning"
               />
-              <p className="text-xs text-muted-foreground">Comma-separated list</p>
+              <p className="text-xs text-muted-foreground">
+                Comma-separated list
+              </p>
             </div>
           </div>
         )}
@@ -231,11 +263,17 @@ function EducationCard({
   );
 }
 
-export default function EnhancedEducationForm({ className }: EnhancedEducationFormProps) {
+export default function EnhancedEducationForm({
+  className,
+}: EnhancedEducationFormProps) {
   const educationList = useEducation();
   const addEducation = useResumeBuilderStore((state) => state.addEducation);
-  const updateEducation = useResumeBuilderStore((state) => state.updateEducation);
-  const removeEducation = useResumeBuilderStore((state) => state.removeEducation);
+  const updateEducation = useResumeBuilderStore(
+    (state) => state.updateEducation
+  );
+  const removeEducation = useResumeBuilderStore(
+    (state) => state.removeEducation
+  );
 
   const [expandedIds, setExpandedIds] = useState<Set<string>>(new Set());
 

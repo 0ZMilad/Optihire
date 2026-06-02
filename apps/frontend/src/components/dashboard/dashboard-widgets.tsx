@@ -1,8 +1,16 @@
 "use client";
 
-import { useState, useEffect, useMemo, useCallback, useRef } from "react";
+import {
+  Activity,
+  Pause,
+  Play,
+  RotateCcw,
+  StickyNote,
+  Target,
+  Timer,
+} from "lucide-react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
-import { Timer, StickyNote, Target, Activity, Play, Pause, RotateCcw } from "lucide-react";
 
 interface DashboardWidgetsProps {
   className?: string;
@@ -38,7 +46,9 @@ export default function DashboardWidgets({ className }: DashboardWidgetsProps) {
     notesTimerRef.current = setTimeout(() => {
       localStorage.setItem("dash_notes", notes);
     }, 500);
-    return () => { if (notesTimerRef.current) clearTimeout(notesTimerRef.current); };
+    return () => {
+      if (notesTimerRef.current) clearTimeout(notesTimerRef.current);
+    };
   }, [notes]);
 
   useEffect(() => {
@@ -46,18 +56,34 @@ export default function DashboardWidgets({ className }: DashboardWidgetsProps) {
   }, [weeklyGoal]);
 
   // Memoize timer formatting to avoid recalculation on unrelated state changes
-  const mm = useMemo(() => String(Math.floor(seconds / 60)).padStart(2, "0"), [seconds]);
+  const mm = useMemo(
+    () => String(Math.floor(seconds / 60)).padStart(2, "0"),
+    [seconds]
+  );
   const ss = useMemo(() => String(seconds % 60).padStart(2, "0"), [seconds]);
 
   // Stable callback refs to prevent child re-renders
   const toggleRunning = useCallback(() => setRunning((v) => !v), []);
-  const resetTimer = useCallback(() => { setRunning(false); setSeconds(25 * 60); }, []);
-  const handleNotesChange = useCallback((e: React.ChangeEvent<HTMLTextAreaElement>) => setNotes(e.target.value), []);
-  const handleGoalChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => setWeeklyGoal(Number(e.target.value)), []);
+  const resetTimer = useCallback(() => {
+    setRunning(false);
+    setSeconds(25 * 60);
+  }, []);
+  const handleNotesChange = useCallback(
+    (e: React.ChangeEvent<HTMLTextAreaElement>) => setNotes(e.target.value),
+    []
+  );
+  const handleGoalChange = useCallback(
+    (e: React.ChangeEvent<HTMLInputElement>) =>
+      setWeeklyGoal(Number(e.target.value)),
+    []
+  );
   const toggleActivity = useCallback(() => setShowActivity((v) => !v), []);
 
   return (
-    <section className={`grid gap-6 sm:grid-cols-2 lg:grid-cols-4 ${className || ""}`} aria-label="Interactive widgets">
+    <section
+      className={`grid gap-6 sm:grid-cols-2 lg:grid-cols-4 ${className || ""}`}
+      aria-label="Interactive widgets"
+    >
       {/* Focus Timer */}
       <div className="rounded-xl border p-6">
         <div className="flex items-center justify-between">
@@ -67,12 +93,25 @@ export default function DashboardWidgets({ className }: DashboardWidgetsProps) {
           </div>
           <div className="text-xs text-muted-foreground">Pomodoro</div>
         </div>
-        <div className="mt-3 text-3xl font-mono tabular-nums tracking-tight" aria-live="polite" aria-atomic>
+        <div
+          className="mt-3 text-3xl font-mono tabular-nums tracking-tight"
+          aria-live="polite"
+          aria-atomic
+        >
           {mm}:{ss}
         </div>
         <div className="mt-3 flex items-center gap-2">
-          <Button size="sm" variant="secondary" onClick={toggleRunning} aria-pressed={running}>
-            {running ? <Pause className="mr-2 size-4" /> : <Play className="mr-2 size-4" />}
+          <Button
+            size="sm"
+            variant="secondary"
+            onClick={toggleRunning}
+            aria-pressed={running}
+          >
+            {running ? (
+              <Pause className="mr-2 size-4" />
+            ) : (
+              <Play className="mr-2 size-4" />
+            )}
             {running ? "Pause" : "Start"}
           </Button>
           <Button size="sm" variant="ghost" onClick={resetTimer}>
@@ -94,14 +133,18 @@ export default function DashboardWidgets({ className }: DashboardWidgetsProps) {
           className="mt-3 w-full min-h-24 rounded-md border bg-background p-2 text-sm outline-none focus:ring-2 focus:ring-ring"
           aria-label="Quick notes"
         />
-        <div className="mt-2 text-[11px] text-muted-foreground">Autosaved locally</div>
+        <div className="mt-2 text-[11px] text-muted-foreground">
+          Autosaved locally
+        </div>
       </div>
 
       {/* Weekly Goal */}
       <div className="rounded-xl border p-6">
         <div className="inline-flex items-center gap-2">
           <Target className="size-4 text-muted-foreground" aria-hidden />
-          <span className="text-sm text-muted-foreground">Weekly application goal</span>
+          <span className="text-sm text-muted-foreground">
+            Weekly application goal
+          </span>
         </div>
         <div className="mt-3 flex items-center gap-3">
           <input
@@ -113,10 +156,15 @@ export default function DashboardWidgets({ className }: DashboardWidgetsProps) {
             className="w-full accent-foreground"
             aria-label="Applications per week goal"
           />
-          <span className="w-10 text-right text-sm tabular-nums">{weeklyGoal}</span>
+          <span className="w-10 text-right text-sm tabular-nums">
+            {weeklyGoal}
+          </span>
         </div>
         <div className="mt-2 h-1.5 rounded-full bg-muted">
-          <div className="h-full rounded-full bg-foreground/80" style={{ width: `${Math.min(weeklyGoal / 40 * 100, 100)}%` }} />
+          <div
+            className="h-full rounded-full bg-foreground/80"
+            style={{ width: `${Math.min((weeklyGoal / 40) * 100, 100)}%` }}
+          />
         </div>
       </div>
 
@@ -125,9 +173,16 @@ export default function DashboardWidgets({ className }: DashboardWidgetsProps) {
         <div className="flex items-center justify-between">
           <div className="inline-flex items-center gap-2">
             <Activity className="size-4 text-muted-foreground" aria-hidden />
-            <span className="text-sm text-muted-foreground">Recent activity</span>
+            <span className="text-sm text-muted-foreground">
+              Recent activity
+            </span>
           </div>
-          <Button size="sm" variant="ghost" onClick={toggleActivity} aria-expanded={showActivity}>
+          <Button
+            size="sm"
+            variant="ghost"
+            onClick={toggleActivity}
+            aria-expanded={showActivity}
+          >
             {showActivity ? "Hide" : "Show"}
           </Button>
         </div>

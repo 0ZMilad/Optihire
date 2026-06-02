@@ -1,19 +1,19 @@
-import type { Metadata } from "next";
+import { GeistMono } from "geist/font/mono";
 // Use the local geist npm package instead of next/font/google to avoid
 // network requests to fonts.googleapis.com (works fully offline/dev).
 import { GeistSans } from "geist/font/sans";
-import { GeistMono } from "geist/font/mono";
+import type { Metadata } from "next";
 import "./globals.css";
+import { Toaster } from "sonner";
 import { AuthProvider } from "@/components/auth-provider";
 import { ErrorBoundary } from "@/components/error-boundary";
-import { Toaster } from "sonner";
 
 export const metadata: Metadata = {
   title: "Optihire",
   description:
     "A web platform that helps job seekers improve their CVs for Applicant Tracking Systems (ATS). This platform provides automated analysis, compatibility scoring, and actionable suggestions to increase your chances of landing an interview.",
   icons: {
-    icon: "/Omega.png", 
+    icon: "/Omega.png",
   },
 };
 

@@ -1,9 +1,9 @@
 /**
  * Centralized Logger Utility for Frontend
- * 
+ *
  * Captures user actions, errors, and events, then sends them to the backend
  * logging endpoint without blocking the UI.
- * 
+ *
  * Usage:
  *   logger.info("User logged in", { userId: "123" })
  *   logger.error("API call failed", { endpoint: "/api/users" })
@@ -16,7 +16,14 @@ import { apiClient } from "@/middle-service/client";
 type LogLevel = "DEBUG" | "INFO" | "WARNING" | "ERROR" | "CRITICAL";
 
 interface LogContext {
-  [key: string]: string | number | boolean | null | undefined | LogContext | Array<string | number | boolean>;
+  [key: string]:
+    | string
+    | number
+    | boolean
+    | null
+    | undefined
+    | LogContext
+    | Array<string | number | boolean>;
 }
 
 interface LogOptions {
@@ -36,13 +43,14 @@ class Logger {
   private static instance: Logger;
   private sessionId: string;
   private userId: string | null = null;
-  private isOnline: boolean = typeof navigator !== 'undefined' ? navigator.onLine : true;
+  private isOnline: boolean =
+    typeof navigator !== "undefined" ? navigator.onLine : true;
   private isDev: boolean = process.env.NODE_ENV === "development";
 
   private constructor() {
     this.sessionId = this.getOrCreateSessionId();
 
-    if (typeof window !== 'undefined') {
+    if (typeof window !== "undefined") {
       window.addEventListener("online", () => {
         this.isOnline = true;
       });
@@ -67,8 +75,8 @@ class Logger {
    * Get or create a unique session ID
    */
   private getOrCreateSessionId(): string {
-    if (typeof sessionStorage === 'undefined') return "server-session";
-    
+    if (typeof sessionStorage === "undefined") return "server-session";
+
     const key = "optihire_session_id";
     let sessionId = sessionStorage.getItem(key);
 
@@ -175,7 +183,11 @@ class Logger {
     }
   }
 
-  critical(message: string, context?: LogContext, extraData?: LogContext): void {
+  critical(
+    message: string,
+    context?: LogContext,
+    extraData?: LogContext
+  ): void {
     if (this.isDev) console.error(`[CRITICAL] ${message}`, context);
 
     this.submitLog({

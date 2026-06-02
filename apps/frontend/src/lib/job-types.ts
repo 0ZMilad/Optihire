@@ -9,7 +9,14 @@ export interface JobListing {
   salary_currency: string;
   description: string | null;
   job_type: "full_time" | "part_time" | "contract" | "internship" | null;
-  experience_level: "entry" | "junior" | "mid" | "senior" | "lead" | "graduate" | null;
+  experience_level:
+    | "entry"
+    | "junior"
+    | "mid"
+    | "senior"
+    | "lead"
+    | "graduate"
+    | null;
   posted_date: string | null;
   external_url: string | null;
   is_active: boolean;

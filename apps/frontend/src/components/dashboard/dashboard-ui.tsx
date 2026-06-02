@@ -1,13 +1,13 @@
 "use client";
 
-import { useState, useCallback } from "react";
-import { Button } from "@/components/ui/button";
 import Link from "next/link";
+import { useCallback, useState } from "react";
+import { Button } from "@/components/ui/button";
+import ATSScoreWidget from "./ats-score-widget";
+import DashboardWidgets from "./dashboard-widgets";
+import QuickActions from "./quick-actions";
 import QuickStatsGrid from "./quick-stats-grid";
 import ResumeUpload from "./resume-upload";
-import QuickActions from "./quick-actions";
-import DashboardWidgets from "./dashboard-widgets";
-import ATSScoreWidget from "./ats-score-widget";
 
 interface DashboardUIProps {
   className?: string;
@@ -21,16 +21,16 @@ interface DashboardUIProps {
   statusMessage?: string;
 }
 
-export default function DashboardUI({ 
-  className, 
-  appState, 
-  fileName, 
-  inputRef, 
-  error, 
-  onFileChange, 
+export default function DashboardUI({
+  className,
+  appState,
+  fileName,
+  inputRef,
+  error,
+  onFileChange,
   onUploadClick,
   onReviewClick,
-  statusMessage 
+  statusMessage,
 }: DashboardUIProps) {
   const [atsExpanded, setAtsExpanded] = useState(false);
 
@@ -42,7 +42,9 @@ export default function DashboardUI({
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-semibold">Dashboard</h1>
-          <p className="text-sm text-muted-foreground">Upload your resume or build one from scratch.</p>
+          <p className="text-sm text-muted-foreground">
+            Upload your resume or build one from scratch.
+          </p>
         </div>
         <Button asChild>
           <Link href="/dashboard/resumes">Open Builder</Link>
@@ -63,7 +65,7 @@ export default function DashboardUI({
       </div>
 
       {/* Resume Upload */}
-      <ResumeUpload 
+      <ResumeUpload
         className="mt-8"
         appState={appState}
         fileName={fileName}
