@@ -27,9 +27,11 @@ export default function QuickStatsGrid({
   const resumeCount = resumes.length;
   const auditCount = history.length;
   const latestScore = history[0]?.overall_score ?? null;
-  const bestScore =
+  const avgScore =
     history.length > 0
-      ? Math.max(...history.map((h) => h.overall_score))
+      ? Math.round(
+          history.reduce((sum, h) => sum + h.overall_score, 0) / history.length
+        )
       : null;
 
   return (
@@ -75,25 +77,25 @@ export default function QuickStatsGrid({
         </p>
       </div>
 
-      {/* Best ATS Score */}
+      {/* Average ATS Score */}
       <div className="rounded-xl border p-6 hover:bg-muted/40 transition-colors">
         <div className="flex items-center justify-between">
-          <span className="text-sm text-muted-foreground">Best Score</span>
+          <span className="text-sm text-muted-foreground">Avg. Score</span>
           <Briefcase className="size-4 text-muted-foreground" aria-hidden />
         </div>
         <div className="mt-2">
           <span className="text-2xl font-semibold">
             {auditsLoading
               ? "—"
-              : bestScore !== null
-                ? `${bestScore}%`
+              : avgScore !== null
+                ? `${avgScore}%`
                 : "—"}
           </span>
         </div>
         <p className="mt-2 text-xs text-muted-foreground">
-          {bestScore === null && !auditsLoading
-            ? "Run an audit to track progress"
-            : "Highest ATS score achieved"}
+          {avgScore === null && !auditsLoading
+            ? "Run audits to track progress"
+            : `Across ${auditCount} audit${auditCount !== 1 ? "s" : ""}`}
         </p>
       </div>
 
