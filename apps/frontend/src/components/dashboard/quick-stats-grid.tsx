@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import {
   Briefcase,
   ChevronDown,
@@ -9,6 +10,8 @@ import {
 } from "lucide-react";
 import { useAuditHistory } from "@/stores/audit-history-store";
 import { useSavedResumes } from "@/stores/saved-resumes-store";
+import { getActiveResume } from "@/middle-service/resumes";
+import { getJobMatches } from "@/middle-service/jobs";
 
 interface QuickStatsGridProps {
   className?: string;
@@ -23,16 +26,30 @@ export default function QuickStatsGrid({
 }: QuickStatsGridProps) {
   const { resumes, isLoading: resumesLoading } = useSavedResumes();
   const { history, isLoading: auditsLoading } = useAuditHistory();
+  const [appliedCount, setAppliedCount] = useState<number | null>(null);
 
   const resumeCount = resumes.length;
   const auditCount = history.length;
   const latestScore = history[0]?.overall_score ?? null;
-  const avgScore =
-    history.length > 0
-      ? Math.round(
-          history.reduce((sum, h) => sum + h.overall_score, 0) / history.length
-        )
-      : null;
+
+  useEffect(() => {
+    let cancelled = false;
+    async function fetchApplications() {
+      try {
+        const resume = await getActiveResume();
+        const matches = await getJobMatches(resume.id);
+        if (!cancelled) {
+          setAppliedCount(
+            matches.filter((m) => m.application_status !== "not_applied").length
+          );
+        }
+      } catch {
+        // No active resume or no matches — leave as null
+      }
+    }
+    fetchApplications();
+    return () => { cancelled = true; };
+  }, []);
 
   return (
     <section
@@ -77,25 +94,21 @@ export default function QuickStatsGrid({
         </p>
       </div>
 
-      {/* Average ATS Score */}
+      {/* Applications */}
       <div className="rounded-xl border p-6 hover:bg-muted/40 transition-colors">
         <div className="flex items-center justify-between">
-          <span className="text-sm text-muted-foreground">Avg. Score</span>
+          <span className="text-sm text-muted-foreground">Applications</span>
           <Briefcase className="size-4 text-muted-foreground" aria-hidden />
         </div>
         <div className="mt-2">
           <span className="text-2xl font-semibold">
-            {auditsLoading
-              ? "—"
-              : avgScore !== null
-                ? `${avgScore}%`
-                : "—"}
+            {appliedCount !== null ? appliedCount : "—"}
           </span>
         </div>
         <p className="mt-2 text-xs text-muted-foreground">
-          {avgScore === null && !auditsLoading
-            ? "Run audits to track progress"
-            : `Across ${auditCount} audit${auditCount !== 1 ? "s" : ""}`}
+          {appliedCount === null
+            ? "Upload a resume to see matches"
+            : "Jobs applied to or tracked"}
         </p>
       </div>
 
