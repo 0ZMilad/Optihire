@@ -27,6 +27,10 @@ export default function QuickStatsGrid({
   const resumeCount = resumes.length;
   const auditCount = history.length;
   const latestScore = history[0]?.overall_score ?? null;
+  const bestScore =
+    history.length > 0
+      ? Math.max(...history.map((h) => h.overall_score))
+      : null;
 
   return (
     <section
@@ -71,17 +75,25 @@ export default function QuickStatsGrid({
         </p>
       </div>
 
-      {/* Applications (honest — no tracking data available yet) */}
+      {/* Best ATS Score */}
       <div className="rounded-xl border p-6 hover:bg-muted/40 transition-colors">
         <div className="flex items-center justify-between">
-          <span className="text-sm text-muted-foreground">Applications</span>
+          <span className="text-sm text-muted-foreground">Best Score</span>
           <Briefcase className="size-4 text-muted-foreground" aria-hidden />
         </div>
         <div className="mt-2">
-          <span className="text-2xl font-semibold">—</span>
+          <span className="text-2xl font-semibold">
+            {auditsLoading
+              ? "—"
+              : bestScore !== null
+                ? `${bestScore}%`
+                : "—"}
+          </span>
         </div>
         <p className="mt-2 text-xs text-muted-foreground">
-          Track via Jobs page
+          {bestScore === null && !auditsLoading
+            ? "Run an audit to track progress"
+            : "Highest ATS score achieved"}
         </p>
       </div>
 
