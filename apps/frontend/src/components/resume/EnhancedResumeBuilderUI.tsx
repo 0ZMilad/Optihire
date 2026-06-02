@@ -1,38 +1,38 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import {
+  ArrowLeft,
+  Award,
+  Briefcase,
+  Eye,
+  FolderKanban,
+  GraduationCap,
+  Loader2,
+  Save,
+  User,
+  Wrench,
+} from "lucide-react";
+import { useCallback, useEffect, useState } from "react";
+import { useShallow } from "zustand/react/shallow";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { 
-  ArrowLeft, 
-  User, 
-  Briefcase, 
-  GraduationCap, 
-  Wrench, 
-  FolderKanban,
-  Award,
-  Eye,
-  Save,
-  Loader2
-} from "lucide-react";
+import { useAutoSave, useBeforeUnload } from "@/hooks/use-resume-builder";
 import { cn } from "@/lib/utils";
-import { useShallow } from "zustand/react/shallow";
-
 // Store and hooks
-import { useResumeBuilderStore, useResumeData } from "@/stores/resume-builder-store";
-import { useBeforeUnload, useAutoSave } from "@/hooks/use-resume-builder";
-
+import {
+  useResumeBuilderStore,
+  useResumeData,
+} from "@/stores/resume-builder-store";
+import EnhancedCertificationsForm from "./EnhancedCertificationsForm";
+import EnhancedEducationForm from "./EnhancedEducationForm";
+import EnhancedExperienceForm from "./EnhancedExperienceForm";
 // Form components
 import EnhancedProfileForm from "./EnhancedProfileForm";
-import EnhancedExperienceForm from "./EnhancedExperienceForm";
-import EnhancedEducationForm from "./EnhancedEducationForm";
-import EnhancedSkillsForm from "./EnhancedSkillsForm";
 import EnhancedProjectsForm from "./EnhancedProjectsForm";
-import EnhancedCertificationsForm from "./EnhancedCertificationsForm";
-
 // UI components
 import EnhancedResumePreview from "./EnhancedResumePreview";
+import EnhancedSkillsForm from "./EnhancedSkillsForm";
 import SaveStatusIndicator from "./SaveStatusIndicator";
 
 interface EnhancedResumeBuilderUIProps {
@@ -52,8 +52,8 @@ const TABS = [
   { id: "preview", label: "Preview", icon: Eye },
 ] as const;
 
-export default function EnhancedResumeBuilderUI({ 
-  className, 
+export default function EnhancedResumeBuilderUI({
+  className,
   onBack,
   onSave,
   resumeId,
@@ -79,9 +79,9 @@ export default function EnhancedResumeBuilderUI({
     }))
   );
   const resumeData = useResumeData();
-  
+
   const [resumeTitle, setResumeTitle] = useState("");
-  
+
   useBeforeUnload();
   useAutoSave();
 
@@ -91,7 +91,7 @@ export default function EnhancedResumeBuilderUI({
       setActiveSection("profile");
     }
   }, [isInitialized, initialize, setActiveSection]);
-  
+
   useEffect(() => {
     if (resumeId && isInitialized) {
       setResumeTitle(resumeData.versionName || "");
@@ -104,7 +104,7 @@ export default function EnhancedResumeBuilderUI({
     if (resumeTitle.trim() && resumeTitle !== resumeData.versionName) {
       setVersionName(resumeTitle.trim());
     }
-    
+
     await saveToBackend();
 
     // Notify parent after successful backend save
@@ -112,7 +112,13 @@ export default function EnhancedResumeBuilderUI({
     if (storedId && onSave) {
       onSave(storedId);
     }
-  }, [resumeTitle, resumeData.versionName, setVersionName, saveToBackend, onSave]);
+  }, [
+    resumeTitle,
+    resumeData.versionName,
+    setVersionName,
+    saveToBackend,
+    onSave,
+  ]);
 
   return (
     <div className={cn("mx-auto max-w-7xl", className)}>
@@ -139,15 +145,15 @@ export default function EnhancedResumeBuilderUI({
             </p>
           </div>
         </div>
-        
+
         <div className="flex items-center gap-3">
           <SaveStatusIndicator className="hidden sm:flex" />
-          
-          <Button 
-            onClick={handleSaveToBackend} 
-            disabled={saveStatus === 'saving'}
+
+          <Button
+            onClick={handleSaveToBackend}
+            disabled={saveStatus === "saving"}
           >
-            {saveStatus === 'saving' ? (
+            {saveStatus === "saving" ? (
               <>
                 <Loader2 className="mr-2 size-4 animate-spin" />
                 Saving...
@@ -166,8 +172,8 @@ export default function EnhancedResumeBuilderUI({
       <div className="grid gap-6 grid-cols-1">
         {/* Editor */}
         <div>
-          <Tabs 
-            value={activeSection} 
+          <Tabs
+            value={activeSection}
             onValueChange={setActiveSection}
             className="w-full"
           >
@@ -214,7 +220,10 @@ export default function EnhancedResumeBuilderUI({
                 <div className="bg-muted -mx-6 px-6 py-6">
                   {/* Document Preview */}
                   <div className="flex justify-center">
-                    <div className="w-full max-w-[8.5in] bg-white shadow-lg rounded-lg overflow-hidden" style={{aspectRatio: '8.5/11'}}>
+                    <div
+                      className="w-full max-w-[8.5in] bg-white shadow-lg rounded-lg overflow-hidden"
+                      style={{ aspectRatio: "8.5/11" }}
+                    >
                       <div className="p-8 h-full">
                         <EnhancedResumePreview hideLabel={true} />
                       </div>

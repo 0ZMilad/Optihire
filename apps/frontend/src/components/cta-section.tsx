@@ -10,11 +10,15 @@ export function CTASection() {
             Ready to get hired?
           </h2>
           <p className="mx-auto mt-6 max-w-xl text-lg leading-8 text-muted-foreground">
-            Join thousands of job seekers who have optimised their resumes and found better opportunities faster.
+            Join thousands of job seekers who have optimised their resumes and
+            found better opportunities faster.
           </p>
           <div className="mt-10 flex items-center justify-center gap-x-6">
             <Link href="/sign-up">
-              <Button size="lg" className="bg-brand-primary text-brand-primary-foreground hover:bg-brand-primary/90 font-semibold">
+              <Button
+                size="lg"
+                className="bg-brand-primary text-brand-primary-foreground hover:bg-brand-primary/90 font-semibold"
+              >
                 Get Started Free
               </Button>
             </Link>

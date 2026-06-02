@@ -10,9 +10,12 @@ export function cn(...inputs: ClassValue[]) {
  * Strips HTML/script tags, null bytes, and dangerous control characters.
  */
 export function sanitizeText(input: string): string {
-  return input
-    .replace(/<[^>]*>/g, "")         // strip all HTML/XML tags
-    .replace(/&[a-z]+;/gi, " ")      // decode common HTML entities to whitespace
-    .replace(/[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]/g, "") // strip control chars (keep \t \n \r)
-    .trim();
+  return (
+    input
+      .replace(/<[^>]*>/g, "") // strip all HTML/XML tags
+      .replace(/&[a-z]+;/gi, " ") // decode common HTML entities to whitespace
+      // biome-ignore lint/suspicious/noControlCharactersInRegex: intentional — strips control chars while keeping \t \n \r
+      .replace(/[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]/g, "")
+      .trim()
+  );
 }

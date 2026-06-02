@@ -1,7 +1,13 @@
 "use client";
 
-import { useState, useCallback } from "react";
-import { FileText, Download, ExternalLink, Loader2, AlertCircle } from "lucide-react";
+import {
+  AlertCircle,
+  Download,
+  ExternalLink,
+  FileText,
+  Loader2,
+} from "lucide-react";
+import { useCallback, useState } from "react";
 import { Button } from "./ui/button";
 import { Card } from "./ui/card";
 
@@ -19,10 +25,10 @@ interface PdfViewerProps {
  */
 function isPdfFile(url: string | null, filename?: string): boolean {
   if (!url) return false;
-  
+
   const urlLower = url.toLowerCase();
   const filenameLower = filename?.toLowerCase() || "";
-  
+
   return (
     urlLower.endsWith(".pdf") ||
     urlLower.includes(".pdf?") ||
@@ -33,10 +39,10 @@ function isPdfFile(url: string | null, filename?: string): boolean {
 
 /**
  * PDF Viewer Component
- * 
+ *
  * Displays PDF files inline using an iframe for browser-native rendering.
  * For non-PDF files (DOCX, etc.), shows a download fallback.
- * 
+ *
  * Features:
  * - Inline PDF rendering with native browser viewer
  * - Loading state while PDF loads
@@ -63,7 +69,7 @@ export function PdfViewer({ url, filename, className }: PdfViewerProps) {
 
   const handleDownload = useCallback(() => {
     if (!url) return;
-    
+
     const link = document.createElement("a");
     link.href = url;
     link.download = displayFilename;
@@ -82,7 +88,9 @@ export function PdfViewer({ url, filename, className }: PdfViewerProps) {
   // No URL provided
   if (!url) {
     return (
-      <Card className={`flex flex-col items-center justify-center p-8 text-center ${className}`}>
+      <Card
+        className={`flex flex-col items-center justify-center p-8 text-center ${className}`}
+      >
         <div className="p-4 bg-muted rounded-full mb-4">
           <FileText className="w-8 h-8 text-muted-foreground" />
         </div>
@@ -94,23 +102,27 @@ export function PdfViewer({ url, filename, className }: PdfViewerProps) {
   // Non-PDF file - show download fallback
   if (!isPdf) {
     return (
-      <Card className={`flex flex-col items-center justify-center p-8 text-center space-y-4 ${className}`}>
+      <Card
+        className={`flex flex-col items-center justify-center p-8 text-center space-y-4 ${className}`}
+      >
         <div className="p-4 bg-primary/10 rounded-full">
           <FileText className="w-10 h-10 text-primary" />
         </div>
-        
+
         <div className="space-y-2">
-          <h4 className="font-semibold text-lg">Document Preview Unavailable</h4>
+          <h4 className="font-semibold text-lg">
+            Document Preview Unavailable
+          </h4>
           <p className="text-sm text-muted-foreground max-w-xs">
-            This file format cannot be previewed in the browser. 
-            Download it to view the original document.
+            This file format cannot be previewed in the browser. Download it to
+            view the original document.
           </p>
         </div>
 
         <div className="flex gap-2">
           <Button onClick={handleDownload} variant="default" size="sm">
             <Download className="w-4 h-4 mr-2" />
-            Download {displayFilename.split('.').pop()?.toUpperCase()}
+            Download {displayFilename.split(".").pop()?.toUpperCase()}
           </Button>
           <Button onClick={handleOpenInNewTab} variant="outline" size="sm">
             <ExternalLink className="w-4 h-4 mr-2" />
@@ -130,18 +142,18 @@ export function PdfViewer({ url, filename, className }: PdfViewerProps) {
           {displayFilename}
         </span>
         <div className="flex gap-1">
-          <Button 
-            onClick={handleDownload} 
-            variant="ghost" 
+          <Button
+            onClick={handleDownload}
+            variant="ghost"
             size="sm"
             className="h-8 px-2"
             aria-label="Download document"
           >
             <Download className="w-4 h-4" aria-hidden="true" />
           </Button>
-          <Button 
-            onClick={handleOpenInNewTab} 
-            variant="ghost" 
+          <Button
+            onClick={handleOpenInNewTab}
+            variant="ghost"
             size="sm"
             className="h-8 px-2"
             aria-label="Open in new tab"

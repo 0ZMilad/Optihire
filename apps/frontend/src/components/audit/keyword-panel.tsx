@@ -1,7 +1,7 @@
 "use client";
 
-import { Badge } from "@/components/ui/badge";
 import { AlertTriangle, CheckCircle2 } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
 
 interface KeywordPanelProps {
   matched: string[];
@@ -27,7 +27,9 @@ export function KeywordPanel({ matched, missing }: KeywordPanelProps) {
         </p>
         <div className="flex flex-wrap gap-2">
           {missing.length === 0 ? (
-            <span className="text-sm text-red-500/60 italic">None — great coverage!</span>
+            <span className="text-sm text-red-500/60 italic">
+              None — great coverage!
+            </span>
           ) : (
             missing.map((kw) => (
               <Badge
@@ -57,7 +59,9 @@ export function KeywordPanel({ matched, missing }: KeywordPanelProps) {
         </p>
         <div className="flex flex-wrap gap-2">
           {matched.length === 0 ? (
-            <span className="text-sm text-emerald-500/60 italic">No matches yet.</span>
+            <span className="text-sm text-emerald-500/60 italic">
+              No matches yet.
+            </span>
           ) : (
             matched.map((kw) => (
               <Badge

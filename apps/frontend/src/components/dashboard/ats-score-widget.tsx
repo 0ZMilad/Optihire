@@ -1,24 +1,18 @@
 "use client";
 
-import { useEffect, useState, useCallback } from "react";
+import { ArrowRight, Gauge, RefreshCw } from "lucide-react";
 import Link from "next/link";
-import { Gauge, ArrowRight, RefreshCw } from "lucide-react";
+import { useCallback, useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
-import { getLatestAuditResult, type AuditResult } from "@/middle-service/audit";
 import { logger } from "@/lib/logger";
+import { type AuditResult, getLatestAuditResult } from "@/middle-service/audit";
 
 interface ATSScoreWidgetProps {
   className?: string;
 }
 
-function ScoreBar({
-  label,
-  value,
-}: {
-  label: string;
-  value: number;
-}) {
+function ScoreBar({ label, value }: { label: string; value: number }) {
   const color =
     value >= 70
       ? "bg-emerald-500 dark:bg-emerald-400"
@@ -96,10 +90,13 @@ export default function ATSScoreWidget({ className }: ATSScoreWidgetProps) {
       <div className="flex items-center justify-between">
         <div className="inline-flex items-center gap-2">
           <Gauge className="size-4 text-muted-foreground" aria-hidden />
-          <span className="text-sm text-muted-foreground">Latest ATS score</span>
+          <span className="text-sm text-muted-foreground">
+            Latest ATS score
+          </span>
         </div>
         {!loading && (
           <button
+            type="button"
             onClick={fetchLatest}
             className="text-muted-foreground hover:text-foreground transition-colors"
             aria-label="Refresh ATS score"
@@ -123,7 +120,12 @@ export default function ATSScoreWidget({ className }: ATSScoreWidgetProps) {
       {!loading && error && (
         <div className="mt-4 text-sm text-muted-foreground">
           <p>Could not load your score.</p>
-          <Button size="sm" variant="ghost" className="mt-2 px-0" onClick={fetchLatest}>
+          <Button
+            size="sm"
+            variant="ghost"
+            className="mt-2 px-0"
+            onClick={fetchLatest}
+          >
             Try again
           </Button>
         </div>
@@ -149,12 +151,13 @@ export default function ATSScoreWidget({ className }: ATSScoreWidgetProps) {
           <div className="mt-3 flex items-baseline gap-2">
             <span
               className={`text-3xl font-semibold tabular-nums ${scoreColor(result.overall_score)}`}
-              aria-label={`Overall ATS score: ${result.overall_score} out of 100`}
             >
               {result.overall_score}
             </span>
             <span className="text-sm text-muted-foreground">/&nbsp;100</span>
-            <span className={`text-xs font-medium ${scoreColor(result.overall_score)}`}>
+            <span
+              className={`text-xs font-medium ${scoreColor(result.overall_score)}`}
+            >
               {scoreLabel(result.overall_score)}
             </span>
           </div>
@@ -171,7 +174,12 @@ export default function ATSScoreWidget({ className }: ATSScoreWidgetProps) {
             <span className="text-[11px] text-muted-foreground">
               {formatRelativeTime(result.analyzed_at)}
             </span>
-            <Button asChild size="sm" variant="ghost" className="h-auto px-0 py-0 text-xs gap-1">
+            <Button
+              asChild
+              size="sm"
+              variant="ghost"
+              className="h-auto px-0 py-0 text-xs gap-1"
+            >
               <Link href="/dashboard/audit">
                 New audit
                 <ArrowRight className="size-3" />

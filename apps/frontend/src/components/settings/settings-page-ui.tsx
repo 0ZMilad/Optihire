@@ -9,14 +9,9 @@ import {
   Trash2,
   UserRound,
 } from "lucide-react";
-import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
+import { useEffect, useState } from "react";
 import { useAuth } from "@/components/auth-provider";
-import { useUserProfile } from "@/stores/user-profile-store";
-import { userService } from "@/middle-service/users";
-import { authService } from "@/middle-service/supabase";
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
-import { Badge } from "@/components/ui/badge";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -28,6 +23,8 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -40,6 +37,9 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { authService } from "@/middle-service/supabase";
+import { userService } from "@/middle-service/users";
+import { useUserProfile } from "@/stores/user-profile-store";
 
 type PersonalFormState = {
   fullName: string;
@@ -68,7 +68,12 @@ const initialPasswordForm: PasswordFormState = {
 export function SettingsPageUI() {
   const router = useRouter();
   const { user } = useAuth();
-  const { profile, isLoading: isProfileLoading, setProfile, clearProfile } = useUserProfile();
+  const {
+    profile,
+    isLoading: isProfileLoading,
+    setProfile,
+    clearProfile,
+  } = useUserProfile();
   const [personalForm, setPersonalForm] =
     useState<PersonalFormState>(initialPersonalForm);
   const [passwordForm, setPasswordForm] =
@@ -547,10 +552,7 @@ export function SettingsPageUI() {
               <CardFooter className="justify-end border-t pt-6">
                 <AlertDialog>
                   <AlertDialogTrigger asChild>
-                    <Button
-                      variant="destructive"
-                      disabled={isDeletingAccount}
-                    >
+                    <Button variant="destructive" disabled={isDeletingAccount}>
                       <Trash2 className="mr-2 size-4" />
                       {isDeletingAccount ? "Deleting…" : "Delete Account"}
                     </Button>

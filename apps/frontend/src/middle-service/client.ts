@@ -2,8 +2,8 @@
  * API Client - Axios instance with interceptors
  */
 import axios, { type AxiosError } from "axios";
-import { supabase } from "./supabase";
 import { logger } from "@/lib/logger";
+import { supabase } from "./supabase";
 
 // Get API URL from environment
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
@@ -18,12 +18,12 @@ const ERROR_THROTTLE_MS = 5000; // Only log same error once per 5 seconds
 function shouldLogError(errorKey: string): boolean {
   const now = Date.now();
   const lastLogged = errorCache.get(errorKey);
-  
+
   if (!lastLogged || now - lastLogged > ERROR_THROTTLE_MS) {
     errorCache.set(errorKey, now);
     return true;
   }
-  
+
   return false;
 }
 
@@ -39,13 +39,14 @@ export const apiClient = axios.create({
 
 // Request interceptor - add auth token if needed
 apiClient.interceptors.request.use(
-
-    async (config) => {
-    const { data: { session } } = await supabase.auth.getSession();
+  async (config) => {
+    const {
+      data: { session },
+    } = await supabase.auth.getSession();
     if (session?.access_token) {
       config.headers.Authorization = `Bearer ${session.access_token}`;
     }
-    
+
     return config;
   },
   (error) => {
@@ -75,21 +76,21 @@ apiClient.interceptors.response.use(
     }
 
     if (error.response?.status && error.response.status >= 500) {
-      const errorKey = `${error.response.status}-${error.config?.url || 'unknown'}`;
+      const errorKey = `${error.response.status}-${error.config?.url || "unknown"}`;
       if (shouldLogError(errorKey)) {
-        logger.error("Server error", { 
+        logger.error("Server error", {
           status: error.response.status,
-          url: error.config?.url 
+          url: error.config?.url,
         });
       }
     }
 
     if (!error.response) {
-      const errorKey = `network-${error.config?.url || 'unknown'}`;
+      const errorKey = `network-${error.config?.url || "unknown"}`;
       if (shouldLogError(errorKey)) {
-        logger.error("Network error", { 
+        logger.error("Network error", {
           message: error.message,
-          url: error.config?.url 
+          url: error.config?.url,
         });
       }
     }

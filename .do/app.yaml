@@ -31,7 +31,7 @@ services:
       # --- CORS: your Vercel frontend URL ---
       - key: FRONTEND_URL
         scope: RUN_TIME
-        value: "https://your-app.vercel.app"
+        value: "https://optihire-frontend.vercel.app"
 
       # --- Docs (disabled in production for security) ---
       - key: DOCS_ENABLED

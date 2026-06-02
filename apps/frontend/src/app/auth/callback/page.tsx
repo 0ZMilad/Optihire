@@ -1,8 +1,8 @@
 "use client";
 
-import { Header } from "@/components/header";
-import AuthCallback from "@/components/auth-callback";
 import { Suspense } from "react";
+import AuthCallback from "@/components/auth-callback";
+import { Header } from "@/components/header";
 
 // Loading fallback for Suspense
 function CallbackLoading() {

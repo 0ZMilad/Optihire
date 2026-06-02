@@ -1,7 +1,7 @@
 "use client";
 
-import { SidebarTrigger } from "@/components/ui/sidebar";
 import { Separator } from "@/components/ui/separator";
+import { SidebarTrigger } from "@/components/ui/sidebar";
 
 export function DashboardHeader({ children }: { children?: React.ReactNode }) {
   return (

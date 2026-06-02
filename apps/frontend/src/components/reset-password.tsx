@@ -5,9 +5,9 @@ import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Spinner } from "./ui/spinner";
 import { logger } from "@/lib/logger";
 import { authService } from "@/middle-service/supabase";
+import { Spinner } from "./ui/spinner";
 
 export default function ResetPassword() {
   const [step, setStep] = useState<"email" | "reset">("email");
@@ -31,7 +31,9 @@ export default function ResetPassword() {
         setSuccessMessage("Reset link sent! Check your email.");
       }
     } catch (error) {
-      logger.error("Password reset email failed", { error: error instanceof Error ? error.message : "Unknown error" });
+      logger.error("Password reset email failed", {
+        error: error instanceof Error ? error.message : "Unknown error",
+      });
       setErrorMessage("Error occurred, check logs");
     } finally {
       setIsLoading(false);
@@ -57,7 +59,9 @@ export default function ResetPassword() {
         setSuccessMessage("Password updated successfully!");
       }
     } catch (error) {
-      logger.error("Password reset failed", { error: error instanceof Error ? error.message : "Unknown error" });
+      logger.error("Password reset failed", {
+        error: error instanceof Error ? error.message : "Unknown error",
+      });
       setErrorMessage("Error occurred, check logs");
     } finally {
       setIsLoading(false);
@@ -112,14 +116,24 @@ export default function ResetPassword() {
                   />
                 </div>
                 {errorMessage && (
-                  <div role="alert" aria-live="polite" aria-atomic="true" className="rounded bg-destructive/10 border border-destructive/20 p-2">
+                  <div
+                    role="alert"
+                    aria-live="polite"
+                    aria-atomic="true"
+                    className="rounded bg-destructive/10 border border-destructive/20 p-2"
+                  >
                     <p className="text-xs font-medium text-destructive">
                       {errorMessage}
                     </p>
                   </div>
                 )}
                 {successMessage && (
-                  <div role="status" aria-live="polite" aria-atomic="true" className="rounded bg-green-500/10 border border-green-500/20 p-2">
+                  <div
+                    role="status"
+                    aria-live="polite"
+                    aria-atomic="true"
+                    className="rounded bg-green-500/10 border border-green-500/20 p-2"
+                  >
                     <p className="text-xs font-medium text-green-600">
                       {successMessage}
                     </p>

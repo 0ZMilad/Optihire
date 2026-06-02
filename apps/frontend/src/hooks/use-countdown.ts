@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useCallback, useEffect, useState } from "react";
 
 export function useCountdown(initialSeconds: number, onComplete?: () => void) {
   const [seconds, setSeconds] = useState(initialSeconds);
@@ -23,10 +23,13 @@ export function useCountdown(initialSeconds: number, onComplete?: () => void) {
 
   const start = useCallback(() => setIsActive(true), []);
   const pause = useCallback(() => setIsActive(false), []);
-  const reset = useCallback((newSeconds?: number) => {
-    setSeconds(newSeconds ?? initialSeconds);
-    setIsActive(false);
-  }, [initialSeconds]);
+  const reset = useCallback(
+    (newSeconds?: number) => {
+      setSeconds(newSeconds ?? initialSeconds);
+      setIsActive(false);
+    },
+    [initialSeconds]
+  );
 
   return { seconds, isActive, start, pause, reset };
 }

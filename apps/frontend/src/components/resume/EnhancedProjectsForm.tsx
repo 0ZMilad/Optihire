@@ -1,16 +1,27 @@
 "use client";
 
+import {
+  ChevronDown,
+  ChevronUp,
+  ExternalLink,
+  FolderKanban,
+  GripVertical,
+  Plus,
+  Trash2,
+} from "lucide-react";
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
-import { Label } from "@/components/ui/label";
-import { Checkbox } from "@/components/ui/checkbox";
 import { Card, CardContent } from "@/components/ui/card";
-import { Plus, Trash2, GripVertical, ChevronDown, ChevronUp, FolderKanban, ExternalLink } from "lucide-react";
-import { useResumeBuilderStore, useProjects } from "@/stores/resume-builder-store";
-import type { Project } from "./types";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
 import { cn } from "@/lib/utils";
+import {
+  useProjects,
+  useResumeBuilderStore,
+} from "@/stores/resume-builder-store";
+import type { Project } from "./types";
 
 interface EnhancedProjectsFormProps {
   className?: string;
@@ -73,8 +84,17 @@ function ProjectCard({
             )}
           </div>
 
-          <Button variant="ghost" size="sm" onClick={onToggle} className="shrink-0">
-            {isExpanded ? <ChevronUp className="size-4" /> : <ChevronDown className="size-4" />}
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={onToggle}
+            className="shrink-0"
+          >
+            {isExpanded ? (
+              <ChevronUp className="size-4" />
+            ) : (
+              <ChevronDown className="size-4" />
+            )}
           </Button>
 
           <Button
@@ -100,7 +120,9 @@ function ProjectCard({
                   minLength={2}
                   maxLength={100}
                   value={project.projectName}
-                  onChange={(e) => onUpdate(project.id, { projectName: e.target.value })}
+                  onChange={(e) =>
+                    onUpdate(project.id, { projectName: e.target.value })
+                  }
                   placeholder="E-commerce Platform"
                 />
               </div>
@@ -109,7 +131,9 @@ function ProjectCard({
                 <Input
                   maxLength={100}
                   value={project.role}
-                  onChange={(e) => onUpdate(project.id, { role: e.target.value })}
+                  onChange={(e) =>
+                    onUpdate(project.id, { role: e.target.value })
+                  }
                   placeholder="Lead Developer"
                 />
               </div>
@@ -121,10 +145,14 @@ function ProjectCard({
                 type="url"
                 pattern="^https?://.*"
                 value={project.projectUrl}
-                onChange={(e) => onUpdate(project.id, { projectUrl: e.target.value })}
+                onChange={(e) =>
+                  onUpdate(project.id, { projectUrl: e.target.value })
+                }
                 placeholder="https://github.com/user/project"
               />
-              <p className="text-xs text-muted-foreground">Must start with https://</p>
+              <p className="text-xs text-muted-foreground">
+                Must start with https://
+              </p>
             </div>
 
             <div className="grid gap-4 sm:grid-cols-2">
@@ -133,7 +161,9 @@ function ProjectCard({
                 <Input
                   type="month"
                   value={project.startDate}
-                  onChange={(e) => onUpdate(project.id, { startDate: e.target.value })}
+                  onChange={(e) =>
+                    onUpdate(project.id, { startDate: e.target.value })
+                  }
                 />
               </div>
               <div className="space-y-2">
@@ -141,7 +171,9 @@ function ProjectCard({
                 <Input
                   type="month"
                   value={project.endDate}
-                  onChange={(e) => onUpdate(project.id, { endDate: e.target.value })}
+                  onChange={(e) =>
+                    onUpdate(project.id, { endDate: e.target.value })
+                  }
                   disabled={project.isCurrent}
                 />
               </div>
@@ -171,11 +203,15 @@ function ProjectCard({
               <Textarea
                 maxLength={1500}
                 value={project.description}
-                onChange={(e) => onUpdate(project.id, { description: e.target.value })}
+                onChange={(e) =>
+                  onUpdate(project.id, { description: e.target.value })
+                }
                 placeholder="Describe the project, your contributions, and key outcomes..."
                 rows={4}
               />
-              <p className="text-xs text-muted-foreground">{project.description.length}/1500 characters</p>
+              <p className="text-xs text-muted-foreground">
+                {project.description.length}/1500 characters
+              </p>
             </div>
 
             <div className="space-y-2">
@@ -185,12 +221,17 @@ function ProjectCard({
                 value={project.technologiesUsed.join(", ")}
                 onChange={(e) =>
                   onUpdate(project.id, {
-                    technologiesUsed: e.target.value.split(",").map((s) => s.trim()).filter(Boolean),
+                    technologiesUsed: e.target.value
+                      .split(",")
+                      .map((s) => s.trim())
+                      .filter(Boolean),
                   })
                 }
                 placeholder="React, TypeScript, PostgreSQL"
               />
-              <p className="text-xs text-muted-foreground">Comma-separated list</p>
+              <p className="text-xs text-muted-foreground">
+                Comma-separated list
+              </p>
             </div>
 
             <div className="space-y-2">
@@ -206,7 +247,9 @@ function ProjectCard({
                 placeholder="• Increased user engagement by 40%\n• Reduced load time by 60%"
                 rows={3}
               />
-              <p className="text-xs text-muted-foreground">One achievement per line</p>
+              <p className="text-xs text-muted-foreground">
+                One achievement per line
+              </p>
             </div>
           </div>
         )}
@@ -215,7 +258,9 @@ function ProjectCard({
   );
 }
 
-export default function EnhancedProjectsForm({ className }: EnhancedProjectsFormProps) {
+export default function EnhancedProjectsForm({
+  className,
+}: EnhancedProjectsFormProps) {
   const projects = useProjects();
   const addProject = useResumeBuilderStore((state) => state.addProject);
   const updateProject = useResumeBuilderStore((state) => state.updateProject);

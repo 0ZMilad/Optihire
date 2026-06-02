@@ -1,27 +1,36 @@
 "use client";
 
-import { useState, useCallback, memo } from "react";
+import {
+  ChevronDown,
+  ChevronUp,
+  GripVertical,
+  Plus,
+  Trash2,
+} from "lucide-react";
+import { memo, useCallback, useState } from "react";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
-import { Label } from "@/components/ui/label";
-import { Checkbox } from "@/components/ui/checkbox";
 import { Card, CardContent } from "@/components/ui/card";
-import { Plus, Trash2, GripVertical, ChevronDown, ChevronUp } from "lucide-react";
-import { useResumeBuilderStore, useExperiences } from "@/stores/resume-builder-store";
-import type { WorkExperience } from "./types";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
 import { cn } from "@/lib/utils";
+import {
+  useExperiences,
+  useResumeBuilderStore,
+} from "@/stores/resume-builder-store";
+import type { WorkExperience } from "./types";
 
 interface EnhancedExperienceFormProps {
   className?: string;
 }
 
-const ExperienceCard = memo(function ExperienceCard({ 
-  experience, 
+const ExperienceCard = memo(function ExperienceCard({
+  experience,
   isExpanded,
   onToggle,
-  onUpdate, 
-  onRemove 
+  onUpdate,
+  onRemove,
 }: {
   experience: WorkExperience;
   isExpanded: boolean;
@@ -41,7 +50,7 @@ const ExperienceCard = memo(function ExperienceCard({
           >
             <GripVertical className="size-4" />
           </button>
-          
+
           <div className="flex-1 min-w-0">
             <div className="flex items-center gap-2">
               <span className="font-medium truncate">
@@ -55,7 +64,8 @@ const ExperienceCard = memo(function ExperienceCard({
             </div>
             {(experience.startDate || experience.isCurrent) && (
               <p className="text-xs text-muted-foreground">
-                {experience.startDate} — {experience.isCurrent ? "Present" : experience.endDate}
+                {experience.startDate} —{" "}
+                {experience.isCurrent ? "Present" : experience.endDate}
               </p>
             )}
           </div>
@@ -72,7 +82,7 @@ const ExperienceCard = memo(function ExperienceCard({
               <ChevronDown className="size-4" />
             )}
           </Button>
-          
+
           <Button
             variant="ghost"
             size="sm"
@@ -96,7 +106,9 @@ const ExperienceCard = memo(function ExperienceCard({
                   minLength={2}
                   maxLength={100}
                   value={experience.jobTitle}
-                  onChange={(e) => onUpdate(experience.id, { jobTitle: e.target.value })}
+                  onChange={(e) =>
+                    onUpdate(experience.id, { jobTitle: e.target.value })
+                  }
                   placeholder="Software Engineer"
                 />
               </div>
@@ -109,7 +121,9 @@ const ExperienceCard = memo(function ExperienceCard({
                   minLength={2}
                   maxLength={100}
                   value={experience.companyName}
-                  onChange={(e) => onUpdate(experience.id, { companyName: e.target.value })}
+                  onChange={(e) =>
+                    onUpdate(experience.id, { companyName: e.target.value })
+                  }
                   placeholder="Acme Corp"
                 />
               </div>
@@ -120,7 +134,9 @@ const ExperienceCard = memo(function ExperienceCard({
               <Input
                 maxLength={100}
                 value={experience.location}
-                onChange={(e) => onUpdate(experience.id, { location: e.target.value })}
+                onChange={(e) =>
+                  onUpdate(experience.id, { location: e.target.value })
+                }
                 placeholder="San Francisco, CA (or Remote)"
               />
             </div>
@@ -134,16 +150,25 @@ const ExperienceCard = memo(function ExperienceCard({
                   type="month"
                   required
                   value={experience.startDate}
-                  onChange={(e) => onUpdate(experience.id, { startDate: e.target.value })}
+                  onChange={(e) =>
+                    onUpdate(experience.id, { startDate: e.target.value })
+                  }
                 />
               </div>
               <div className="space-y-2">
-                <Label>End Date {!experience.isCurrent && <span className="text-destructive">*</span>}</Label>
+                <Label>
+                  End Date{" "}
+                  {!experience.isCurrent && (
+                    <span className="text-destructive">*</span>
+                  )}
+                </Label>
                 <Input
                   type="month"
                   required={!experience.isCurrent}
                   value={experience.endDate}
-                  onChange={(e) => onUpdate(experience.id, { endDate: e.target.value })}
+                  onChange={(e) =>
+                    onUpdate(experience.id, { endDate: e.target.value })
+                  }
                   disabled={experience.isCurrent}
                 />
               </div>
@@ -153,14 +178,14 @@ const ExperienceCard = memo(function ExperienceCard({
               <Checkbox
                 id={`current-${experience.id}`}
                 checked={experience.isCurrent}
-                onCheckedChange={(checked) => 
-                  onUpdate(experience.id, { 
+                onCheckedChange={(checked) =>
+                  onUpdate(experience.id, {
                     isCurrent: checked === true,
-                    endDate: checked ? "" : experience.endDate
+                    endDate: checked ? "" : experience.endDate,
                   })
                 }
               />
-              <Label 
+              <Label
                 htmlFor={`current-${experience.id}`}
                 className="text-sm font-normal cursor-pointer"
               >
@@ -173,12 +198,15 @@ const ExperienceCard = memo(function ExperienceCard({
               <Textarea
                 maxLength={2000}
                 value={experience.description}
-                onChange={(e) => onUpdate(experience.id, { description: e.target.value })}
+                onChange={(e) =>
+                  onUpdate(experience.id, { description: e.target.value })
+                }
                 placeholder="• Led development of...\n• Improved performance by...\n• Collaborated with..."
                 rows={6}
               />
               <p className="text-xs text-muted-foreground">
-                Use bullet points to highlight key achievements and impact. {experience.description.length}/2000
+                Use bullet points to highlight key achievements and impact.{" "}
+                {experience.description.length}/2000
               </p>
             </div>
 
@@ -186,9 +214,12 @@ const ExperienceCard = memo(function ExperienceCard({
               <Label>Skills Used</Label>
               <Input
                 value={experience.skillsUsed.join(", ")}
-                onChange={(e) => 
-                  onUpdate(experience.id, { 
-                    skillsUsed: e.target.value.split(",").map(s => s.trim()).filter(Boolean)
+                onChange={(e) =>
+                  onUpdate(experience.id, {
+                    skillsUsed: e.target.value
+                      .split(",")
+                      .map((s) => s.trim())
+                      .filter(Boolean),
                   })
                 }
                 placeholder="React, TypeScript, Node.js"
@@ -204,12 +235,18 @@ const ExperienceCard = memo(function ExperienceCard({
   );
 });
 
-export default function EnhancedExperienceForm({ className }: EnhancedExperienceFormProps) {
+export default function EnhancedExperienceForm({
+  className,
+}: EnhancedExperienceFormProps) {
   const experiences = useExperiences();
   const addExperience = useResumeBuilderStore((state) => state.addExperience);
-  const updateExperience = useResumeBuilderStore((state) => state.updateExperience);
-  const removeExperience = useResumeBuilderStore((state) => state.removeExperience);
-  
+  const updateExperience = useResumeBuilderStore(
+    (state) => state.updateExperience
+  );
+  const removeExperience = useResumeBuilderStore(
+    (state) => state.removeExperience
+  );
+
   // Track which cards are expanded (new items auto-expand)
   const [expandedIds, setExpandedIds] = useState<Set<string>>(new Set());
 
@@ -218,12 +255,12 @@ export default function EnhancedExperienceForm({ className }: EnhancedExperience
     // Get the new experience ID (it's the last one added)
     const newId = useResumeBuilderStore.getState().data.experiences.at(-1)?.id;
     if (newId) {
-      setExpandedIds(prev => new Set([...prev, newId]));
+      setExpandedIds((prev) => new Set([...prev, newId]));
     }
   }, [addExperience]);
 
   const toggleExpand = useCallback((id: string) => {
-    setExpandedIds(prev => {
+    setExpandedIds((prev) => {
       const next = new Set(prev);
       if (next.has(id)) {
         next.delete(id);
@@ -251,9 +288,7 @@ export default function EnhancedExperienceForm({ className }: EnhancedExperience
 
       {experiences.length === 0 ? (
         <div className="rounded-lg border border-dashed p-8 text-center">
-          <p className="text-muted-foreground mb-4">
-            No experience added yet
-          </p>
+          <p className="text-muted-foreground mb-4">No experience added yet</p>
           <Button onClick={handleAddExperience} variant="outline">
             <Plus className="size-4 mr-1" />
             Add your first experience

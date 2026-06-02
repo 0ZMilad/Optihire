@@ -1,8 +1,8 @@
-import { create } from 'zustand';
-import { useEffect } from 'react';
-import { useShallow } from 'zustand/react/shallow';
-import { listAuditResults } from '../middle-service/audit';
-import type { AuditResult } from '../middle-service/audit';
+import { useEffect } from "react";
+import { create } from "zustand";
+import { useShallow } from "zustand/react/shallow";
+import type { AuditResult } from "../middle-service/audit";
+import { listAuditResults } from "../middle-service/audit";
 
 // ============================================================================
 // Types
@@ -46,8 +46,9 @@ export const useAuditHistoryStore = create<AuditHistoryStore>()((set, get) => ({
       const history = await listAuditResults(0, 50);
       set({ history, isLoading: false, lastFetchedAt: Date.now() });
     } catch (error: unknown) {
-      const message = error instanceof Error ? error.message : 'Failed to load audit history';
-      console.error('Failed to fetch audit history:', error);
+      const message =
+        error instanceof Error ? error.message : "Failed to load audit history";
+      console.error("Failed to fetch audit history:", error);
       set({ error: message, isLoading: false });
     }
   },
@@ -70,17 +71,23 @@ export const useAuditHistoryStore = create<AuditHistoryStore>()((set, get) => ({
 // ============================================================================
 
 export function useAuditHistory() {
-  const { history, isLoading, error, fetchHistory, prependResult, removeResult } =
-    useAuditHistoryStore(
-      useShallow((state) => ({
-        history: state.history,
-        isLoading: state.isLoading,
-        error: state.error,
-        fetchHistory: state.fetchHistory,
-        prependResult: state.prependResult,
-        removeResult: state.removeResult,
-      }))
-    );
+  const {
+    history,
+    isLoading,
+    error,
+    fetchHistory,
+    prependResult,
+    removeResult,
+  } = useAuditHistoryStore(
+    useShallow((state) => ({
+      history: state.history,
+      isLoading: state.isLoading,
+      error: state.error,
+      fetchHistory: state.fetchHistory,
+      prependResult: state.prependResult,
+      removeResult: state.removeResult,
+    }))
+  );
 
   useEffect(() => {
     void fetchHistory();

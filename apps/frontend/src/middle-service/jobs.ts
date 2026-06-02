@@ -23,7 +23,10 @@ export async function updateApplicationStatus(
   matchId: string,
   status: ApplicationStatus
 ): Promise<void> {
-  await apiClient.patch(`/api/v1/jobs/matches/${encodeURIComponent(matchId)}/status`, {
-    status,
-  });
+  await apiClient.patch(
+    `/api/v1/jobs/matches/${encodeURIComponent(matchId)}/status`,
+    {
+      status,
+    }
+  );
 }

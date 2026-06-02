@@ -1,14 +1,25 @@
 "use client";
 
+import {
+  Award,
+  ChevronDown,
+  ChevronUp,
+  ExternalLink,
+  GripVertical,
+  Plus,
+  Trash2,
+} from "lucide-react";
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
+import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Card, CardContent } from "@/components/ui/card";
-import { Plus, Trash2, GripVertical, ChevronDown, ChevronUp, Award, ExternalLink } from "lucide-react";
-import { useResumeBuilderStore, useCertifications } from "@/stores/resume-builder-store";
-import type { Certification } from "./types";
 import { cn } from "@/lib/utils";
+import {
+  useCertifications,
+  useResumeBuilderStore,
+} from "@/stores/resume-builder-store";
+import type { Certification } from "./types";
 
 interface EnhancedCertificationsFormProps {
   className?: string;
@@ -27,8 +38,8 @@ function CertificationCard({
   onUpdate: (id: string, updates: Partial<Certification>) => void;
   onRemove: (id: string) => void;
 }) {
-  const isExpired = certification.expiryDate 
-    ? new Date(certification.expiryDate) < new Date() 
+  const isExpired = certification.expiryDate
+    ? new Date(certification.expiryDate) < new Date()
     : false;
 
   return (
@@ -75,13 +86,23 @@ function CertificationCard({
             {certification.issueDate && (
               <p className="text-xs text-muted-foreground">
                 Issued: {certification.issueDate}
-                {certification.expiryDate && ` • Expires: ${certification.expiryDate}`}
+                {certification.expiryDate &&
+                  ` • Expires: ${certification.expiryDate}`}
               </p>
             )}
           </div>
 
-          <Button variant="ghost" size="sm" onClick={onToggle} className="shrink-0">
-            {isExpanded ? <ChevronUp className="size-4" /> : <ChevronDown className="size-4" />}
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={onToggle}
+            className="shrink-0"
+          >
+            {isExpanded ? (
+              <ChevronUp className="size-4" />
+            ) : (
+              <ChevronDown className="size-4" />
+            )}
           </Button>
 
           <Button
@@ -107,20 +128,29 @@ function CertificationCard({
                   minLength={2}
                   maxLength={150}
                   value={certification.certificationName}
-                  onChange={(e) => onUpdate(certification.id, { certificationName: e.target.value })}
+                  onChange={(e) =>
+                    onUpdate(certification.id, {
+                      certificationName: e.target.value,
+                    })
+                  }
                   placeholder="AWS Solutions Architect"
                 />
               </div>
               <div className="space-y-2">
                 <Label>
-                  Issuing Organization <span className="text-destructive">*</span>
+                  Issuing Organization{" "}
+                  <span className="text-destructive">*</span>
                 </Label>
                 <Input
                   required
                   minLength={2}
                   maxLength={100}
                   value={certification.issuingOrganization}
-                  onChange={(e) => onUpdate(certification.id, { issuingOrganization: e.target.value })}
+                  onChange={(e) =>
+                    onUpdate(certification.id, {
+                      issuingOrganization: e.target.value,
+                    })
+                  }
                   placeholder="Amazon Web Services"
                 />
               </div>
@@ -135,7 +165,9 @@ function CertificationCard({
                   type="month"
                   required
                   value={certification.issueDate}
-                  onChange={(e) => onUpdate(certification.id, { issueDate: e.target.value })}
+                  onChange={(e) =>
+                    onUpdate(certification.id, { issueDate: e.target.value })
+                  }
                 />
               </div>
               <div className="space-y-2">
@@ -143,7 +175,9 @@ function CertificationCard({
                 <Input
                   type="month"
                   value={certification.expiryDate}
-                  onChange={(e) => onUpdate(certification.id, { expiryDate: e.target.value })}
+                  onChange={(e) =>
+                    onUpdate(certification.id, { expiryDate: e.target.value })
+                  }
                 />
                 <p className="text-xs text-muted-foreground">
                   Leave empty if the certification doesn't expire
@@ -157,7 +191,9 @@ function CertificationCard({
                 <Input
                   maxLength={100}
                   value={certification.credentialId}
-                  onChange={(e) => onUpdate(certification.id, { credentialId: e.target.value })}
+                  onChange={(e) =>
+                    onUpdate(certification.id, { credentialId: e.target.value })
+                  }
                   placeholder="ABC123XYZ"
                 />
               </div>
@@ -167,7 +203,11 @@ function CertificationCard({
                   type="url"
                   pattern="^https?://.*"
                   value={certification.credentialUrl}
-                  onChange={(e) => onUpdate(certification.id, { credentialUrl: e.target.value })}
+                  onChange={(e) =>
+                    onUpdate(certification.id, {
+                      credentialUrl: e.target.value,
+                    })
+                  }
                   placeholder="https://www.credly.com/badges/..."
                 />
               </div>
@@ -179,17 +219,27 @@ function CertificationCard({
   );
 }
 
-export default function EnhancedCertificationsForm({ className }: EnhancedCertificationsFormProps) {
+export default function EnhancedCertificationsForm({
+  className,
+}: EnhancedCertificationsFormProps) {
   const certifications = useCertifications();
-  const addCertification = useResumeBuilderStore((state) => state.addCertification);
-  const updateCertification = useResumeBuilderStore((state) => state.updateCertification);
-  const removeCertification = useResumeBuilderStore((state) => state.removeCertification);
+  const addCertification = useResumeBuilderStore(
+    (state) => state.addCertification
+  );
+  const updateCertification = useResumeBuilderStore(
+    (state) => state.updateCertification
+  );
+  const removeCertification = useResumeBuilderStore(
+    (state) => state.removeCertification
+  );
 
   const [expandedIds, setExpandedIds] = useState<Set<string>>(new Set());
 
   const handleAddCertification = () => {
     addCertification();
-    const newId = useResumeBuilderStore.getState().data.certifications.at(-1)?.id;
+    const newId = useResumeBuilderStore
+      .getState()
+      .data.certifications.at(-1)?.id;
     if (newId) {
       setExpandedIds((prev) => new Set([...prev, newId]));
     }
@@ -224,7 +274,9 @@ export default function EnhancedCertificationsForm({ className }: EnhancedCertif
 
       {certifications.length === 0 ? (
         <div className="rounded-lg border border-dashed p-8 text-center">
-          <p className="text-muted-foreground mb-4">No certifications added yet</p>
+          <p className="text-muted-foreground mb-4">
+            No certifications added yet
+          </p>
           <Button onClick={handleAddCertification} variant="outline">
             <Plus className="size-4 mr-1" />
             Add your first certification

@@ -1,21 +1,24 @@
 "use client";
 
+import { Plus, X } from "lucide-react";
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
+import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Card, CardContent } from "@/components/ui/card";
-import { 
+import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Plus, Trash2, X } from "lucide-react";
-import { useResumeBuilderStore, useSkills } from "@/stores/resume-builder-store";
-import type { Skill } from "./types";
 import { cn } from "@/lib/utils";
+import {
+  useResumeBuilderStore,
+  useSkills,
+} from "@/stores/resume-builder-store";
+import type { Skill } from "./types";
 
 interface EnhancedSkillsFormProps {
   className?: string;
@@ -43,15 +46,16 @@ const PROFICIENCY_LEVELS = [
 const PROFICIENCY_COLORS: Record<string, string> = {
   beginner: "bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-300",
   intermediate: "bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-300",
-  advanced: "bg-purple-100 text-purple-700 dark:bg-purple-900 dark:text-purple-300",
+  advanced:
+    "bg-purple-100 text-purple-700 dark:bg-purple-900 dark:text-purple-300",
   expert: "bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-300",
 };
 
-function SkillBadge({ 
-  skill, 
-  onRemove 
-}: { 
-  skill: Skill; 
+function SkillBadge({
+  skill,
+  onRemove,
+}: {
+  skill: Skill;
   onRemove: (id: string) => void;
 }) {
   return (
@@ -74,14 +78,11 @@ function SkillBadge({
   );
 }
 
-function SkillInputForm({
-  onAdd,
-}: {
-  onAdd: (skill: Partial<Skill>) => void;
-}) {
+function SkillInputForm({ onAdd }: { onAdd: (skill: Partial<Skill>) => void }) {
   const [skillName, setSkillName] = useState("");
   const [category, setCategory] = useState("");
-  const [proficiency, setProficiency] = useState<Skill["proficiencyLevel"]>("intermediate");
+  const [proficiency, setProficiency] =
+    useState<Skill["proficiencyLevel"]>("intermediate");
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -113,7 +114,7 @@ function SkillInputForm({
             placeholder="e.g., React, Python"
           />
         </div>
-        
+
         <div className="space-y-2">
           <Label htmlFor="category">Category</Label>
           <Select value={category} onValueChange={setCategory}>
@@ -129,12 +130,14 @@ function SkillInputForm({
             </SelectContent>
           </Select>
         </div>
-        
+
         <div className="space-y-2">
           <Label htmlFor="proficiency">Proficiency</Label>
-          <Select 
-            value={proficiency} 
-            onValueChange={(v) => setProficiency(v as Skill["proficiencyLevel"])}
+          <Select
+            value={proficiency}
+            onValueChange={(v) =>
+              setProficiency(v as Skill["proficiencyLevel"])
+            }
           >
             <SelectTrigger>
               <SelectValue />
@@ -160,7 +163,9 @@ function SkillInputForm({
   );
 }
 
-export default function EnhancedSkillsForm({ className }: EnhancedSkillsFormProps) {
+export default function EnhancedSkillsForm({
+  className,
+}: EnhancedSkillsFormProps) {
   const skills = useSkills();
   const addSkill = useResumeBuilderStore((state) => state.addSkill);
   const updateSkill = useResumeBuilderStore((state) => state.updateSkill);
@@ -177,14 +182,17 @@ export default function EnhancedSkillsForm({ className }: EnhancedSkillsFormProp
   };
 
   // Group skills by category
-  const skillsByCategory = skills.reduce((acc, skill) => {
-    const category = skill.skillCategory || "Uncategorized";
-    if (!acc[category]) {
-      acc[category] = [];
-    }
-    acc[category].push(skill);
-    return acc;
-  }, {} as Record<string, Skill[]>);
+  const skillsByCategory = skills.reduce(
+    (acc, skill) => {
+      const category = skill.skillCategory || "Uncategorized";
+      if (!acc[category]) {
+        acc[category] = [];
+      }
+      acc[category].push(skill);
+      return acc;
+    },
+    {} as Record<string, Skill[]>
+  );
 
   return (
     <div className={cn("space-y-6", className)}>
@@ -211,24 +219,26 @@ export default function EnhancedSkillsForm({ className }: EnhancedSkillsFormProp
         </div>
       ) : (
         <div className="space-y-4">
-          {Object.entries(skillsByCategory).map(([category, categorySkills]) => (
-            <div key={category}>
-              <h4 className="text-sm font-medium text-muted-foreground mb-2">
-                {category}
-              </h4>
-              <div className="flex flex-wrap gap-2">
-                {categorySkills
-                  .sort((a, b) => a.displayOrder - b.displayOrder)
-                  .map((skill) => (
-                    <SkillBadge
-                      key={skill.id}
-                      skill={skill}
-                      onRemove={removeSkill}
-                    />
-                  ))}
+          {Object.entries(skillsByCategory).map(
+            ([category, categorySkills]) => (
+              <div key={category}>
+                <h4 className="text-sm font-medium text-muted-foreground mb-2">
+                  {category}
+                </h4>
+                <div className="flex flex-wrap gap-2">
+                  {categorySkills
+                    .sort((a, b) => a.displayOrder - b.displayOrder)
+                    .map((skill) => (
+                      <SkillBadge
+                        key={skill.id}
+                        skill={skill}
+                        onRemove={removeSkill}
+                      />
+                    ))}
+                </div>
               </div>
-            </div>
-          ))}
+            )
+          )}
         </div>
       )}
 
@@ -238,19 +248,35 @@ export default function EnhancedSkillsForm({ className }: EnhancedSkillsFormProp
           Quick add popular skills:
         </p>
         <div className="flex flex-wrap gap-2">
-          {["JavaScript", "Python", "React", "Node.js", "SQL", "Git", "AWS", "Docker"]
-            .filter(name => !skills.some(s => s.skillName.toLowerCase() === name.toLowerCase()))
+          {[
+            "JavaScript",
+            "Python",
+            "React",
+            "Node.js",
+            "SQL",
+            "Git",
+            "AWS",
+            "Docker",
+          ]
+            .filter(
+              (name) =>
+                !skills.some(
+                  (s) => s.skillName.toLowerCase() === name.toLowerCase()
+                )
+            )
             .slice(0, 6)
             .map((name) => (
               <Button
                 key={name}
                 variant="outline"
                 size="sm"
-                onClick={() => handleAddSkill({ 
-                  skillName: name, 
-                  skillCategory: "Programming Languages",
-                  proficiencyLevel: "intermediate"
-                })}
+                onClick={() =>
+                  handleAddSkill({
+                    skillName: name,
+                    skillCategory: "Programming Languages",
+                    proficiencyLevel: "intermediate",
+                  })
+                }
               >
                 <Plus className="size-3 mr-1" />
                 {name}

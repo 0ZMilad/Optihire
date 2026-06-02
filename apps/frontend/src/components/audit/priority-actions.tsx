@@ -1,13 +1,9 @@
 "use client";
 
-import { cn } from "@/lib/utils";
-import {
-  CheckCircle2,
-  ChevronDown,
-  ChevronUp,
-} from "lucide-react";
+import { CheckCircle2, ChevronDown, ChevronUp } from "lucide-react";
 import { useState } from "react";
 import { Badge } from "@/components/ui/badge";
+import { cn } from "@/lib/utils";
 import type { PriorityAction } from "@/middle-service/audit";
 
 interface PriorityActionsProps {
@@ -82,26 +78,21 @@ export function PriorityActions({ actions }: PriorityActionsProps) {
               className={cn(
                 "flex items-start gap-3 rounded-lg border px-3.5 py-3 text-sm",
                 meta.border,
-                meta.bg,
+                meta.bg
               )}
             >
               <span
-                className={cn(
-                  "mt-1.5 size-2 shrink-0 rounded-full",
-                  meta.dot,
-                )}
+                className={cn("mt-1.5 size-2 shrink-0 rounded-full", meta.dot)}
               />
               <div className="flex-1 min-w-0 space-y-1">
-                <p className={cn("leading-snug", meta.text)}>
-                  {action.action}
-                </p>
+                <p className={cn("leading-snug", meta.text)}>{action.action}</p>
                 <div className="flex items-center gap-2">
                   <Badge
                     variant="outline"
                     className={cn(
                       "text-[10px] px-1.5 py-0 h-4 font-medium",
                       meta.text,
-                      meta.border,
+                      meta.border
                     )}
                   >
                     {meta.label}
